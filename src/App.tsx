@@ -4,13 +4,13 @@ import ChordDiagram from './components/ChordDiagram';
 import ChordInfo from './components/ChordInfo';
 import PlayButton from './components/PlayButton';
 import ProgressionPanel from './components/ProgressionPanel';
-import ChordSheetPage from './components/ChordSheet';
+// [CHORD SHEET - COMMENTED OUT] import ChordSheetPage from './components/ChordSheet';
 import type { ParsedChord } from './utils/chordUtils';
 import { parseChordName, getChordNotes } from './utils/chordUtils';
 import { getGuitarFingerings } from './data/chords';
 import { playChordStrum, playChordBlock } from './utils/audioUtils';
 
-type Page = 'chord' | 'progression' | 'sheet';
+type Page = 'chord' | 'progression'; // [CHORD SHEET - COMMENTED OUT] | 'sheet'
 
 function App() {
   const [page, setPage] = useState<Page>('chord');
@@ -88,6 +88,7 @@ function App() {
               和弦进行
               {page === 'progression' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
             </button>
+            {/* [CHORD SHEET - COMMENTED OUT]
             <button
               onClick={() => setPage('sheet')}
               className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
@@ -96,6 +97,7 @@ function App() {
               和弦谱
               {page === 'sheet' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
             </button>
+            */}
           </nav>
         </div>
       </header>
@@ -165,12 +167,14 @@ function App() {
           <ProgressionPanel onChordSelect={handleChordSelect} />
         )}
 
+        {/* [CHORD SHEET - COMMENTED OUT]
         {page === 'sheet' && (
           <ChordSheetPage onChordSelect={(name) => {
             const parsed = parseChordName(name);
             if (parsed) handleChordSelect(parsed);
           }} />
         )}
+        */}
       </main>
 
       <footer className="border-t border-gray-100 mt-16 py-4 text-center text-xs text-gray-300">
