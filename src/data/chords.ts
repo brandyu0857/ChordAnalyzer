@@ -284,6 +284,51 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
 };
 
 // ============================================================
+// SLASH CHORD FINGERINGS (inversions & pedal bass)
+// Fret array: [6th(E), 5th(A), 4th(D), 3rd(G), 2nd(B), 1st(E)]
+// ============================================================
+export const SLASH_CHORD_SHAPES: Record<string, GuitarFingering> = {
+  // C inversions
+  'C/E':    { frets: [0, 3, 2, 0, 1, 0],    fingers: [0, 3, 2, 0, 1, 0] },          // E-C-E-G-C-E
+  'C/G':    { frets: [3, 3, 2, 0, 1, 0],    fingers: [3, 3, 2, 0, 1, 0] },          // G-C-E-G-C-E
+
+  // G inversions & passing bass
+  'G/B':    { frets: [-1, 2, 0, 0, 0, 3],   fingers: [0, 1, 0, 0, 0, 3] },          // x-B-D-G-B-G
+  'G/F#':   { frets: [2, 2, 0, 0, 0, 3],    fingers: [2, 1, 0, 0, 0, 4] },          // F#-B-D-G-B-G
+
+  // Am inversions
+  'Am/C':   { frets: [-1, 3, 2, 2, 1, 0],   fingers: [0, 3, 2, 3, 1, 0] },          // x-C-E-A-C-E
+  'Am/E':   { frets: [0, 0, 2, 2, 1, 0],    fingers: [0, 0, 2, 3, 1, 0] },          // E-A-E-A-C-E
+  'Am/G':   { frets: [3, 0, 2, 2, 1, 0],    fingers: [3, 0, 2, 3, 1, 0] },          // G-A-E-A-C-E (Am7 voicing)
+
+  // D inversions
+  'D/F#':   { frets: [2, 0, 0, 2, 3, 2],    fingers: [2, 0, 0, 1, 3, 2] },          // F#-A-D-A-D-F#
+
+  // F inversions
+  'F/A':    { frets: [-1, 0, 3, 2, 1, 1],   fingers: [0, 0, 4, 3, 2, 1] },          // x-A-F-A-C-F
+  'F/C':    { frets: [-1, 3, 3, 2, 1, 1],   fingers: [0, 3, 4, 2, 1, 1] },          // x-C-F-A-C-F
+
+  // Em inversions
+  'Em/B':   { frets: [-1, 2, 2, 0, 0, 0],   fingers: [0, 1, 2, 0, 0, 0] },          // x-B-E-G-B-E
+
+  // Dm inversions
+  'Dm/F':   { frets: [1, 0, 0, 2, 3, 1],    fingers: [1, 0, 0, 2, 3, 1] },          // F-A-D-A-D-F
+  'Dm/A':   { frets: [-1, 0, 0, 2, 3, 1],   fingers: [0, 0, 0, 2, 3, 1] },          // x-A-D-A-D-F
+
+  // E inversions
+  'E/G#':   { frets: [4, -1, 2, 1, 0, 0],   fingers: [4, 0, 2, 1, 0, 0], startFret: 1 }, // G#-x-E-G#-B-E
+
+  // Other common passing/pedal bass chords
+  'D/A':    { frets: [-1, 0, 0, 2, 3, 2],   fingers: [0, 0, 0, 1, 3, 2] },          // x-A-D-A-D-F# (D over open A)
+  'A/C#':   { frets: [-1, 4, 2, 2, 2, 0],   fingers: [0, 4, 1, 1, 1, 0], startFret: 2 }, // x-C#-A-E-A-E
+  'A/E':    { frets: [0, 0, 2, 2, 2, 0],    fingers: [0, 0, 1, 2, 3, 0] },          // E-A-E-A-C#-E
+  'E/B':    { frets: [-1, 2, 2, 1, 0, 0],   fingers: [0, 2, 3, 1, 0, 0] },          // x-B-E-G#-B-E
+  'Bm/D':   { frets: [-1, -1, 0, 4, 3, 2],  fingers: [0, 0, 0, 4, 3, 2], startFret: 2 }, // x-x-D-F#-A-F#
+  'G/D':    { frets: [-1, -1, 0, 0, 0, 3],  fingers: [0, 0, 0, 0, 0, 3] },          // x-x-D-G-B-G
+  'C/B':    { frets: [-1, 2, 2, 0, 1, 0],   fingers: [0, 2, 3, 0, 1, 0] },          // x-B-E-G-C-E (Cmaj7-ish)
+};
+
+// ============================================================
 // ALTERNATIVE VOICINGS (barre positions, inversions)
 // ============================================================
 const ALTERNATIVE_VOICINGS: Record<string, GuitarFingering[]> = {
@@ -385,11 +430,22 @@ export function getGuitarFingering(root: string, type: string): GuitarFingering 
   return GUITAR_CHORD_SHAPES[key] || null;
 }
 
-/** Returns all available voicings for a chord (primary + alternatives) */
-export function getGuitarFingerings(root: string, type: string): GuitarFingering[] {
+/** Returns all available voicings for a chord (primary + alternatives).
+ *  If bassNote is provided, the matching slash voicing is prepended. */
+export function getGuitarFingerings(root: string, type: string, bassNote?: string): GuitarFingering[] {
   const key = getChordShapeKey(root, type);
   const primary = GUITAR_CHORD_SHAPES[key];
-  if (!primary) return [];
   const alts = ALTERNATIVE_VOICINGS[key] || [];
-  return [primary, ...alts];
+  const all: GuitarFingering[] = primary ? [primary, ...alts] : [];
+
+  if (bassNote) {
+    const slashKey = `${key}/${bassNote}`;
+    const slashFingering = SLASH_CHORD_SHAPES[slashKey];
+    if (slashFingering) {
+      // Slash voicing first, then standard voicings
+      return [slashFingering, ...all];
+    }
+  }
+
+  return all;
 }

@@ -41,7 +41,7 @@ function App() {
   }, []);
 
   const fingerings = useMemo(() => {
-    return currentChord ? getGuitarFingerings(currentChord.root, currentChord.type) : [];
+    return currentChord ? getGuitarFingerings(currentChord.root, currentChord.type, currentChord.bassNote) : [];
   }, [currentChord]);
 
   const fingering = fingerings[voicingIndex] || null;

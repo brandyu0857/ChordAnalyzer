@@ -8,15 +8,31 @@ export interface ParsedChord {
   type: string;
   chordType: ChordType;
   display: string;
+  bassNote?: string;  // For slash chords like C/E, G/B
 }
 
 export function parseChordName(name: string): ParsedChord | null {
   let trimmed = name.trim();
   if (!trimmed) return null;
 
-  // Handle slash chords like C/E → treat as C
+  // Extract bass note from slash chords like C/E, Am/G, D/F#
+  let bassNote: string | undefined;
   if (trimmed.includes('/')) {
-    trimmed = trimmed.split('/')[0].trim();
+    const slashIdx = trimmed.indexOf('/');
+    const bassStr = trimmed.substring(slashIdx + 1).trim();
+    trimmed = trimmed.substring(0, slashIdx).trim();
+
+    // Parse the bass note (1 or 2 chars)
+    let rawBass = '';
+    if (bassStr.length >= 2 && (bassStr[1] === '#' || bassStr[1] === 'b')) {
+      rawBass = bassStr[0].toUpperCase() + bassStr[1];
+    } else if (bassStr.length >= 1) {
+      rawBass = bassStr[0].toUpperCase();
+    }
+    const normalizedBass = normalizeNote(rawBass);
+    if (rawBass && getNoteIndex(normalizedBass) !== -1) {
+      bassNote = normalizedBass;
+    }
   }
 
   // Handle #X notation (e.g. #F7 → F#7, #Fm7b5 → F#m7b5)
@@ -84,7 +100,8 @@ export function parseChordName(name: string): ParsedChord | null {
     root,
     type,
     chordType,
-    display: root + chordType.symbol,
+    display: bassNote ? `${root}${chordType.symbol}/${bassNote}` : root + chordType.symbol,
+    bassNote,
   };
 }
 
