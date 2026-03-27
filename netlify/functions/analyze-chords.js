@@ -1,3 +1,9 @@
+// [AI FEATURE - COMMENTED OUT]
+// This Netlify Function proxied Gemini Vision API for chord sheet image recognition.
+// Disabled due to API quota limits. Re-enable when upgrading to a paid Gemini plan.
+
+/* [AI FEATURE - COMMENTED OUT]
+
 // Netlify Function (Node.js runtime) - Gemini Vision API proxy
 
 exports.handler = async (event) => {
@@ -74,4 +80,15 @@ Output rules:
       body: JSON.stringify({ error: String(err) }),
     };
   }
+};
+
+*/
+
+// Placeholder: return 501 Not Implemented
+exports.handler = async () => {
+  return {
+    statusCode: 501,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ error: "AI chord recognition is currently disabled." }),
+  };
 };

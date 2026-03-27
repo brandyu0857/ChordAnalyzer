@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { parseChordPro, EXAMPLE_CHORD_PRO, EXAMPLE_PLAIN_CHORDS } from '../utils/chordProParser';
 import { parseChordName } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
@@ -11,10 +11,10 @@ interface ChordSheetProps {
 export default function ChordSheet({ onChordSelect }: ChordSheetProps) {
   const [input, setInput] = useState('');
   const [rendered, setRendered] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // [AI FEATURE - COMMENTED OUT] const [analyzing, setAnalyzing] = useState(false);
+  // [AI FEATURE - COMMENTED OUT] const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // [AI FEATURE - COMMENTED OUT] const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sheet = useMemo(() => {
     if (!rendered || !input.trim()) return null;
@@ -28,10 +28,11 @@ export default function ChordSheet({ onChordSelect }: ChordSheetProps) {
   const handleClear = () => {
     setInput('');
     setRendered(false);
-    setPreviewUrl(null);
+    // [AI FEATURE - COMMENTED OUT] setPreviewUrl(null);
     setError('');
   };
 
+  /* [AI FEATURE - COMMENTED OUT]
   // Image upload and AI recognition
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,6 +78,7 @@ export default function ChordSheet({ onChordSelect }: ChordSheetProps) {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+  */
 
   const getBaseChord = (name: string) => {
     const base = name.includes('/') ? name.split('/')[0] : name;
@@ -85,7 +87,7 @@ export default function ChordSheet({ onChordSelect }: ChordSheetProps) {
 
   return (
     <div className="space-y-6">
-      {/* Upload area */}
+      {/* [AI FEATURE - COMMENTED OUT]
       <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-gray-300 transition-colors">
         <input
           ref={fileInputRef}
@@ -119,13 +121,15 @@ export default function ChordSheet({ onChordSelect }: ChordSheetProps) {
           </div>
         )}
       </div>
+      */}
 
-      {/* Image preview */}
+      {/* [AI FEATURE - COMMENTED OUT]
       {previewUrl && (
         <div className="border border-gray-200 rounded-xl overflow-hidden">
           <img src={previewUrl} alt="上传的和弦谱" className="max-h-64 mx-auto object-contain" />
         </div>
       )}
+      */}
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
@@ -140,7 +144,7 @@ export default function ChordSheet({ onChordSelect }: ChordSheetProps) {
         <textarea
           value={input}
           onChange={(e) => { setInput(e.target.value); setRendered(false); }}
-          placeholder={`AI 识别结果会显示在这里，也可以手动输入或修改`}
+          placeholder={`输入 ChordPro 格式：[C]歌词 [Am]歌词\n或纯和弦进行：C - Am - F - G`}
           className="w-full h-32 px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 text-sm font-mono resize-y"
         />
         <div className="flex gap-2 mt-2 flex-wrap">
@@ -278,6 +282,7 @@ export default function ChordSheet({ onChordSelect }: ChordSheetProps) {
   );
 }
 
+/* [AI FEATURE - COMMENTED OUT]
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -291,3 +296,4 @@ function fileToBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+*/
