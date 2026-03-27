@@ -1,20 +1,21 @@
-import type { Context } from "@netlify/functions";
+// Netlify Function (Node.js runtime) - Gemini Vision API proxy
 
-export default async (req: Request, _context: Context) => {
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: "Method not allowed" };
   }
 
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "API key not configured" }), {
-      status: 500,
+    return {
+      statusCode: 500,
       headers: { "Content-Type": "application/json" },
-    });
+      body: JSON.stringify({ error: "API key not configured" }),
+    };
   }
 
   try {
-    const { image, mimeType } = await req.json();
+    const { image, mimeType } = JSON.parse(event.body);
 
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -52,23 +53,25 @@ Output rules:
     const data = await geminiResponse.json();
 
     if (!geminiResponse.ok) {
-      return new Response(
-        JSON.stringify({ error: data.error?.message || "Gemini API error" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return {
+        statusCode: 500,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: data.error?.message || "Gemini API error" }),
+      };
     }
 
-    const text =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    return new Response(JSON.stringify({ text }), {
-      status: 200,
+    return {
+      statusCode: 200,
       headers: { "Content-Type": "application/json" },
-    });
+      body: JSON.stringify({ text }),
+    };
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: String(err) }),
+    };
   }
 };
