@@ -1,0 +1,145 @@
+import { NOTES, getNoteIndex, getNoteAtInterval, normalizeNote, MAJOR_SCALE_INTERVALS } from '../data/notes';
+import { CHORD_TYPES } from '../data/chords';
+import type { ChordType } from '../data/chords';
+import { DEGREE_TO_CHORD_TYPE } from '../data/progressions';
+
+export interface ParsedChord {
+  root: string;
+  type: string;
+  chordType: ChordType;
+  display: string;
+}
+
+export function parseChordName(name: string): ParsedChord | null {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+
+  // Try to extract root note (1 or 2 chars)
+  let root = '';
+  let suffix = '';
+
+  if (trimmed.length >= 2 && (trimmed[1] === '#' || trimmed[1] === 'b')) {
+    root = trimmed.substring(0, 2);
+    suffix = trimmed.substring(2);
+  } else if (trimmed.length >= 1) {
+    root = trimmed[0].toUpperCase();
+    suffix = trimmed.substring(1);
+  }
+
+  root = normalizeNote(root);
+  if (getNoteIndex(root) === -1) return null;
+
+  // Map suffix to chord type
+  const suffixLower = suffix.toLowerCase();
+  let type = 'major';
+
+  if (suffix === '' || suffixLower === 'maj' || suffixLower === 'major') {
+    type = 'major';
+  } else if (suffixLower === 'm' || suffixLower === 'min' || suffixLower === 'minor' || suffix === '-') {
+    type = 'minor';
+  } else if (suffixLower === '7' || suffixLower === 'dom7') {
+    type = '7';
+  } else if (suffixLower === 'maj7' || suffixLower === 'M7' || suffix === 'Δ7') {
+    type = 'maj7';
+  } else if (suffixLower === 'm7' || suffixLower === 'min7' || suffix === '-7') {
+    type = 'm7';
+  } else if (suffixLower === 'dim' || suffix === '°') {
+    type = 'dim';
+  } else if (suffixLower === 'dim7' || suffix === '°7') {
+    type = 'dim7';
+  } else if (suffixLower === 'aug' || suffix === '+') {
+    type = 'aug';
+  } else if (suffixLower === 'sus2') {
+    type = 'sus2';
+  } else if (suffixLower === 'sus4' || suffixLower === 'sus') {
+    type = 'sus4';
+  } else if (suffixLower === 'add9') {
+    type = 'add9';
+  } else if (suffixLower === 'm7b5' || suffix === 'ø' || suffix === 'ø7') {
+    type = 'm7b5';
+  } else if (suffixLower === '9') {
+    type = '9';
+  } else if (suffixLower === '6') {
+    type = '6';
+  } else if (suffixLower === 'm6' || suffixLower === 'min6') {
+    type = 'm6';
+  } else {
+    return null;
+  }
+
+  const chordType = CHORD_TYPES[type];
+  if (!chordType) return null;
+
+  return {
+    root,
+    type,
+    chordType,
+    display: root + chordType.symbol,
+  };
+}
+
+export function getChordNotes(root: string, type: string): string[] {
+  const chordType = CHORD_TYPES[type];
+  if (!chordType) return [];
+  return chordType.intervals.map(interval => getNoteAtInterval(root, interval % 12));
+}
+
+export function transposeChord(chord: ParsedChord, semitones: number): ParsedChord {
+  const newRoot = getNoteAtInterval(chord.root, semitones);
+  return {
+    ...chord,
+    root: newRoot,
+    display: newRoot + chord.chordType.symbol,
+  };
+}
+
+export function transposeProgression(chords: ParsedChord[], semitones: number): ParsedChord[] {
+  return chords.map(c => transposeChord(c, semitones));
+}
+
+export function degreeToChord(degree: string, key: string): ParsedChord | null {
+  const mapping = DEGREE_TO_CHORD_TYPE[degree];
+  if (!mapping) return null;
+
+  const keyIndex = getNoteIndex(key);
+  if (keyIndex === -1) return null;
+
+  const scaleNote = NOTES[(keyIndex + MAJOR_SCALE_INTERVALS[mapping.scaleIndex]) % 12];
+  const chordType = CHORD_TYPES[mapping.type];
+
+  return {
+    root: scaleNote,
+    type: mapping.type,
+    chordType,
+    display: scaleNote + chordType.symbol,
+  };
+}
+
+export function progressionDegreesToChords(degrees: string[], key: string): (ParsedChord | null)[] {
+  return degrees.map(d => degreeToChord(d, key));
+}
+
+export function findChordDegree(chordRoot: string, key: string): { degree: string; isNatural: boolean } | null {
+  const keyIndex = getNoteIndex(key);
+  const chordIndex = getNoteIndex(chordRoot);
+  if (keyIndex === -1 || chordIndex === -1) return null;
+
+  const interval = (chordIndex - keyIndex + 12) % 12;
+  const degreeIndex = MAJOR_SCALE_INTERVALS.indexOf(interval);
+
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+
+  if (degreeIndex !== -1) {
+    return { degree: ROMAN[degreeIndex], isNatural: true };
+  }
+
+  // Check if it's a flat degree
+  const FLAT_DEGREES: Record<number, string> = {
+    1: 'bII', 3: 'bIII', 6: 'bV', 8: 'bVI', 10: 'bVII',
+  };
+  if (FLAT_DEGREES[interval]) {
+    return { degree: FLAT_DEGREES[interval], isNatural: false };
+  }
+
+  return null;
+}
