@@ -11,8 +11,18 @@ export interface ParsedChord {
 }
 
 export function parseChordName(name: string): ParsedChord | null {
-  const trimmed = name.trim();
+  let trimmed = name.trim();
   if (!trimmed) return null;
+
+  // Handle slash chords like C/E → treat as C
+  if (trimmed.includes('/')) {
+    trimmed = trimmed.split('/')[0].trim();
+  }
+
+  // Handle #X notation (e.g. #F7 → F#7, #Fm7b5 → F#m7b5)
+  if (trimmed.startsWith('#') && trimmed.length >= 2) {
+    trimmed = trimmed[1] + '#' + trimmed.substring(2);
+  }
 
   // Try to extract root note (1 or 2 chars)
   let root = '';

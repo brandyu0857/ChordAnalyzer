@@ -7,9 +7,10 @@ interface ChordDiagramProps {
   fingering: GuitarFingering;
   chordName: string;
   size?: 'small' | 'medium' | 'large';
+  interactive?: boolean;
 }
 
-export default function ChordDiagram({ fingering, chordName, size = 'medium' }: ChordDiagramProps) {
+export default function ChordDiagram({ fingering, chordName, size = 'medium', interactive = true }: ChordDiagramProps) {
   const [showNotes, setShowNotes] = useState(false);
   const scale = size === 'small' ? 0.65 : size === 'large' ? 1.2 : 1;
   const stringSpacing = 28 * scale;
@@ -39,8 +40,8 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium' }: 
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
-      className="select-none cursor-pointer"
-      onClick={() => setShowNotes(prev => !prev)}
+      className={`select-none ${interactive ? 'cursor-pointer' : ''}`}
+      onClick={interactive ? () => setShowNotes(prev => !prev) : undefined}
     >
       {/* Chord name */}
       <text
