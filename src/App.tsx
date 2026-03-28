@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import ChordSearch from './components/ChordSearch';
 import ChordDiagram from './components/ChordDiagram';
 import ChordInfo from './components/ChordInfo';
@@ -19,12 +19,20 @@ function App() {
   const [error, setError] = useState('');
   const [voicingIndex, setVoicingIndex] = useState(0);
   const [chordToAppend, setChordToAppend] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(msg);
+    toastTimer.current = setTimeout(() => setToast(null), 2500);
+  }, []);
 
   const handleAddToProgression = useCallback(() => {
     if (!currentChord) return;
     setChordToAppend(currentChord.display);
-    setPage('progression');
-  }, [currentChord]);
+    showToast('已添加到和弦进行');
+  }, [currentChord, showToast]);
 
   const handleSearch = useCallback((name: string) => {
     setSearchInput(name);
@@ -176,13 +184,14 @@ function App() {
           </div>
         )}
 
-        {page === 'progression' && (
+        {/* Always mounted so appendChord is received even when on another tab */}
+        <div className={page === 'progression' ? '' : 'hidden'}>
           <ProgressionPanel
             onChordSelect={handleChordSelect}
             appendChord={chordToAppend}
             onAppendDone={() => setChordToAppend(null)}
           />
-        )}
+        </div>
 
         {page === 'identify' && (
           <FretboardIdentifier onChordSelect={handleChordSelect} />
@@ -192,6 +201,20 @@ function App() {
       <footer className="border-t border-gray-100 mt-16 py-4 text-center text-xs text-gray-300">
         ChordAnalyzer
       </footer>
+
+      {/* Toast */}
+      <div
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+        style={{
+          transition: 'opacity 0.25s ease, transform 0.25s ease',
+          opacity: toast ? 1 : 0,
+          transform: toast ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(8px)',
+        }}
+      >
+        <div className="bg-gray-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg whitespace-nowrap">
+          {toast}
+        </div>
+      </div>
     </div>
   );
 }
