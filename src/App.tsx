@@ -4,12 +4,13 @@ import ChordDiagram from './components/ChordDiagram';
 import ChordInfo from './components/ChordInfo';
 import PlayButton from './components/PlayButton';
 import ProgressionPanel from './components/ProgressionPanel';
+import FretboardIdentifier from './components/FretboardIdentifier';
 import type { ParsedChord } from './utils/chordUtils';
 import { parseChordName, getChordNotes } from './utils/chordUtils';
 import { getGuitarFingerings } from './data/chords';
 import { playChordStrum, playChordBlock } from './utils/audioUtils';
 
-type Page = 'chord' | 'progression';
+type Page = 'chord' | 'progression' | 'identify';
 
 function App() {
   const [page, setPage] = useState<Page>('chord');
@@ -87,6 +88,14 @@ function App() {
               和弦进行
               {page === 'progression' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
             </button>
+            <button
+              onClick={() => setPage('identify')}
+              className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
+                ${page === 'identify' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              反查和弦
+              {page === 'identify' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
+            </button>
           </nav>
         </div>
       </header>
@@ -153,6 +162,10 @@ function App() {
 
         {page === 'progression' && (
           <ProgressionPanel onChordSelect={handleChordSelect} />
+        )}
+
+        {page === 'identify' && (
+          <FretboardIdentifier onChordSelect={handleChordSelect} />
         )}
       </main>
 
