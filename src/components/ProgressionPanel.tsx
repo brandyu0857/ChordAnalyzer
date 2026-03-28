@@ -12,9 +12,11 @@ import { NOTES } from '../data/notes';
 
 interface Props {
   onChordSelect?: (chord: ParsedChord) => void;
+  appendChord?: string | null;
+  onAppendDone?: () => void;
 }
 
-export default function ProgressionPanel({ onChordSelect: _onChordSelect }: Props) {
+export default function ProgressionPanel({ onChordSelect: _onChordSelect, appendChord, onAppendDone }: Props) {
   // Template section
   const [templatesOpen, setTemplatesOpen] = useState(true);
   const [styleFilter, setStyleFilter] = useState('全部');
@@ -78,6 +80,21 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect }: Prop
     }, 400);
     return () => clearTimeout(timer);
   }, [input]);
+
+  // Append a chord pushed from the chord query page
+  useEffect(() => {
+    if (!appendChord) return;
+    skipParse.current = true;
+    setInput(prev => (prev.trim() ? prev.trim() + ' ' + appendChord : appendChord));
+    setBaseChords(prev => {
+      const c = parseChordName(appendChord);
+      return c ? [...prev, c] : prev;
+    });
+    setSelectedTemplateIdx(null);
+    setSemitones(0);
+    setExpandedIdx(null);
+    onAppendDone?.();
+  }, [appendChord, onAppendDone]);
 
   const handleReplace = useCallback((subDisplay: string) => {
     if (expandedIdx === null) return;
