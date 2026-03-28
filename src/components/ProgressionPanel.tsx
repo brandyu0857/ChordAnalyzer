@@ -140,12 +140,11 @@ export default function ProgressionPanel({ onChordSelect }: ProgressionPanelProp
             const fingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
             const fingering = fingerings[0] || null;
             return (
-              <button key={i}
-                onClick={() => onChordSelect(chord)}
-                className={`flex flex-col items-center rounded-xl transition-all cursor-pointer border pt-2 pb-1 px-2
+              <div key={i}
+                className={`flex flex-col items-center rounded-xl border pt-2 pb-1 px-2
                   ${activeChordIndex === i
                     ? 'border-gray-900 bg-gray-50 scale-105 shadow-sm'
-                    : 'bg-white border-gray-200 hover:border-gray-400'
+                    : 'bg-white border-gray-200'
                   }`}
               >
                 {fingering ? (
@@ -158,7 +157,7 @@ export default function ProgressionPanel({ onChordSelect }: ProgressionPanelProp
                 <span className="text-xs font-semibold mt-0.5 text-gray-700">
                   {chord.display}
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>
