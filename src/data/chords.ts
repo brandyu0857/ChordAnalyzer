@@ -451,97 +451,315 @@ export const SLASH_CHORD_SHAPES: Record<string, GuitarFingering> = {
 };
 
 // ============================================================
-// ALTERNATIVE VOICINGS (barre positions, inversions)
+// ALTERNATIVE VOICINGS (barre positions, second positions)
+// E-frets (root on 6th string): C=8,C#=9,D=10,D#=11,E=0,F=1,F#=2,G=3,G#=4,A=5,A#=6,B=7
+// A-frets (root on 5th string): C=3,C#=4,D=5,D#=6,E=7,F=8,F#=9,G=10,G#=11,A=0,A#=1,B=2
 // ============================================================
 const ALTERNATIVE_VOICINGS: Record<string, GuitarFingering[]> = {
-  // --- Major alternatives ---
-  'C':  [
-    { frets: [-1, 3, 5, 5, 5, 3], barreAt: 3, startFret: 3 },   // A-shape barre
-    { frets: [8, 10, 10, 9, 8, 8], barreAt: 8, startFret: 8 },   // E-shape barre
-  ],
-  'D':  [
-    { frets: [-1, 5, 7, 7, 7, 5], barreAt: 5, startFret: 5 },   // A-shape barre
-  ],
-  'E':  [
-    { frets: [-1, 7, 9, 9, 9, 7], barreAt: 7, startFret: 7 },   // A-shape barre
-  ],
-  'F':  [
-    { frets: [-1, -1, 3, 2, 1, 1], fingers: [0, 0, 3, 2, 1, 1] }, // simplified (no barre)
-    { frets: [-1, 8, 10, 10, 10, 8], barreAt: 8, startFret: 8 },  // A-shape barre
-  ],
-  'G':  [
-    { frets: [3, 5, 5, 4, 3, 3], barreAt: 3, startFret: 3 },    // E-shape barre
-  ],
-  'A':  [
-    { frets: [5, 7, 7, 6, 5, 5], barreAt: 5, startFret: 5 },    // E-shape barre
-  ],
-  'B':  [
-    { frets: [7, 9, 9, 8, 7, 7], barreAt: 7, startFret: 7 },    // E-shape barre
-  ],
+  // ---- MAJOR  (E-shape: [n,n+2,n+2,n+1,n,n]; A-shape: [-1,n,n+2,n+2,n+2,n]) ----
+  'C':   [{ frets: [-1,3,5,5,5,3],    barreAt:3,  startFret:3  }, { frets:[8,10,10,9,8,8],    barreAt:8,  startFret:8  }],
+  'C#':  [{ frets: [-1,4,6,6,6,4],    barreAt:4,  startFret:4  }],
+  'D':   [{ frets: [-1,5,7,7,7,5],    barreAt:5,  startFret:5  }],
+  'D#':  [{ frets: [-1,6,8,8,8,6],    barreAt:6,  startFret:6  }],
+  'E':   [{ frets: [-1,7,9,9,9,7],    barreAt:7,  startFret:7  }],
+  'F':   [{ frets: [-1,-1,3,2,1,1],   fingers:[0,0,3,2,1,1]    }, { frets:[-1,8,10,10,10,8],  barreAt:8,  startFret:8  }],
+  'F#':  [{ frets: [-1,9,11,11,11,9], barreAt:9,  startFret:9  }],
+  'G':   [{ frets: [3,5,5,4,3,3],     barreAt:3,  startFret:3  }],
+  'G#':  [{ frets: [-1,11,13,13,13,11],barreAt:11,startFret:11 }],
+  'A':   [{ frets: [5,7,7,6,5,5],     barreAt:5,  startFret:5  }],
+  'A#':  [{ frets: [6,8,8,7,6,6],     barreAt:6,  startFret:6  }],
+  'B':   [{ frets: [7,9,9,8,7,7],     barreAt:7,  startFret:7  }],
 
-  // --- Minor alternatives ---
-  'Cm':  [
-    { frets: [8, 10, 10, 8, 8, 8], barreAt: 8, startFret: 8 },  // Em-shape barre
-  ],
-  'Dm':  [
-    { frets: [-1, 5, 7, 7, 6, 5], barreAt: 5, startFret: 5 },   // Am-shape barre
-  ],
-  'Em':  [
-    { frets: [-1, 7, 9, 9, 8, 7], barreAt: 7, startFret: 7 },   // Am-shape barre
-  ],
-  'Fm':  [
-    { frets: [-1, 8, 10, 10, 9, 8], barreAt: 8, startFret: 8 }, // Am-shape barre
-  ],
-  'Gm':  [
-    { frets: [-1, 10, 12, 12, 11, 10], barreAt: 10, startFret: 10 }, // Am-shape barre
-  ],
-  'Am':  [
-    { frets: [5, 7, 7, 5, 5, 5], barreAt: 5, startFret: 5 },    // Em-shape barre
-  ],
-  'Bm':  [
-    { frets: [7, 9, 9, 7, 7, 7], barreAt: 7, startFret: 7 },    // Em-shape barre
-  ],
+  // ---- MINOR  (Em-shape: [n,n+2,n+2,n,n,n]; Am-shape: [-1,n,n+2,n+2,n+1,n]) ----
+  'Cm':  [{ frets: [8,10,10,8,8,8],    barreAt:8,  startFret:8  }],
+  'C#m': [{ frets: [9,11,11,9,9,9],    barreAt:9,  startFret:9  }],
+  'Dm':  [{ frets: [-1,5,7,7,6,5],     barreAt:5,  startFret:5  }],
+  'D#m': [{ frets: [-1,6,8,8,7,6],     barreAt:6,  startFret:6  }],
+  'Em':  [{ frets: [-1,7,9,9,8,7],     barreAt:7,  startFret:7  }],
+  'Fm':  [{ frets: [-1,8,10,10,9,8],   barreAt:8,  startFret:8  }],
+  'F#m': [{ frets: [-1,9,11,11,10,9],  barreAt:9,  startFret:9  }],
+  'Gm':  [{ frets: [-1,10,12,12,11,10],barreAt:10, startFret:10 }],
+  'G#m': [{ frets: [-1,11,13,13,12,11],barreAt:11, startFret:11 }],
+  'Am':  [{ frets: [5,7,7,5,5,5],      barreAt:5,  startFret:5  }],
+  'A#m': [{ frets: [6,8,8,6,6,6],      barreAt:6,  startFret:6  }],
+  'Bm':  [{ frets: [7,9,9,7,7,7],      barreAt:7,  startFret:7  }],
 
-  // --- 7th alternatives ---
-  'C7':  [
-    { frets: [-1, 3, 5, 3, 5, 3], barreAt: 3, startFret: 3 },   // A7-shape barre
-  ],
-  'D7':  [
-    { frets: [-1, 5, 7, 5, 7, 5], barreAt: 5, startFret: 5 },   // A7-shape barre
-  ],
-  'E7':  [
-    { frets: [0, 2, 2, 1, 3, 0], fingers: [0, 1, 2, 1, 3, 0] }, // open variant
-  ],
-  'G7':  [
-    { frets: [3, 5, 3, 4, 3, 3], barreAt: 3, startFret: 3 },    // E7-shape barre
-  ],
-  'A7':  [
-    { frets: [5, 7, 5, 6, 5, 5], barreAt: 5, startFret: 5 },    // E7-shape barre
-  ],
+  // ---- DOM 7  (E7-shape: [n,n+2,n,n+1,n,n]; A7-shape: [-1,n,n+2,n,n+2,n]) ----
+  'C7':  [{ frets: [-1,3,5,3,5,3],     barreAt:3,  startFret:3  }],
+  'C#7': [{ frets: [9,11,9,10,9,9],    barreAt:9,  startFret:9  }],
+  'D7':  [{ frets: [-1,5,7,5,7,5],     barreAt:5,  startFret:5  }],
+  'D#7': [{ frets: [11,13,11,12,11,11],barreAt:11, startFret:11 }],
+  'E7':  [{ frets: [0,2,2,1,3,0],      fingers:[0,1,2,1,3,0]   }],
+  'F7':  [{ frets: [-1,8,10,8,10,8],   barreAt:8,  startFret:8  }],
+  'F#7': [{ frets: [-1,9,11,9,11,9],   barreAt:9,  startFret:9  }],
+  'G7':  [{ frets: [3,5,3,4,3,3],      barreAt:3,  startFret:3  }],
+  'G#7': [{ frets: [-1,11,13,11,13,11],barreAt:11, startFret:11 }],
+  'A7':  [{ frets: [5,7,5,6,5,5],      barreAt:5,  startFret:5  }],
+  'A#7': [{ frets: [6,8,6,7,6,6],      barreAt:6,  startFret:6  }],
+  'B7':  [{ frets: [7,9,7,8,7,7],      barreAt:7,  startFret:7  }],
 
-  // --- maj7 alternatives ---
-  'Cmaj7': [
-    { frets: [-1, 3, 5, 4, 5, 3], barreAt: 3, startFret: 3 },
-  ],
-  'Gmaj7': [
-    { frets: [3, 5, 4, 4, 3, 3], barreAt: 3, startFret: 3 },
-  ],
-  'Amaj7': [
-    { frets: [5, 7, 6, 6, 5, 5], barreAt: 5, startFret: 5 },
-  ],
+  // ---- MAJ7  (Emaj7-shape: [n,n+2,n+1,n+1,n,n]; Amaj7-shape: [-1,n,n+2,n+1,n+2,n]) ----
+  'Cmaj7':  [{ frets: [-1,3,5,4,5,3],     barreAt:3,  startFret:3  }],
+  'C#maj7': [{ frets: [9,11,10,10,9,9],   barreAt:9,  startFret:9  }],
+  'Dmaj7':  [{ frets: [-1,5,7,6,7,5],     barreAt:5,  startFret:5  }],
+  'D#maj7': [{ frets: [11,13,12,12,11,11],barreAt:11, startFret:11 }],
+  'Emaj7':  [{ frets: [-1,7,9,8,9,7],     barreAt:7,  startFret:7  }],
+  'Fmaj7':  [{ frets: [-1,8,10,9,10,8],   barreAt:8,  startFret:8  }],
+  'F#maj7': [{ frets: [-1,9,11,10,11,9],  barreAt:9,  startFret:9  }],
+  'Gmaj7':  [{ frets: [3,5,4,4,3,3],      barreAt:3,  startFret:3  }],
+  'G#maj7': [{ frets: [-1,11,13,12,13,11],barreAt:11, startFret:11 }],
+  'Amaj7':  [{ frets: [5,7,6,6,5,5],      barreAt:5,  startFret:5  }],
+  'A#maj7': [{ frets: [6,8,7,7,6,6],      barreAt:6,  startFret:6  }],
+  'Bmaj7':  [{ frets: [7,9,8,8,7,7],      barreAt:7,  startFret:7  }],
 
-  // --- m7 alternatives ---
-  'Am7':  [
-    { frets: [5, 7, 5, 5, 5, 5], barreAt: 5, startFret: 5 },    // Em7-shape barre
-  ],
-  'Dm7':  [
-    { frets: [-1, 5, 7, 5, 6, 5], barreAt: 5, startFret: 5 },   // Am7-shape barre
-  ],
-  'Em7':  [
-    { frets: [-1, 7, 9, 7, 8, 7], barreAt: 7, startFret: 7 },
-  ],
+  // ---- m7  (Em7-shape: [n,n+2,n,n,n,n]; Am7-shape: [-1,n,n+2,n,n+1,n]) ----
+  'Cm7':  [{ frets: [8,10,8,8,8,8],     barreAt:8,  startFret:8  }],
+  'C#m7': [{ frets: [9,11,9,9,9,9],     barreAt:9,  startFret:9  }],
+  'Dm7':  [{ frets: [-1,5,7,5,6,5],     barreAt:5,  startFret:5  }],
+  'D#m7': [{ frets: [11,13,11,11,11,11],barreAt:11, startFret:11 }],
+  'Em7':  [{ frets: [-1,7,9,7,8,7],     barreAt:7,  startFret:7  }],
+  'Fm7':  [{ frets: [-1,8,10,8,9,8],    barreAt:8,  startFret:8  }],
+  'F#m7': [{ frets: [-1,9,11,9,10,9],   barreAt:9,  startFret:9  }],
+  'Gm7':  [{ frets: [-1,10,12,10,11,10],barreAt:10, startFret:10 }],
+  'G#m7': [{ frets: [-1,11,13,11,12,11],barreAt:11, startFret:11 }],
+  'Am7':  [{ frets: [5,7,5,5,5,5],      barreAt:5,  startFret:5  }],
+  'A#m7': [{ frets: [6,8,6,6,6,6],      barreAt:6,  startFret:6  }],
+  'Bm7':  [{ frets: [7,9,7,7,7,7],      barreAt:7,  startFret:7  }],
+
+  // ---- m7b5  (E-shape: [n,-1,n,n,n-1,n]; A-shape: [-1,n,n+1,n,n+1,-1]) ----
+  'Cm7b5':  [{ frets: [8,-1,8,8,7,8],    startFret:7  }],
+  'C#m7b5': [{ frets: [9,-1,9,9,8,9],    startFret:8  }],
+  'Dm7b5':  [{ frets: [-1,5,6,5,6,-1],   startFret:5  }],
+  'D#m7b5': [{ frets: [11,-1,11,11,10,11],startFret:10 }],
+  'Em7b5':  [{ frets: [-1,7,8,7,8,-1],   startFret:7  }],
+  'Fm7b5':  [{ frets: [-1,8,9,8,9,-1],   startFret:8  }],
+  'F#m7b5': [{ frets: [-1,9,10,9,10,-1], startFret:9  }],
+  'Gm7b5':  [{ frets: [-1,10,11,10,11,-1],startFret:10 }],
+  'G#m7b5': [{ frets: [-1,11,12,11,12,-1],startFret:11 }],
+  'Am7b5':  [{ frets: [5,-1,5,5,4,5],    startFret:4  }],
+  'A#m7b5': [{ frets: [6,-1,6,6,5,6],    startFret:5  }],
+  'Bm7b5':  [{ frets: [7,-1,7,7,6,7],    startFret:6  }],
+
+  // ---- dim  (E-shape: [n,n+1,n+2,n,-1,-1]; A-shape: [-1,n,n+1,n+2,n+1,-1]) ----
+  'Cdim':  [{ frets: [8,9,10,8,-1,-1],    startFret:8  }],
+  'C#dim': [{ frets: [9,10,11,9,-1,-1],   startFret:9  }],
+  'Ddim':  [{ frets: [-1,5,6,7,6,-1],     startFret:5  }],
+  'D#dim': [{ frets: [-1,6,7,8,7,-1],     startFret:6  }],
+  'Edim':  [{ frets: [-1,7,8,9,8,-1],     startFret:7  }],
+  'Fdim':  [{ frets: [-1,8,9,10,9,-1],    startFret:8  }],
+  'F#dim': [{ frets: [-1,9,10,11,10,-1],  startFret:9  }],
+  'Gdim':  [{ frets: [-1,10,11,12,11,-1], startFret:10 }],
+  'G#dim': [{ frets: [-1,11,12,13,12,-1], startFret:11 }],
+  'Adim':  [{ frets: [5,6,7,5,-1,-1],     barreAt:5, startFret:5 }],
+  'A#dim': [{ frets: [6,7,8,6,-1,-1],     barreAt:6, startFret:6 }],
+  'Bdim':  [{ frets: [7,8,9,7,-1,-1],     barreAt:7, startFret:7 }],
+
+  // ---- dim7  (E-shape: [n,n+1,n+2,n,n+2,n]; A-shape: [-1,n,n+1,n+2,n+1,n+2]) ----
+  'Cdim7':  [{ frets: [8,9,10,8,10,8],     barreAt:8,  startFret:8  }],
+  'C#dim7': [{ frets: [9,10,11,9,11,9],    barreAt:9,  startFret:9  }],
+  'Ddim7':  [{ frets: [-1,5,6,7,6,7],      startFret:5  }],
+  'D#dim7': [{ frets: [-1,6,7,8,7,8],      startFret:6  }],
+  'Edim7':  [{ frets: [-1,7,8,9,8,9],      startFret:7  }],
+  'Fdim7':  [{ frets: [-1,8,9,10,9,10],    startFret:8  }],
+  'F#dim7': [{ frets: [-1,9,10,11,10,11],  startFret:9  }],
+  'Gdim7':  [{ frets: [-1,10,11,12,11,12], startFret:10 }],
+  'G#dim7': [{ frets: [-1,11,12,13,12,13], startFret:11 }],
+  'Adim7':  [{ frets: [5,6,7,5,7,5],       barreAt:5, startFret:5 }],
+  'A#dim7': [{ frets: [6,7,8,6,8,6],       barreAt:6, startFret:6 }],
+  'Bdim7':  [{ frets: [7,8,9,7,9,7],       barreAt:7, startFret:7 }],
+
+  // ---- sus2  (A-shape: [-1,n,n+2,n+2,n,n]; E-shape: [n,n+2,n+4,n+4,n,n]) ----
+  'Csus2':  [{ frets: [-1,3,5,5,3,3],      barreAt:3,  startFret:3  }],
+  'C#sus2': [{ frets: [9,11,13,13,9,9],    barreAt:9,  startFret:9  }],
+  'Dsus2':  [{ frets: [-1,5,7,7,5,5],      barreAt:5,  startFret:5  }],
+  'D#sus2': [{ frets: [11,13,15,15,11,11], barreAt:11, startFret:11 }],
+  'Esus2':  [{ frets: [-1,7,9,9,7,7],      barreAt:7,  startFret:7  }],
+  'Fsus2':  [{ frets: [-1,8,10,10,8,8],    barreAt:8,  startFret:8  }],
+  'F#sus2': [{ frets: [-1,9,11,11,9,9],    barreAt:9,  startFret:9  }],
+  'Gsus2':  [{ frets: [-1,10,12,12,10,10], barreAt:10, startFret:10 }],
+  'G#sus2': [{ frets: [4,6,8,8,4,4],       barreAt:4,  startFret:4  }],
+  'Asus2':  [{ frets: [5,7,9,9,5,5],       barreAt:5,  startFret:5  }],
+  'A#sus2': [{ frets: [6,8,10,10,6,6],     barreAt:6,  startFret:6  }],
+  'Bsus2':  [{ frets: [7,9,11,11,7,7],     barreAt:7,  startFret:7  }],
+
+  // ---- sus4  (E-shape: [n,n+2,n+2,n+2,n,n]; A-shape: [-1,n,n+2,n+2,n+3,n]) ----
+  'Csus4':  [{ frets: [8,10,10,10,8,8],    barreAt:8,  startFret:8  }],
+  'C#sus4': [{ frets: [9,11,11,11,9,9],    barreAt:9,  startFret:9  }],
+  'Dsus4':  [{ frets: [-1,5,7,7,8,5],      barreAt:5,  startFret:5  }],
+  'D#sus4': [{ frets: [11,13,13,13,11,11], barreAt:11, startFret:11 }],
+  'Esus4':  [{ frets: [-1,7,9,9,10,7],     barreAt:7,  startFret:7  }],
+  'Fsus4':  [{ frets: [-1,8,10,10,11,8],   barreAt:8,  startFret:8  }],
+  'F#sus4': [{ frets: [-1,9,11,11,12,9],   barreAt:9,  startFret:9  }],
+  'Gsus4':  [{ frets: [3,5,5,5,3,3],       barreAt:3,  startFret:3  }],
+  'G#sus4': [{ frets: [4,6,6,6,4,4],       barreAt:4,  startFret:4  }],
+  'Asus4':  [{ frets: [5,7,7,7,5,5],       barreAt:5,  startFret:5  }],
+  'A#sus4': [{ frets: [6,8,8,8,6,6],       barreAt:6,  startFret:6  }],
+  'Bsus4':  [{ frets: [7,9,9,9,7,7],       barreAt:7,  startFret:7  }],
+
+  // ---- aug  (E-shape: [n,n+3,n+2,n+1,n+1,n]; A-shape: [-1,n,n+3,n+2,n+2,n+1]) ----
+  'Caug':  [{ frets: [-1,3,6,5,5,4],   startFret:3 }],
+  'C#aug': [{ frets: [-1,4,7,6,6,5],   startFret:4 }],
+  'Daug':  [{ frets: [-1,5,8,7,7,6],   startFret:5 }],
+  'D#aug': [{ frets: [-1,6,9,8,8,7],   startFret:6 }],
+  'Eaug':  [{ frets: [-1,7,10,9,9,8],  startFret:7 }],
+  'Faug':  [{ frets: [-1,8,11,10,10,9],startFret:8 }],
+  'F#aug': [{ frets: [2,5,4,3,3,2],    startFret:2 }],
+  'Gaug':  [{ frets: [3,6,5,4,4,3],    startFret:3 }],
+  'G#aug': [{ frets: [4,7,6,5,5,4],    startFret:4 }],
+  'Aaug':  [{ frets: [5,8,7,6,6,5],    barreAt:5, startFret:5 }],
+  'A#aug': [{ frets: [6,9,8,7,7,6],    startFret:6 }],
+  'Baug':  [{ frets: [-1,2,5,4,4,3],   startFret:2 }],
+
+  // ---- add9  (major barre as second voicing) ----
+  'Cadd9':  [{ frets: [-1,3,5,5,5,3],     barreAt:3,  startFret:3  }],
+  'C#add9': [{ frets: [-1,4,6,6,6,4],     barreAt:4,  startFret:4  }],
+  'Dadd9':  [{ frets: [-1,5,7,7,7,5],     barreAt:5,  startFret:5  }],
+  'D#add9': [{ frets: [-1,6,8,8,8,6],     barreAt:6,  startFret:6  }],
+  'Eadd9':  [{ frets: [-1,7,9,9,9,7],     barreAt:7,  startFret:7  }],
+  'Fadd9':  [{ frets: [-1,8,10,10,10,8],  barreAt:8,  startFret:8  }],
+  'F#add9': [{ frets: [-1,9,11,11,11,9],  barreAt:9,  startFret:9  }],
+  'Gadd9':  [{ frets: [3,5,5,4,3,3],      barreAt:3,  startFret:3  }],
+  'G#add9': [{ frets: [4,6,6,5,4,4],      barreAt:4,  startFret:4  }],
+  'Aadd9':  [{ frets: [5,7,7,6,5,5],      barreAt:5,  startFret:5  }],
+  'A#add9': [{ frets: [6,8,8,7,6,6],      barreAt:6,  startFret:6  }],
+  'Badd9':  [{ frets: [7,9,9,8,7,7],      barreAt:7,  startFret:7  }],
+
+  // ---- dom9  (E-shape: [n,n+2,n,n+1,n,n+2]; A-shape: [-1,n,n-1,n,n,n]) ----
+  'C9':  [{ frets: [8,10,8,9,8,10],     barreAt:8,  startFret:8  }],
+  'C#9': [{ frets: [9,11,9,10,9,11],    barreAt:9,  startFret:9  }],
+  'D9':  [{ frets: [10,12,10,11,10,12], barreAt:10, startFret:10 }],
+  'D#9': [{ frets: [11,13,11,12,11,13], barreAt:11, startFret:11 }],
+  'E9':  [{ frets: [-1,7,6,7,7,7],      startFret:6  }],
+  'F9':  [{ frets: [-1,8,7,8,8,8],      startFret:7  }],
+  'F#9': [{ frets: [-1,9,8,9,9,9],      startFret:8  }],
+  'G9':  [{ frets: [-1,10,9,10,10,10],  startFret:9  }],
+  'G#9': [{ frets: [-1,11,10,11,11,11], startFret:10 }],
+  'A9':  [{ frets: [5,7,5,6,5,7],       barreAt:5,  startFret:5  }],
+  'A#9': [{ frets: [6,8,6,7,6,8],       barreAt:6,  startFret:6  }],
+  'B9':  [{ frets: [7,9,7,8,7,9],       barreAt:7,  startFret:7  }],
+
+  // ---- 6  (E-shape: [n,n+2,n+2,n+1,n+2,n]; A-shape: [-1,n,n+2,n+2,n+2,n+2]) ----
+  'C6':  [{ frets: [-1,3,5,5,5,5],      startFret:3  }],
+  'C#6': [{ frets: [-1,4,6,6,6,6],      startFret:4  }],
+  'D6':  [{ frets: [-1,5,7,7,7,7],      startFret:5  }],
+  'D#6': [{ frets: [-1,6,8,8,8,8],      startFret:6  }],
+  'E6':  [{ frets: [-1,7,9,9,9,9],      startFret:7  }],
+  'F6':  [{ frets: [-1,8,10,10,10,10],  startFret:8  }],
+  'F#6': [{ frets: [-1,9,11,11,11,11],  startFret:9  }],
+  'G6':  [{ frets: [-1,10,12,12,12,12], startFret:10 }],
+  'G#6': [{ frets: [-1,11,13,13,13,13], startFret:11 }],
+  'A6':  [{ frets: [5,7,7,6,7,5],       barreAt:5, startFret:5 }],
+  'A#6': [{ frets: [6,8,8,7,8,6],       barreAt:6, startFret:6 }],
+  'B6':  [{ frets: [7,9,9,8,9,7],       barreAt:7, startFret:7 }],
+
+  // ---- m6  (E-shape: [n,n+2,n+2,n,n+2,n]; A-shape: [-1,n,n+2,n+2,n+1,n+2]) ----
+  'Cm6':  [{ frets: [-1,3,5,5,4,5],    startFret:3  }],
+  'C#m6': [{ frets: [-1,4,6,6,5,6],    startFret:4  }],
+  'Dm6':  [{ frets: [-1,5,7,7,6,7],    startFret:5  }],
+  'D#m6': [{ frets: [-1,6,8,8,7,8],    startFret:6  }],
+  'Em6':  [{ frets: [-1,7,9,9,8,9],    startFret:7  }],
+  'Fm6':  [{ frets: [-1,8,10,10,9,10], startFret:8  }],
+  'F#m6': [{ frets: [-1,9,11,11,10,11],startFret:9  }],
+  'Gm6':  [{ frets: [-1,10,12,12,11,12],startFret:10 }],
+  'G#m6': [{ frets: [-1,11,13,13,12,13],startFret:11 }],
+  'Am6':  [{ frets: [5,7,7,5,7,5],     barreAt:5, startFret:5 }],
+  'A#m6': [{ frets: [6,8,8,6,8,6],     barreAt:6, startFret:6 }],
+  'Bm6':  [{ frets: [7,9,9,7,9,7],     barreAt:7, startFret:7 }],
+
+  // ---- maj9  (second position) ----
+  'Cmaj9':  [{ frets: [8,10,9,11,11,10],  startFret:8  }],
+  'C#maj9': [{ frets: [9,11,10,12,12,11], startFret:9  }],
+  'Dmaj9':  [{ frets: [10,12,11,13,13,12],startFret:10 }],
+  'D#maj9': [{ frets: [-1,6,5,7,8,7],     startFret:5  }],
+  'Emaj9':  [{ frets: [-1,7,6,8,9,8],     startFret:6  }],
+  'Fmaj9':  [{ frets: [-1,8,7,9,10,9],    startFret:7  }],
+  'F#maj9': [{ frets: [-1,9,8,10,11,10],  startFret:8  }],
+  'Gmaj9':  [{ frets: [-1,10,9,11,12,11], startFret:9  }],
+  'G#maj9': [{ frets: [-1,11,10,12,13,12],startFret:10 }],
+  'Amaj9':  [{ frets: [-1,0,4,4,5,4]                   }],
+
+  // ---- m9  (second position) ----
+  'Cm9':  [{ frets: [-1,3,1,3,4,3],    startFret:1  }],
+  'C#m9': [{ frets: [-1,4,2,4,5,4],    startFret:2  }],
+  'Dm9':  [{ frets: [-1,5,3,5,6,5],    startFret:3  }],
+  'D#m9': [{ frets: [-1,6,4,6,7,6],    startFret:4  }],
+  'Em9':  [{ frets: [-1,7,5,7,8,7],    startFret:5  }],
+  'Fm9':  [{ frets: [-1,8,6,8,9,8],    startFret:6  }],
+  'F#m9': [{ frets: [-1,9,7,9,10,9],   startFret:7  }],
+  'Gm9':  [{ frets: [-1,10,8,10,11,10],startFret:8  }],
+  'G#m9': [{ frets: [-1,11,9,11,12,11],startFret:9  }],
+  'Am9':  [{ frets: [-1,0,3,0,1,0]                   }],
+  'A#m9': [{ frets: [-1,1,4,1,2,1],    barreAt:1, startFret:1 }],
+  'Bm9':  [{ frets: [-1,2,5,2,3,2],    startFret:2  }],
+
+  // ---- 13  (second position) ----
+  'C13':  [{ frets: [-1,3,2,3,5,5],    startFret:2  }],
+  'C#13': [{ frets: [-1,4,3,4,6,6],    startFret:3  }],
+  'D13':  [{ frets: [-1,5,4,5,7,7],    startFret:4  }],
+  'D#13': [{ frets: [-1,6,5,6,8,8],    startFret:5  }],
+  'E13':  [{ frets: [-1,7,6,7,9,9],    startFret:6  }],
+  'F13':  [{ frets: [-1,8,7,8,10,10],  startFret:7  }],
+  'F#13': [{ frets: [-1,9,8,9,11,11],  startFret:8  }],
+  'G13':  [{ frets: [-1,10,9,10,12,12],startFret:9  }],
+  'G#13': [{ frets: [-1,11,10,11,13,13],startFret:10 }],
+  'A13':  [{ frets: [-1,0,2,0,2,2]                   }],
+  'A#13': [{ frets: [-1,1,3,1,3,3],    barreAt:1, startFret:1 }],
+  'B13':  [{ frets: [-1,2,4,2,4,4],    barreAt:2, startFret:2 }],
+
+  // ---- m11  (second position) ----
+  'Cm11':  [{ frets: [-1,3,1,3,4,1],   startFret:1  }],
+  'C#m11': [{ frets: [-1,4,2,4,5,2],   startFret:2  }],
+  'Dm11':  [{ frets: [-1,5,3,5,6,3],   startFret:3  }],
+  'D#m11': [{ frets: [-1,6,4,6,7,4],   startFret:4  }],
+  'Em11':  [{ frets: [-1,7,5,7,8,5],   startFret:5  }],
+  'Fm11':  [{ frets: [-1,8,6,8,9,6],   startFret:6  }],
+  'F#m11': [{ frets: [-1,9,7,9,10,7],  startFret:7  }],
+  'Gm11':  [{ frets: [-1,10,8,10,11,8],startFret:8  }],
+  'G#m11': [{ frets: [-1,11,9,11,12,9],startFret:9  }],
+  'Am11':  [{ frets: [-1,0,3,0,1,4]                  }],
+  'A#m11': [{ frets: [-1,1,4,1,2,4],   barreAt:1, startFret:1 }],
+  'Bm11':  [{ frets: [-1,2,5,2,3,5],   startFret:2  }],
+
+  // ---- 7b9  (second position) ----
+  'C7b9':  [{ frets: [8,10,8,9,7,8],    startFret:7  }],
+  'C#7b9': [{ frets: [9,11,9,10,8,9],   startFret:8  }],
+  'D7b9':  [{ frets: [10,12,10,11,9,10],startFret:9  }],
+  'D#7b9': [{ frets: [11,13,11,12,10,11],startFret:10 }],
+  'E7b9':  [{ frets: [-1,7,6,7,5,7],    startFret:5  }],
+  'F7b9':  [{ frets: [-1,8,7,8,6,8],    startFret:6  }],
+  'F#7b9': [{ frets: [-1,9,8,9,7,9],    startFret:7  }],
+  'G7b9':  [{ frets: [-1,10,9,10,8,10], startFret:8  }],
+  'G#7b9': [{ frets: [-1,11,10,11,9,11],startFret:9  }],
+  'A7b9':  [{ frets: [5,7,5,6,4,5],     startFret:4  }],
+
+  // ---- 7#9  (second position) ----
+  'C7#9':  [{ frets: [8,10,8,9,11,8],   barreAt:8, startFret:8  }],
+  'C#7#9': [{ frets: [9,11,9,10,12,9],  barreAt:9, startFret:9  }],
+  'D7#9':  [{ frets: [10,12,10,11,13,10],barreAt:10,startFret:10 }],
+  'D#7#9': [{ frets: [-1,6,5,6,8,6],    startFret:5  }],
+  'E7#9':  [{ frets: [-1,7,6,7,9,7],    startFret:6  }],
+  'F7#9':  [{ frets: [-1,8,7,8,10,8],   startFret:7  }],
+  'F#7#9': [{ frets: [-1,9,8,9,11,9],   startFret:8  }],
+  'G7#9':  [{ frets: [-1,10,9,10,12,10],startFret:9  }],
+  'G#7#9': [{ frets: [-1,11,10,11,13,11],startFret:10 }],
+  'A7#9':  [{ frets: [5,7,5,6,8,5],     barreAt:5, startFret:5  }],
+  'A#7#9': [{ frets: [6,8,6,7,9,6],     barreAt:6, startFret:6  }],
+  'B7#9':  [{ frets: [7,9,7,8,10,7],    barreAt:7, startFret:7  }],
+
+  // ---- maj13  (second position) ----
+  'Cmaj13':  [{ frets: [-1,3,5,4,5,5],    startFret:3  }],
+  'C#maj13': [{ frets: [-1,4,6,5,6,6],    startFret:4  }],
+  'Dmaj13':  [{ frets: [-1,5,7,6,7,7],    startFret:5  }],
+  'D#maj13': [{ frets: [-1,6,8,7,8,8],    startFret:6  }],
+  'Emaj13':  [{ frets: [-1,7,9,8,9,9],    startFret:7  }],
+  'Fmaj13':  [{ frets: [-1,8,10,9,10,10], startFret:8  }],
+  'F#maj13': [{ frets: [-1,9,11,10,11,11],startFret:9  }],
+  'Gmaj13':  [{ frets: [-1,10,12,11,12,12],startFret:10 }],
+  'G#maj13': [{ frets: [-1,11,13,12,13,13],startFret:11 }],
+  'Amaj13':  [{ frets: [-1,0,2,1,2,2]                   }],
+  'A#maj13': [{ frets: [-1,1,3,2,3,3],    barreAt:1, startFret:1 }],
+  'Bmaj13':  [{ frets: [-1,2,4,3,4,4],    barreAt:2, startFret:2 }],
 };
-
 export function getChordShapeKey(root: string, type: string): string {
   const suffix = type === 'major' ? '' : CHORD_TYPES[type]?.symbol || type;
   return root + suffix;
