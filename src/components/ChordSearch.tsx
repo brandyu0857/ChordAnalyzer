@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CHORD_TYPES } from '../data/chords';
 import { NOTES } from '../data/notes';
 
@@ -10,20 +10,29 @@ interface ChordSearchProps {
 export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps) {
   const [input, setInput] = useState(currentChord);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const skipSearch = useRef(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (input.trim()) {
+  // Sync when parent changes currentChord (e.g. clicking a chord in progression)
+  useEffect(() => {
+    skipSearch.current = true;
+    setInput(currentChord);
+  }, [currentChord]);
+
+  // Debounce auto-search
+  useEffect(() => {
+    if (skipSearch.current) { skipSearch.current = false; return; }
+    if (!input.trim()) return;
+    const timer = setTimeout(() => {
       onSearch(input.trim());
-      setShowSuggestions(false);
-    }
-  };
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [input, onSearch]);
 
   const quickChords = ['C', 'Dm', 'Em', 'F', 'G', 'Am', 'G7', 'Cmaj7', 'Am7', 'Bdim'];
 
   return (
     <div className="relative">
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <input
             type="text"
@@ -98,13 +107,7 @@ export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps
             );
           })()}
         </div>
-
-        <button type="submit"
-          className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
-        >
-          分析
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
