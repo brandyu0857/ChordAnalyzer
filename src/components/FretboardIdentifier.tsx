@@ -100,27 +100,19 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
       )}
 
       {/* Results */}
-      {hasNonDefault && (
+      {results.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700">
-            {results.length > 0 ? '识别结果' : '无法识别'}
-          </h3>
-          {results.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {results.map((chord, idx) => (
-                <ChordResultCard
-                  key={chord.symbol}
-                  chord={chord}
-                  rank={idx + 1}
-                  onSelect={onChordSelect}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">
-              当前音符组合无法匹配已知和弦，请尝试调整按弦位置
-            </p>
-          )}
+          <h3 className="text-sm font-medium text-gray-700">识别结果</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {results.map((chord, idx) => (
+              <ChordResultCard
+                key={chord.symbol}
+                chord={chord}
+                rank={idx + 1}
+                onSelect={onChordSelect}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
