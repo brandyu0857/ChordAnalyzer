@@ -16,26 +16,14 @@ const INLAY_FRETS = [3, 5, 7, 9, 12, 15];
 const DOUBLE_INLAY_FRETS = [12];
 
 export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifierProps) {
-  // -1 = muted, 0 = open, 1+ = fret number
-  const [frets, setFrets] = useState<number[]>([-1, -1, -1, -1, -1, -1]);
+  // -1 = muted, 0 = open (default), 1+ = fret number
+  const [frets, setFrets] = useState<number[]>([0, 0, 0, 0, 0, 0]);
 
   const handleFretClick = useCallback((stringIdx: number, fret: number) => {
     setFrets(prev => {
       const next = [...prev];
-      // If clicking the same fret that's already selected, deselect (mute)
-      if (next[stringIdx] === fret) {
-        next[stringIdx] = -1;
-      } else {
-        next[stringIdx] = fret;
-      }
-      return next;
-    });
-  }, []);
-
-  const handleStringOpen = useCallback((stringIdx: number) => {
-    setFrets(prev => {
-      const next = [...prev];
-      next[stringIdx] = next[stringIdx] === 0 ? -1 : 0;
+      // Clicking same fret → back to open; clicking new fret → select it
+      next[stringIdx] = next[stringIdx] === fret ? 0 : fret;
       return next;
     });
   }, []);
@@ -43,17 +31,19 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
   const handleStringMute = useCallback((stringIdx: number) => {
     setFrets(prev => {
       const next = [...prev];
-      next[stringIdx] = -1;
+      // Toggle mute: if muted → open; otherwise → muted
+      next[stringIdx] = next[stringIdx] === -1 ? 0 : -1;
       return next;
     });
   }, []);
 
   const handleClear = useCallback(() => {
-    setFrets([-1, -1, -1, -1, -1, -1]);
+    setFrets([0, 0, 0, 0, 0, 0]);
   }, []);
 
   const results = useMemo(() => identifyChords(frets), [frets]);
-  const hasSelection = frets.some(f => f >= 0);
+  // Show reset only when something is non-default (a fret pressed or a string muted)
+  const hasNonDefault = frets.some(f => f !== 0);
 
   // Selected note names for display
   const selectedNotes = useMemo(() => {
@@ -76,12 +66,12 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
           <h2 className="text-lg font-semibold text-gray-900">指板和弦识别</h2>
           <p className="text-sm text-gray-500 mt-1">点击指板上的位置标记按弦，系统自动识别和弦</p>
         </div>
-        {hasSelection && (
+        {hasNonDefault && (
           <button
             onClick={handleClear}
             className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer shrink-0"
           >
-            清除
+            重置
           </button>
         )}
       </div>
@@ -92,48 +82,43 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
           <Fretboard
             frets={frets}
             onFretClick={handleFretClick}
-            onStringOpen={handleStringOpen}
             onStringMute={handleStringMute}
           />
         </div>
       </div>
 
       {/* Selected notes */}
-      {hasSelection && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-gray-500">选中音符：</span>
-          {uniqueNoteNames.map(note => (
-            <span key={note} className="px-2 py-0.5 text-sm font-medium bg-gray-100 text-gray-700 rounded">
-              {note}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm text-gray-500">发音音符：</span>
+        {uniqueNoteNames.map(note => (
+          <span key={note} className="px-2 py-0.5 text-sm font-medium bg-gray-100 text-gray-700 rounded">
+            {note}
+          </span>
+        ))}
+      </div>
 
       {/* Results */}
-      {hasSelection && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700">
-            {results.length > 0 ? '识别结果' : '无法识别'}
-          </h3>
-          {results.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {results.map((chord, idx) => (
-                <ChordResultCard
-                  key={chord.symbol}
-                  chord={chord}
-                  rank={idx + 1}
-                  onSelect={onChordSelect}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">
-              当前选择的音符组合无法匹配已知和弦，请尝试调整按弦位置
-            </p>
-          )}
-        </div>
-      )}
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-gray-700">
+          {results.length > 0 ? '识别结果' : '无法识别'}
+        </h3>
+        {results.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {results.map((chord, idx) => (
+              <ChordResultCard
+                key={chord.symbol}
+                chord={chord}
+                rank={idx + 1}
+                onSelect={onChordSelect}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">
+            当前音符组合无法匹配已知和弦，请尝试调整按弦位置
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -143,16 +128,16 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
 interface FretboardProps {
   frets: number[];
   onFretClick: (stringIdx: number, fret: number) => void;
-  onStringOpen: (stringIdx: number) => void;
   onStringMute: (stringIdx: number) => void;
 }
 
-function Fretboard({ frets, onFretClick, onStringOpen, onStringMute }: FretboardProps) {
+function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
   const stringSpacing = 28;
   const fretWidth = 56;
-  const nutWidth = 10;  // narrow nut visual
-  const controlW = 60;  // space for O / X buttons left of nut
-  const leftPad = controlW + nutWidth;
+  const controlW = 46;  // space for × button + string label
+  const nutX = controlW;
+  const nutZoneW = 28;  // space between nut and fret 1 for open-string indicators
+  const leftPad = nutX + nutZoneW;
   const topPad = 8;
   const bottomPad = 24;
   const dotRadius = 10;
@@ -166,16 +151,13 @@ function Fretboard({ frets, onFretClick, onStringOpen, onStringMute }: Fretboard
   // Visual row 5 (bottom) = 6th string (low E) = frets[0]
   const dataIdx = (visualIdx: number) => 5 - visualIdx;
 
-  // X of fret wire i (0-based, so i=0 is the nut line)
   const fretX = (fret: number) => leftPad + fret * fretWidth;
-  // X center of fret cell
   const fretCenterX = (fret: number) => leftPad + (fret - 0.5) * fretWidth;
   const stringY = (visualIdx: number) => topPad + visualIdx * stringSpacing;
 
-  // Control button positions
-  const openBtnX = 14;   // ○ button center X
-  const muteBtnX = 38;   // × button center X
-  const labelX = 56;     // string letter
+  const muteBtnX = 14;
+  const labelX = 34;
+  const openDotX = nutX + nutZoneW / 2;  // center of open-string zone
 
   return (
     <svg
@@ -185,19 +167,11 @@ function Fretboard({ frets, onFretClick, onStringOpen, onStringMute }: Fretboard
       style={{ maxHeight: 280 }}
     >
       {/* Nut */}
-      <rect
-        x={leftPad - 4}
-        y={topPad - 4}
-        width={5}
-        height={fretboardHeight + 8}
-        fill="#1a1a1a"
-        rx={1}
-      />
+      <rect x={nutX - 3} y={topPad - 4} width={5} height={fretboardHeight + 8} fill="#1a1a1a" rx={1} />
 
       {/* Fret wires */}
       {Array.from({ length: NUM_FRETS }, (_, i) => (
-        <line
-          key={`fw-${i}`}
+        <line key={`fw-${i}`}
           x1={fretX(i + 1)} y1={topPad - 2}
           x2={fretX(i + 1)} y2={topPad + fretboardHeight + 2}
           stroke="#c4c4c4" strokeWidth={1.5}
@@ -206,12 +180,10 @@ function Fretboard({ frets, onFretClick, onStringOpen, onStringMute }: Fretboard
 
       {/* Strings — thinnest at top (high e), thickest at bottom (low E) */}
       {Array.from({ length: 6 }, (_, visualIdx) => (
-        <line
-          key={`str-${visualIdx}`}
-          x1={leftPad} y1={stringY(visualIdx)}
+        <line key={`str-${visualIdx}`}
+          x1={nutX} y1={stringY(visualIdx)}
           x2={leftPad + fretboardWidth} y2={stringY(visualIdx)}
-          stroke="#a3a3a3"
-          strokeWidth={0.85 + visualIdx * 0.15}
+          stroke="#a3a3a3" strokeWidth={0.85 + visualIdx * 0.15}
         />
       ))}
 
@@ -219,73 +191,60 @@ function Fretboard({ frets, onFretClick, onStringOpen, onStringMute }: Fretboard
       {INLAY_FRETS.map(f => {
         if (f > NUM_FRETS) return null;
         const cx = fretCenterX(f);
-        const isDouble = DOUBLE_INLAY_FRETS.includes(f);
-        if (isDouble) {
-          return (
-            <g key={`inlay-${f}`}>
-              <circle cx={cx} cy={topPad + 1.5 * stringSpacing} r={3.5} fill="#e0e0e0" />
-              <circle cx={cx} cy={topPad + 3.5 * stringSpacing} r={3.5} fill="#e0e0e0" />
-            </g>
-          );
-        }
-        return (
+        return DOUBLE_INLAY_FRETS.includes(f) ? (
+          <g key={`inlay-${f}`}>
+            <circle cx={cx} cy={topPad + 1.5 * stringSpacing} r={3.5} fill="#e0e0e0" />
+            <circle cx={cx} cy={topPad + 3.5 * stringSpacing} r={3.5} fill="#e0e0e0" />
+          </g>
+        ) : (
           <circle key={`inlay-${f}`} cx={cx} cy={topPad + 2.5 * stringSpacing} r={3.5} fill="#e0e0e0" />
         );
       })}
 
       {/* Fret numbers */}
-      {[1, 3, 5, 7, 9, 12, 15].map(f => {
-        if (f > NUM_FRETS) return null;
-        return (
-          <text key={`fn-${f}`} x={fretCenterX(f)} y={topPad + fretboardHeight + 18}
-            textAnchor="middle" fill="#bbb" fontSize={10} fontFamily="Inter, sans-serif">
-            {f}
-          </text>
-        );
-      })}
+      {[1, 3, 5, 7, 9, 12, 15].map(f => f <= NUM_FRETS && (
+        <text key={`fn-${f}`} x={fretCenterX(f)} y={topPad + fretboardHeight + 18}
+          textAnchor="middle" fill="#bbb" fontSize={10} fontFamily="Inter, sans-serif">{f}</text>
+      ))}
 
-      {/* Per-string controls: ○ open / × mute / label */}
+      {/* Per-string: × mute button + label + open/muted indicator */}
       {VISUAL_STRING_LABELS.map((label, visualIdx) => {
         const di = dataIdx(visualIdx);
         const fretVal = frets[di];
         const y = stringY(visualIdx);
-        const isOpen = fretVal === 0;
         const isMuted = fretVal === -1;
+        const isOpen = fretVal === 0;
 
         return (
           <g key={`ctrl-${visualIdx}`}>
-            {/* ○ Open button */}
-            <g className="cursor-pointer" onClick={() => onStringOpen(di)}>
-              <rect x={openBtnX - 11} y={y - 11} width={22} height={22} fill="transparent" />
-              <circle
-                cx={openBtnX} cy={y} r={8}
-                fill={isOpen ? '#2563eb' : 'none'}
-                stroke={isOpen ? '#2563eb' : '#d1d5db'}
-                strokeWidth={1.5}
-              />
-              {isOpen && (
-                <text x={openBtnX} y={y + 3.5} textAnchor="middle" fill="white"
-                  fontSize={7} fontWeight="bold" fontFamily="Inter, sans-serif">
-                  {getNoteAtFret(di, 0)}
-                </text>
-              )}
-            </g>
-
-            {/* × Mute button */}
+            {/* × mute toggle */}
             <g className="cursor-pointer" onClick={() => onStringMute(di)}>
-              <rect x={muteBtnX - 10} y={y - 11} width={20} height={22} fill="transparent" />
+              <rect x={muteBtnX - 12} y={y - 12} width={24} height={24} fill="transparent" />
               <text x={muteBtnX} y={y + 5} textAnchor="middle"
                 fill={isMuted ? '#ef4444' : '#d1d5db'}
-                fontSize={16} fontWeight="bold" fontFamily="Inter, sans-serif"
-              >×</text>
+                fontSize={17} fontWeight="bold" fontFamily="Inter, sans-serif">×</text>
             </g>
 
             {/* String label */}
             <text x={labelX} y={y + 4} textAnchor="middle"
               fill={isMuted ? '#bbb' : '#555'}
-              fontSize={11} fontWeight="500" fontFamily="Inter, sans-serif">
-              {label}
-            </text>
+              fontSize={11} fontWeight="500" fontFamily="Inter, sans-serif">{label}</text>
+
+            {/* Open-string indicator (○ with note name) in the nut zone */}
+            {isOpen && (
+              <g>
+                <circle cx={openDotX} cy={y} r={7} fill="none" stroke="#a3a3a3" strokeWidth={1.5} />
+                <text x={openDotX} y={y + 3} textAnchor="middle" fill="#888"
+                  fontSize={6.5} fontFamily="Inter, sans-serif">
+                  {getNoteAtFret(di, 0)}
+                </text>
+              </g>
+            )}
+            {/* Muted indicator in nut zone */}
+            {isMuted && (
+              <text x={openDotX} y={y + 5} textAnchor="middle" fill="#ef4444"
+                fontSize={14} fontWeight="bold" fontFamily="Inter, sans-serif">×</text>
+            )}
           </g>
         );
       })}
@@ -301,11 +260,8 @@ function Fretboard({ frets, onFretClick, onStringOpen, onStringMute }: Fretboard
 
           return (
             <g key={`zone-${visualIdx}-${fret}`} className="cursor-pointer" onClick={() => onFretClick(di, fret)}>
-              <rect
-                x={cx - fretWidth / 2} y={cy - stringSpacing / 2}
-                width={fretWidth} height={stringSpacing}
-                fill="transparent"
-              />
+              <rect x={cx - fretWidth / 2} y={cy - stringSpacing / 2}
+                width={fretWidth} height={stringSpacing} fill="transparent" />
               {!isSelected && (
                 <circle cx={cx} cy={cy} r={dotRadius}
                   fill="transparent" className="hover:fill-gray-200 transition-colors" />
