@@ -77,6 +77,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
       setSemitones(0);
       setSelectedTemplateIdx(null);
       setExpandedIdx(null);
+      setTemplatesOpen(false);
     }, 400);
     return () => clearTimeout(timer);
   }, [input]);
@@ -93,6 +94,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
     setSelectedTemplateIdx(null);
     setSemitones(0);
     setExpandedIdx(null);
+    setTemplatesOpen(false);
     onAppendDone?.();
   }, [appendChord, onAppendDone]);
 
@@ -200,6 +202,17 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
 
       {/* Progression editor */}
       <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-900">自定义和弦进行</span>
+          {input.trim() && (
+            <button
+              onClick={() => { setInput(''); setBaseChords([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); }}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            >
+              清空
+            </button>
+          )}
+        </div>
         {/* Input row */}
         <div className="flex gap-2">
           <input
