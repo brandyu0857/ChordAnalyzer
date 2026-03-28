@@ -3,9 +3,11 @@ import { PROGRESSION_TEMPLATES } from '../data/progressions';
 import type { ParsedChord } from '../utils/chordUtils';
 import { progressionDegreesToChords, getChordNotes } from '../utils/chordUtils';
 import { getNoteAtInterval } from '../data/notes';
+import { getGuitarFingerings } from '../data/chords';
 import TransposeControl from './TransposeControl';
 import ProgressionAnalysisView from './ProgressionAnalysis';
 import PlayButton from './PlayButton';
+import ChordDiagram from './ChordDiagram';
 import { playProgression } from '../utils/audioUtils';
 
 interface ProgressionPanelProps {
@@ -108,17 +110,32 @@ export default function ProgressionPanel({ onChordSelect }: ProgressionPanelProp
           )}
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {chords.map((chord, i) => (
-            <button key={i}
-              onClick={() => onChordSelect(chord)}
-              className={`px-4 py-2 rounded-lg font-bold text-lg transition-all cursor-pointer border
-                ${activeChordIndex === i
-                  ? 'bg-gray-900 text-white border-gray-900 scale-105'
-                  : 'bg-white text-gray-900 border-gray-200 hover:border-gray-400'
-                }`}
-            >{chord.display}</button>
-          ))}
+        <div className="mt-3 flex flex-wrap gap-3">
+          {chords.map((chord, i) => {
+            const fingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
+            const fingering = fingerings[0] || null;
+            return (
+              <button key={i}
+                onClick={() => onChordSelect(chord)}
+                className={`flex flex-col items-center rounded-xl transition-all cursor-pointer border pt-2 pb-1 px-2
+                  ${activeChordIndex === i
+                    ? 'border-gray-900 bg-gray-50 scale-105 shadow-sm'
+                    : 'bg-white border-gray-200 hover:border-gray-400'
+                  }`}
+              >
+                {fingering ? (
+                  <ChordDiagram fingering={fingering} chordName="" size="small" interactive={false} />
+                ) : (
+                  <div className="w-16 h-20 flex items-center justify-center text-xs text-gray-400">
+                    {chord.display}
+                  </div>
+                )}
+                <span className="text-xs font-semibold mt-0.5 text-gray-700">
+                  {chord.display}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
