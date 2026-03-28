@@ -204,8 +204,9 @@ function App() {
 
       {/* Toast */}
       <div
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+        className="fixed bottom-6 z-50 pointer-events-none"
         style={{
+          left: '50%',
           transition: 'opacity 0.25s ease, transform 0.25s ease',
           opacity: toast ? 1 : 0,
           transform: toast ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(8px)',
