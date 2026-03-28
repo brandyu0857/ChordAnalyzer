@@ -8,13 +8,17 @@ import TransposeControl from './TransposeControl';
 import ProgressionAnalysisView from './ProgressionAnalysis';
 import PlayButton from './PlayButton';
 import ChordDiagram from './ChordDiagram';
+import CustomProgressionPanel from './CustomProgressionPanel';
 import { playProgression } from '../utils/audioUtils';
 
 interface ProgressionPanelProps {
   onChordSelect: (chord: ParsedChord) => void;
 }
 
+type Mode = 'template' | 'custom';
+
 export default function ProgressionPanel({ onChordSelect }: ProgressionPanelProps) {
+  const [mode, setMode] = useState<Mode>('template');
   const [selectedTemplate, setSelectedTemplate] = useState(0);
   const [musicalKey, setMusicalKey] = useState('C');
   const [semitones, setSemitones] = useState(0);
@@ -45,6 +49,27 @@ export default function ProgressionPanel({ onChordSelect }: ProgressionPanelProp
 
   return (
     <div className="space-y-5">
+      {/* Mode toggle */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
+        <button
+          onClick={() => setMode('template')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer
+            ${mode === 'template' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          常用模板
+        </button>
+        <button
+          onClick={() => setMode('custom')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer
+            ${mode === 'custom' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          自定义输入
+        </button>
+      </div>
+
+      {mode === 'custom' && <CustomProgressionPanel onChordSelect={onChordSelect} />}
+
+      {mode === 'template' && <>
       {/* Style filter */}
       <div className="flex gap-1.5 flex-wrap">
         {styles.map(s => (
@@ -147,6 +172,7 @@ export default function ProgressionPanel({ onChordSelect }: ProgressionPanelProp
           onChordClick={(i) => { setActiveChordIndex(i); onChordSelect(chords[i]); }}
         />
       </div>
+      </>}
     </div>
   );
 }
