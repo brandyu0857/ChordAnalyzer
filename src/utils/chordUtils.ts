@@ -15,11 +15,23 @@ export function parseChordName(name: string): ParsedChord | null {
   let trimmed = name.trim();
   if (!trimmed) return null;
 
-  // Extract bass note from slash chords like C/E, Am/G, D/F#
+  // Normalize prefix-style accidentals: #X → X#, bX → Xb (where X is a note letter A-G)
+  // e.g. #F7 → F#7, bEm → Ebm, bA → Ab
+  function normalizePrefixAccidental(s: string): string {
+    if (s.startsWith('#') && s.length >= 2) {
+      return s[1].toUpperCase() + '#' + s.substring(2);
+    }
+    if (s.startsWith('b') && s.length >= 2 && /[A-Ga-g]/.test(s[1])) {
+      return s[1].toUpperCase() + 'b' + s.substring(2);
+    }
+    return s;
+  }
+
+  // Extract bass note from slash chords like C/E, Am/G, D/F#, bE/bB
   let bassNote: string | undefined;
   if (trimmed.includes('/')) {
     const slashIdx = trimmed.indexOf('/');
-    const bassStr = trimmed.substring(slashIdx + 1).trim();
+    const bassStr = normalizePrefixAccidental(trimmed.substring(slashIdx + 1).trim());
     trimmed = trimmed.substring(0, slashIdx).trim();
 
     // Parse the bass note (1 or 2 chars)
@@ -35,10 +47,7 @@ export function parseChordName(name: string): ParsedChord | null {
     }
   }
 
-  // Handle #X notation (e.g. #F7 → F#7, #Fm7b5 → F#m7b5)
-  if (trimmed.startsWith('#') && trimmed.length >= 2) {
-    trimmed = trimmed[1] + '#' + trimmed.substring(2);
-  }
+  trimmed = normalizePrefixAccidental(trimmed);
 
   // Try to extract root note (1 or 2 chars)
   let root = '';
