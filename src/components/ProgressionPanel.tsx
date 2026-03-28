@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { PROGRESSION_TEMPLATES } from '../data/progressions';
 import type { ParsedChord } from '../utils/chordUtils';
-import { progressionDegreesToChords, getChordNotes, parseChordName, transposeChord } from '../utils/chordUtils';
+import { progressionDegreesToChords, getChordNotes, parseChordName, transposeChord, isNashvilleNotation, parseNashvilleToken } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
 import { getSubstitutions, CATEGORY_STYLES } from '../utils/substitutionUtils';
 import ChordDiagram from './ChordDiagram';
@@ -31,6 +31,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
   const [parseError, setParseError] = useState('');
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [activeIdx, setActiveIdx] = useState<number | undefined>(undefined);
+  const [isNashville, setIsNashville] = useState(false);
   const skipParse = useRef(false);
 
   const styles = ['全部', ...new Set(PROGRESSION_TEMPLATES.map(t => t.style))];
@@ -61,9 +62,27 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
 
   useEffect(() => {
     if (skipParse.current) { skipParse.current = false; return; }
-    if (!input.trim()) { setBaseChords([]); setParseError(''); return; }
+    if (!input.trim()) { setBaseChords([]); setParseError(''); setIsNashville(false); return; }
     const timer = setTimeout(() => {
       const tokens = input.split(/[\s\-,|]+/).filter(Boolean);
+
+      // Nashville Number System detection (e.g. "4 5 3 6 2 5 1")
+      if (isNashvilleNotation(tokens)) {
+        const nashville = tokens.map(t => parseNashvilleToken(t, templateKey));
+        if (nashville.every(c => c !== null)) {
+          setBaseChords(nashville as ParsedChord[]);
+          setParseError('');
+          setIsNashville(true);
+          setSemitones(0);
+          setSelectedTemplateIdx(null);
+          setExpandedIdx(null);
+          setTemplatesOpen(false);
+          return;
+        }
+      }
+
+      // Normal chord name parsing
+      setIsNashville(false);
       const parsed: ParsedChord[] = [];
       const failed: string[] = [];
       for (const t of tokens) {
@@ -80,7 +99,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
       setTemplatesOpen(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [input]);
+  }, [input, templateKey]);
 
   // Append a chord pushed from the chord query page
   useEffect(() => {
@@ -218,12 +237,22 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           <input
             value={input}
             onChange={e => { setInput(e.target.value); setParseError(''); }}
-            placeholder="输入和弦进行，如 C Em F Fm，或从上方选择模板"
+            placeholder="输入和弦：C Em F G，或级数：1 6m 4 5"
             className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
           />
           {chords.length > 0 && <PlayButton onPlay={handlePlayAll} label="播放" />}
         </div>
         {parseError && <p className="text-xs text-red-400">{parseError}</p>}
+        {isNashville && baseChords.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-gray-400 shrink-0">{templateKey} 大调 →</span>
+            {baseChords.map((c, i) => (
+              <span key={i} className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                {c.display}
+              </span>
+            ))}
+          </div>
+        )}
 
         {chords.length > 0 && (
           <>
