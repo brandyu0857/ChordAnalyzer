@@ -18,6 +18,13 @@ function App() {
   const [searchInput, setSearchInput] = useState('C');
   const [error, setError] = useState('');
   const [voicingIndex, setVoicingIndex] = useState(0);
+  const [chordToAppend, setChordToAppend] = useState<string | null>(null);
+
+  const handleAddToProgression = useCallback(() => {
+    if (!currentChord) return;
+    setChordToAppend(currentChord.display);
+    setPage('progression');
+  }, [currentChord]);
 
   const handleSearch = useCallback((name: string) => {
     setSearchInput(name);
@@ -139,9 +146,18 @@ function App() {
                         </div>
                       )}
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap justify-center">
                         <PlayButton onPlay={handlePlayStrum} label="扫弦" small />
                         <PlayButton onPlay={handlePlayBlock} label="和弦" small />
+                        <button
+                          onClick={handleAddToProgression}
+                          className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                          </svg>
+                          加入进行
+                        </button>
                       </div>
                     </>
                   ) : (
@@ -161,7 +177,11 @@ function App() {
         )}
 
         {page === 'progression' && (
-          <ProgressionPanel onChordSelect={handleChordSelect} />
+          <ProgressionPanel
+            onChordSelect={handleChordSelect}
+            appendChord={chordToAppend}
+            onAppendDone={() => setChordToAppend(null)}
+          />
         )}
 
         {page === 'identify' && (
