@@ -48,6 +48,16 @@ export default function CustomProgressionPanel({ onChordSelect }: Props) {
     return baseChords.map(c => transposeChord(c, semitones));
   }, [baseChords, semitones]);
 
+  const handleReplace = useCallback((subDisplay: string) => {
+    if (expandedIdx === null) return;
+    const parsed = parseChordName(subDisplay);
+    if (!parsed) return;
+    // Substitution is computed in transposed space; untranspose back to base before storing
+    const inBaseSpace = semitones !== 0 ? transposeChord(parsed, -semitones) : parsed;
+    setBaseChords(prev => prev.map((c, i) => i === expandedIdx ? inBaseSpace : c));
+    setExpandedIdx(null);
+  }, [expandedIdx, semitones]);
+
   const handlePlay = async (root: string, type: string) => {
     const fingerings = getGuitarFingerings(root, type);
     if (fingerings[0]) await playChordStrum(fingerings[0]);
@@ -201,10 +211,7 @@ export default function CustomProgressionPanel({ onChordSelect }: Props) {
                           </span>
                           <div
                             className="border border-gray-100 rounded-xl p-2 cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-colors w-full flex flex-col items-center"
-                            onClick={() => {
-                              const parsed = parseChordName(sub.display);
-                              if (parsed) onChordSelect?.(parsed);
-                            }}
+                            onClick={() => handleReplace(sub.display)}
                           >
                             {sf ? (
                               <ChordDiagram fingering={sf} chordName={sub.display} size="small" interactive={false} />
