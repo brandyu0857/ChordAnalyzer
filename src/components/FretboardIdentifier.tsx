@@ -136,7 +136,7 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
   const fretWidth = 56;
   const controlW = 46;  // space for × button + string label
   const nutX = controlW;
-  const nutZoneW = 28;  // space between nut and fret 1 for open-string indicators
+  const nutZoneW = 18;  // small space right of nut (for muted × indicator)
   const leftPad = nutX + nutZoneW;
   const topPad = 8;
   const bottomPad = 24;
@@ -213,7 +213,6 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
         const fretVal = frets[di];
         const y = stringY(visualIdx);
         const isMuted = fretVal === -1;
-        const isOpen = fretVal === 0;
 
         return (
           <g key={`ctrl-${visualIdx}`}>
@@ -230,16 +229,6 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
               fill={isMuted ? '#bbb' : '#555'}
               fontSize={11} fontWeight="500" fontFamily="Inter, sans-serif">{label}</text>
 
-            {/* Open-string indicator (○ with note name) in the nut zone */}
-            {isOpen && (
-              <g>
-                <circle cx={openDotX} cy={y} r={7} fill="none" stroke="#a3a3a3" strokeWidth={1.5} />
-                <text x={openDotX} y={y + 3} textAnchor="middle" fill="#888"
-                  fontSize={6.5} fontFamily="Inter, sans-serif">
-                  {getNoteAtFret(di, 0)}
-                </text>
-              </g>
-            )}
             {/* Muted indicator in nut zone */}
             {isMuted && (
               <text x={openDotX} y={y + 5} textAnchor="middle" fill="#ef4444"
