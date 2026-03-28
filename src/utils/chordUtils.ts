@@ -193,3 +193,42 @@ export function findChordDegree(chordRoot: string, key: string): { degree: strin
 
   return null;
 }
+
+// ─── Nashville Number System ────────────────────────────────────────────────
+
+// Default chord symbol suffix for each scale degree (1–7) in a major key
+const NASHVILLE_DEFAULT_SYMBOLS = ['', 'm', 'm', '', '', 'm', 'dim'];
+
+/**
+ * Returns true if every token looks like a Nashville number (1–7 with optional suffix).
+ * Numbers only — won't match standard note-name tokens like "C", "Am7".
+ */
+export function isNashvilleNotation(tokens: string[]): boolean {
+  if (!tokens.length) return false;
+  return tokens.every(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t));
+}
+
+/**
+ * Parse a single Nashville number token (e.g. "5", "57", "b3m", "4maj7")
+ * against the given key (e.g. "C").
+ */
+export function parseNashvilleToken(token: string, key: string): ParsedChord | null {
+  const match = token.match(/^([b#]?)([1-7])(.*)$/i);
+  if (!match) return null;
+
+  const [, accidental, degreeStr, suffix] = match;
+  const degree = parseInt(degreeStr) - 1; // 0-indexed
+
+  const keyIndex = getNoteIndex(key);
+  if (keyIndex === -1) return null;
+
+  let interval = MAJOR_SCALE_INTERVALS[degree];
+  if (accidental === 'b') interval = (interval - 1 + 12) % 12;
+  if (accidental === '#') interval = (interval + 1) % 12;
+
+  const root = NOTES[(keyIndex + interval) % 12];
+
+  // Suffix overrides the default quality; no suffix → use scale-degree default
+  const chordName = root + (suffix || NASHVILLE_DEFAULT_SYMBOLS[degree]);
+  return parseChordName(chordName);
+}
