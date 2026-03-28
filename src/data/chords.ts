@@ -21,6 +21,12 @@ export const CHORD_TYPES: Record<string, ChordType> = {
   '9': { name: '属九和弦', symbol: '9', intervals: [0, 4, 7, 10, 14], description: '丰满、蓝调' },
   '6': { name: '大六和弦', symbol: '6', intervals: [0, 4, 7, 9], description: '温暖、复古' },
   m6: { name: '小六和弦', symbol: 'm6', intervals: [0, 3, 7, 9], description: '忧郁中带温暖' },
+  maj9:  { name: '大九和弦',       symbol: 'maj9', intervals: [0, 4, 7, 11, 14], description: '梦幻、层次丰富' },
+  m9:    { name: '小九和弦',       symbol: 'm9',   intervals: [0, 3, 7, 10, 14], description: '柔美、爵士感' },
+  '13':  { name: '属十三和弦',     symbol: '13',   intervals: [0, 4, 7, 10, 14, 17, 21], description: '丰满、蓝调爵士' },
+  m11:   { name: '小十一和弦',     symbol: 'm11',  intervals: [0, 3, 7, 10, 14, 17], description: '温暖、神秘' },
+  '7b9': { name: '属七降九和弦',   symbol: '7b9',  intervals: [0, 4, 7, 10, 13], description: '紧张、蓝调' },
+  '7#9': { name: '属七升九和弦',   symbol: '7#9',  intervals: [0, 4, 7, 10, 15], description: '强烈、布鲁斯摇滚' },
 };
 
 // Guitar string tuning: E2 A2 D3 G3 B3 E4 (low to high)
@@ -281,6 +287,104 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
   'Am6':   { frets: [-1, 0, 2, 2, 1, 2], fingers: [0, 0, 2, 3, 1, 4] },
   'A#m6':  { frets: [-1, 1, 3, 3, 2, 3], fingers: [0, 1, 3, 3, 2, 4], startFret: 1 },
   'Bm6':   { frets: [-1, 2, 4, 4, 3, 4], fingers: [0, 1, 3, 3, 2, 4], startFret: 2 },
+
+  // ============================================================
+  // MAJOR 9TH CHORDS (maj9 = R M3 P5 M7 M9)
+  // A-string root pattern: [-1, n, n-1, n+1, n, n-3]
+  // ============================================================
+  'Cmaj9':  { frets: [-1, 3, 2, 4, 3, 0] },
+  'C#maj9': { frets: [-1, 4, 3, 5, 4, 1], startFret: 1 },
+  'Dmaj9':  { frets: [-1, 5, 4, 6, 5, 2], startFret: 2 },
+  'D#maj9': { frets: [-1, 6, 5, 7, 6, 3], startFret: 3 },
+  'Emaj9':  { frets: [-1, 7, 6, 8, 7, 4], startFret: 4 },
+  'Fmaj9':  { frets: [-1, 8, 7, 9, 8, 5], startFret: 5 },
+  'F#maj9': { frets: [-1, 9, 8, 10, 9, 6], startFret: 6 },
+  'Gmaj9':  { frets: [-1, 10, 9, 11, 10, 7], startFret: 7 },
+  'G#maj9': { frets: [-1, 11, 10, 12, 11, 8], startFret: 8 },
+  'Amaj9':  { frets: [5, 7, 6, 4, 5, 5], startFret: 4 },
+
+  // ============================================================
+  // MINOR 9TH CHORDS (m9 = R m3 P5 m7 M9)
+  // A-string root pattern: [-1, n, n-2, n, n, n]
+  // ============================================================
+  'Cm9':  { frets: [-1, 3, 1, 3, 3, 3], startFret: 1 },
+  'C#m9': { frets: [-1, 4, 2, 4, 4, 4], startFret: 2 },
+  'Dm9':  { frets: [-1, 5, 3, 5, 5, 5], startFret: 3 },
+  'D#m9': { frets: [-1, 6, 4, 6, 6, 6], startFret: 4 },
+  'Em9':  { frets: [-1, 7, 5, 7, 7, 7], startFret: 5 },
+  'Fm9':  { frets: [-1, 8, 6, 8, 8, 8], startFret: 6 },
+  'F#m9': { frets: [-1, 9, 7, 9, 9, 9], startFret: 7 },
+  'Gm9':  { frets: [-1, 10, 8, 10, 10, 10], startFret: 8 },
+  'G#m9': { frets: [-1, 11, 9, 11, 11, 11], startFret: 9 },
+  'Am9':  { frets: [-1, 0, 2, 0, 0, 0] },
+  'A#m9': { frets: [-1, 1, 3, 1, 2, 1], barreAt: 1, startFret: 1 },
+  'Bm9':  { frets: [-1, 2, 0, 2, 2, 2] },
+
+  // ============================================================
+  // DOMINANT 13TH CHORDS (13 = R M3 m7 M9 M13, omit 11)
+  // E-string root pattern: [n, -1, n, n+1, n+2, n+2]
+  // ============================================================
+  'C13':  { frets: [8, -1, 8, 9, 10, 10], startFret: 8, barreAt: 10 },
+  'C#13': { frets: [9, -1, 9, 10, 11, 11], startFret: 9, barreAt: 11 },
+  'D13':  { frets: [10, -1, 10, 11, 12, 12], startFret: 10, barreAt: 12 },
+  'D#13': { frets: [11, -1, 11, 12, 13, 13], startFret: 11, barreAt: 13 },
+  'E13':  { frets: [0, -1, 0, 1, 2, 2], barreAt: 2 },
+  'F13':  { frets: [1, -1, 1, 2, 3, 3], barreAt: 3 },
+  'F#13': { frets: [2, -1, 2, 3, 4, 4], startFret: 2, barreAt: 4 },
+  'G13':  { frets: [3, -1, 3, 4, 5, 5], startFret: 3, barreAt: 5 },
+  'G#13': { frets: [4, -1, 4, 5, 6, 6], startFret: 4, barreAt: 6 },
+  'A13':  { frets: [5, -1, 5, 6, 7, 7], startFret: 5, barreAt: 7 },
+  'A#13': { frets: [6, -1, 6, 7, 8, 8], startFret: 6, barreAt: 8 },
+  'B13':  { frets: [7, -1, 7, 8, 9, 9], startFret: 7, barreAt: 9 },
+
+  // ============================================================
+  // MINOR 11TH CHORDS (m11 = R m3 P5 m7 M9 P11)
+  // A-string root pattern: [-1, n, n-2, n, n, n-2]
+  // ============================================================
+  'Cm11':  { frets: [-1, 3, 1, 3, 3, 1], startFret: 1 },
+  'C#m11': { frets: [-1, 4, 2, 4, 4, 2], startFret: 2 },
+  'Dm11':  { frets: [-1, 5, 3, 5, 5, 3], startFret: 3 },
+  'D#m11': { frets: [-1, 6, 4, 6, 6, 4], startFret: 4 },
+  'Em11':  { frets: [-1, 7, 5, 7, 7, 5], startFret: 5 },
+  'Fm11':  { frets: [-1, 8, 6, 8, 8, 6], startFret: 6 },
+  'F#m11': { frets: [-1, 9, 7, 9, 9, 7], startFret: 7 },
+  'Gm11':  { frets: [-1, 10, 8, 10, 10, 8], startFret: 8 },
+  'G#m11': { frets: [-1, 11, 9, 11, 11, 9], startFret: 9 },
+  'Am11':  { frets: [-1, 0, 2, 0, 1, 3] },
+  'A#m11': { frets: [-1, 1, 3, 1, 1, 3], barreAt: 1, startFret: 1 },
+  'Bm11':  { frets: [-1, 2, 0, 2, 2, 0] },
+
+  // ============================================================
+  // DOMINANT 7b9 CHORDS (7b9 = R M3 P5 m7 b9)
+  // A-string root pattern: [-1, n, n-1, n, n-1, n-3]
+  // ============================================================
+  'C7b9':  { frets: [-1, 3, 2, 3, 2, 0] },
+  'C#7b9': { frets: [-1, 4, 3, 4, 3, 1], startFret: 1 },
+  'D7b9':  { frets: [-1, 5, 4, 5, 4, 2], startFret: 2 },
+  'D#7b9': { frets: [-1, 6, 5, 6, 5, 3], startFret: 3 },
+  'E7b9':  { frets: [-1, 7, 6, 7, 6, 4], startFret: 4 },
+  'F7b9':  { frets: [-1, 8, 7, 8, 7, 5], startFret: 5 },
+  'F#7b9': { frets: [-1, 9, 8, 9, 8, 6], startFret: 6 },
+  'G7b9':  { frets: [-1, 10, 9, 10, 9, 7], startFret: 7 },
+  'G#7b9': { frets: [-1, 11, 10, 11, 10, 8], startFret: 8 },
+  'A7b9':  { frets: [-1, 12, 11, 12, 11, 9], startFret: 9 },
+
+  // ============================================================
+  // DOMINANT 7#9 CHORDS (7#9 = R M3 P5 m7 #9, "Hendrix chord")
+  // A-string root pattern: [-1, n, n-1, n, n+1, n]
+  // ============================================================
+  'C7#9':  { frets: [-1, 3, 2, 3, 4, 3], startFret: 2 },
+  'C#7#9': { frets: [-1, 4, 3, 4, 5, 4], startFret: 3 },
+  'D7#9':  { frets: [-1, 5, 4, 5, 6, 5], startFret: 4 },
+  'D#7#9': { frets: [-1, 6, 5, 6, 7, 6], startFret: 5 },
+  'E7#9':  { frets: [-1, 7, 6, 7, 8, 7], startFret: 6 },
+  'F7#9':  { frets: [-1, 8, 7, 8, 9, 8], startFret: 7 },
+  'F#7#9': { frets: [-1, 9, 8, 9, 10, 9], startFret: 8 },
+  'G7#9':  { frets: [-1, 10, 9, 10, 11, 10], startFret: 9 },
+  'G#7#9': { frets: [-1, 11, 10, 11, 12, 11], startFret: 10 },
+  'A7#9':  { frets: [-1, 12, 11, 12, 13, 12], startFret: 11 },
+  'A#7#9': { frets: [-1, 1, 0, 1, 2, 1] },
+  'B7#9':  { frets: [-1, 2, 1, 2, 3, 2], startFret: 1 },
 };
 
 // ============================================================
