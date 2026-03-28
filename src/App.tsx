@@ -193,9 +193,9 @@ function App() {
           />
         </div>
 
-        {page === 'identify' && (
+        <div className={page !== 'identify' ? 'hidden' : ''}>
           <FretboardIdentifier onChordSelect={handleChordSelect} />
-        )}
+        </div>
       </main>
 
       <footer className="border-t border-gray-100 mt-16 py-4 text-center text-xs text-gray-300">
