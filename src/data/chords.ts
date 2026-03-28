@@ -143,21 +143,23 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
 
   // ============================================================
   // DIMINISHED 7TH CHORDS (all 12 roots)
-  // Pattern A-string: x-n-(n+1)-(n+2)-(n+1)-(n+2)
-  // Pattern E-string: n-(n+1)-(n+2)-n-(n+2)-n
+  // Primary: "box" voicing x-A(n)-D(n+1)-G(n-1)-B(n+1)-x
+  // Mutes both E strings — the most widely used guitar voicing
+  // Fingers: index on G, middle on A, ring on D, pinky on B
   // ============================================================
-  'Cdim7':  { frets: [-1, 3, 4, 5, 4, 5], fingers: [0, 1, 2, 4, 3, 4], startFret: 3 },
-  'C#dim7': { frets: [-1, 4, 5, 6, 5, 6], fingers: [0, 1, 2, 4, 3, 4], startFret: 4 },
-  'Ddim7':  { frets: [-1, -1, 0, 1, 0, 1], fingers: [0, 0, 0, 2, 0, 3] },
-  'D#dim7': { frets: [-1, -1, 1, 2, 1, 2], fingers: [0, 0, 1, 3, 2, 4], startFret: 1 },
-  'Edim7':  { frets: [0, 1, 2, 0, 2, 0], fingers: [0, 1, 2, 0, 3, 0] },
-  'Fdim7':  { frets: [1, 2, 3, 1, 3, 1], fingers: [1, 2, 3, 1, 4, 1], barreAt: 1 },
-  'F#dim7': { frets: [2, 3, 4, 2, 4, 2], fingers: [1, 2, 3, 1, 4, 1], barreAt: 2, startFret: 2 },
-  'Gdim7':  { frets: [3, 4, 5, 3, 5, 3], fingers: [1, 2, 3, 1, 4, 1], barreAt: 3, startFret: 3 },
-  'G#dim7': { frets: [4, 5, 6, 4, 6, 4], fingers: [1, 2, 3, 1, 4, 1], barreAt: 4, startFret: 4 },
-  'Adim7':  { frets: [-1, 0, 1, 2, 1, 2], fingers: [0, 0, 1, 3, 2, 4] },
-  'A#dim7': { frets: [-1, 1, 2, 3, 2, 3], fingers: [0, 1, 2, 4, 3, 4], startFret: 1 },
-  'Bdim7':  { frets: [-1, 2, 3, 4, 3, 4], fingers: [0, 1, 2, 4, 3, 4], startFret: 2 },
+  'Cdim7':  { frets: [-1, 3, 4, 2, 4, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 2 },
+  'C#dim7': { frets: [-1, 4, 5, 3, 5, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 3 },
+  'Ddim7':  { frets: [-1, 5, 6, 4, 6, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 4 },
+  'D#dim7': { frets: [-1, 6, 7, 5, 7, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 5 },
+  'Edim7':  { frets: [-1, 7, 8, 6, 8, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 6 },
+  'Fdim7':  { frets: [-1, 8, 9, 7, 9, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 7 },
+  'F#dim7': { frets: [-1, 9, 10, 8, 10, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 8 },
+  // G, G#, A dim7: use lower-position inversion (dim7 is fully symmetric every 3 frets)
+  'Gdim7':  { frets: [-1, 1, 2, 0, 2, -1], fingers: [0, 1, 2, 0, 3, 0] },             // Bb bass, open G
+  'G#dim7': { frets: [-1, 2, 3, 1, 3, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 1 }, // B bass
+  'Adim7':  { frets: [-1, 3, 4, 2, 4, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 2 }, // C bass
+  'A#dim7': { frets: [-1, 1, 2, 0, 2, -1], fingers: [0, 1, 2, 0, 3, 0] },             // open G string
+  'Bdim7':  { frets: [-1, 2, 3, 1, 3, -1], fingers: [0, 2, 3, 1, 4, 0], startFret: 1 },
 
   // ============================================================
   // SUSPENDED 2ND CHORDS (all 12 roots)
@@ -554,19 +556,55 @@ const ALTERNATIVE_VOICINGS: Record<string, GuitarFingering[]> = {
   'A#dim': [{ frets: [6,7,8,6,-1,-1],     barreAt:6, startFret:6 }],
   'Bdim':  [{ frets: [7,8,9,7,-1,-1],     barreAt:7, startFret:7 }],
 
-  // ---- dim7  (E-shape: [n,n+1,n+2,n,n+2,n]; A-shape: [-1,n,n+1,n+2,n+1,n+2]) ----
-  'Cdim7':  [{ frets: [8,9,10,8,10,8],     barreAt:8,  startFret:8  }],
-  'C#dim7': [{ frets: [9,10,11,9,11,9],    barreAt:9,  startFret:9  }],
-  'Ddim7':  [{ frets: [-1,5,6,7,6,7],      startFret:5  }],
-  'D#dim7': [{ frets: [-1,6,7,8,7,8],      startFret:6  }],
-  'Edim7':  [{ frets: [-1,7,8,9,8,9],      startFret:7  }],
-  'Fdim7':  [{ frets: [-1,8,9,10,9,10],    startFret:8  }],
-  'F#dim7': [{ frets: [-1,9,10,11,10,11],  startFret:9  }],
-  'Gdim7':  [{ frets: [-1,10,11,12,11,12], startFret:10 }],
-  'G#dim7': [{ frets: [-1,11,12,13,12,13], startFret:11 }],
-  'Adim7':  [{ frets: [5,6,7,5,7,5],       barreAt:5, startFret:5 }],
-  'A#dim7': [{ frets: [6,7,8,6,8,6],       barreAt:6, startFret:6 }],
-  'Bdim7':  [{ frets: [7,8,9,7,9,7],       barreAt:7, startFret:7 }],
+  // ---- dim7: A-string 5-string voicing (includes high e); open-position shapes; barre shapes ----
+  'Cdim7':  [
+    { frets: [-1, 3, 4, 5, 4, 5], fingers: [0, 1, 2, 4, 3, 4], startFret: 3 },  // old primary
+    { frets: [8, 9, 10, 8, 10, 8], barreAt: 8, startFret: 8 },
+  ],
+  'C#dim7': [
+    { frets: [-1, 4, 5, 6, 5, 6], fingers: [0, 1, 2, 4, 3, 4], startFret: 4 },
+    { frets: [9, 10, 11, 9, 11, 9], barreAt: 9, startFret: 9 },
+  ],
+  'Ddim7':  [
+    { frets: [-1, -1, 0, 1, 0, 1], fingers: [0, 0, 0, 2, 0, 3] },               // open position
+    { frets: [-1, 5, 6, 7, 6, 7], startFret: 5 },
+  ],
+  'D#dim7': [
+    { frets: [-1, -1, 1, 2, 1, 2], fingers: [0, 0, 1, 3, 2, 4], startFret: 1 }, // low position
+    { frets: [-1, 6, 7, 8, 7, 8], startFret: 6 },
+  ],
+  'Edim7':  [
+    { frets: [0, 1, 2, 0, 2, 0], fingers: [0, 1, 2, 0, 3, 0] },                 // open position
+    { frets: [-1, 7, 8, 9, 8, 9], startFret: 7 },
+  ],
+  'Fdim7':  [
+    { frets: [1, 2, 3, 1, 3, 1], fingers: [1, 2, 3, 1, 4, 1], barreAt: 1 },     // barre
+    { frets: [-1, 8, 9, 10, 9, 10], startFret: 8 },
+  ],
+  'F#dim7': [
+    { frets: [2, 3, 4, 2, 4, 2], fingers: [1, 2, 3, 1, 4, 1], barreAt: 2, startFret: 2 },
+    { frets: [-1, 9, 10, 11, 10, 11], startFret: 9 },
+  ],
+  'Gdim7':  [
+    { frets: [3, 4, 5, 3, 5, 3], fingers: [1, 2, 3, 1, 4, 1], barreAt: 3, startFret: 3 },
+    { frets: [-1, 10, 11, 12, 11, 12], startFret: 10 },
+  ],
+  'G#dim7': [
+    { frets: [4, 5, 6, 4, 6, 4], fingers: [1, 2, 3, 1, 4, 1], barreAt: 4, startFret: 4 },
+    { frets: [-1, 11, 12, 13, 12, 13], startFret: 11 },
+  ],
+  'Adim7':  [
+    { frets: [-1, 0, 1, 2, 1, 2], fingers: [0, 0, 1, 3, 2, 4] },                // open position
+    { frets: [5, 6, 7, 5, 7, 5], barreAt: 5, startFret: 5 },
+  ],
+  'A#dim7': [
+    { frets: [-1, 1, 2, 3, 2, 3], fingers: [0, 1, 2, 4, 3, 4], startFret: 1 },  // old primary
+    { frets: [6, 7, 8, 6, 8, 6], barreAt: 6, startFret: 6 },
+  ],
+  'Bdim7':  [
+    { frets: [-1, 2, 3, 4, 3, 4], fingers: [0, 1, 2, 4, 3, 4], startFret: 2 },  // old primary
+    { frets: [7, 8, 9, 7, 9, 7], barreAt: 7, startFret: 7 },
+  ],
 
   // ---- sus2  (A-shape: [-1,n,n+2,n+2,n,n]; E-shape: [n,n+2,n+4,n+4,n,n]) ----
   'Csus2':  [{ frets: [-1,3,5,5,3,3],      barreAt:3,  startFret:3  }],
