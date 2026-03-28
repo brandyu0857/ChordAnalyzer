@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { PROGRESSION_TEMPLATES } from '../data/progressions';
 import type { ParsedChord } from '../utils/chordUtils';
 import { progressionDegreesToChords, getChordNotes, parseChordName, transposeChord } from '../utils/chordUtils';
@@ -29,6 +29,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect }: Prop
   const [parseError, setParseError] = useState('');
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [activeIdx, setActiveIdx] = useState<number | undefined>(undefined);
+  const skipParse = useRef(false);
 
   const styles = ['全部', ...new Set(PROGRESSION_TEMPLATES.map(t => t.style))];
   const filteredTemplates = styleFilter === '全部'
@@ -45,6 +46,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect }: Prop
     const parsed = progressionDegreesToChords(template.degrees, templateKey)
       .filter((c): c is ParsedChord => c !== null);
     const chordStr = parsed.map(c => c.display).join(' ');
+    skipParse.current = true;
     setInput(chordStr);
     setBaseChords(parsed);
     setSemitones(0);
@@ -55,24 +57,26 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect }: Prop
     setAnalysisKey(templateKey);
   };
 
-  const handleParse = useCallback(() => {
-    const tokens = input.split(/[\s\-,|]+/).filter(Boolean);
-    const parsed: ParsedChord[] = [];
-    const failed: string[] = [];
-    for (const t of tokens) {
-      const c = parseChordName(t);
-      if (c) parsed.push(c);
-      else failed.push(t);
-    }
-    if (!parsed.length) {
-      setParseError('未能识别出任何和弦，请检查格式（如 C Em F Fm）');
-      return;
-    }
-    setParseError(failed.length ? `无法识别：${failed.join(', ')}` : '');
-    setBaseChords(parsed);
-    setSemitones(0);
-    setSelectedTemplateIdx(null);
-    setExpandedIdx(null);
+  useEffect(() => {
+    if (skipParse.current) { skipParse.current = false; return; }
+    if (!input.trim()) { setBaseChords([]); setParseError(''); return; }
+    const timer = setTimeout(() => {
+      const tokens = input.split(/[\s\-,|]+/).filter(Boolean);
+      const parsed: ParsedChord[] = [];
+      const failed: string[] = [];
+      for (const t of tokens) {
+        const c = parseChordName(t);
+        if (c) parsed.push(c);
+        else failed.push(t);
+      }
+      if (!parsed.length) return;
+      setParseError(failed.length ? `无法识别：${failed.join(', ')}` : '');
+      setBaseChords(parsed);
+      setSemitones(0);
+      setSelectedTemplateIdx(null);
+      setExpandedIdx(null);
+    }, 400);
+    return () => clearTimeout(timer);
   }, [input]);
 
   const handleReplace = useCallback((subDisplay: string) => {
@@ -81,6 +85,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect }: Prop
     if (!parsed) return;
     const inBase = semitones !== 0 ? transposeChord(parsed, -semitones) : parsed;
     const newBase = baseChords.map((c, i) => i === expandedIdx ? inBase : c);
+    skipParse.current = true;
     setBaseChords(newBase);
     setInput(newBase.map(c => c.display).join(' '));
     setExpandedIdx(null);
@@ -178,13 +183,9 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect }: Prop
           <input
             value={input}
             onChange={e => { setInput(e.target.value); setParseError(''); }}
-            onKeyDown={e => e.key === 'Enter' && handleParse()}
             placeholder="输入和弦进行，如 C Em F Fm，或从上方选择模板"
             className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
           />
-          <button onClick={handleParse}
-            className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer"
-          >解析</button>
           {chords.length > 0 && <PlayButton onPlay={handlePlayAll} label="播放" />}
         </div>
         {parseError && <p className="text-xs text-red-400">{parseError}</p>}
