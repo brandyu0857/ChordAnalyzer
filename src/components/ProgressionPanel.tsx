@@ -144,53 +144,58 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           </svg>
         </button>
 
-        {templatesOpen && (
-          <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
-            {/* Key selector */}
-            <div className="flex items-center gap-2 pt-3">
-              <span className="text-xs text-gray-500">以</span>
-              <select
-                value={templateKey}
-                onChange={e => setTemplateKey(e.target.value)}
-                className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none cursor-pointer"
-              >
-                {NOTES.map(n => <option key={n} value={n}>{n} 大调</option>)}
-              </select>
-              <span className="text-xs text-gray-500">加载模板</span>
-            </div>
+        <div
+          className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          style={{ gridTemplateRows: templatesOpen ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
+              {/* Key selector */}
+              <div className="flex items-center gap-2 pt-3">
+                <span className="text-xs text-gray-500">以</span>
+                <select
+                  value={templateKey}
+                  onChange={e => setTemplateKey(e.target.value)}
+                  className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none cursor-pointer"
+                >
+                  {NOTES.map(n => <option key={n} value={n}>{n} 大调</option>)}
+                </select>
+                <span className="text-xs text-gray-500">加载模板</span>
+              </div>
 
-            {/* Style filter */}
-            <div className="flex gap-1.5 flex-wrap">
-              {styles.map(s => (
-                <button key={s} onClick={() => setStyleFilter(s)}
-                  className={`px-3 py-1 rounded-full text-xs transition-colors cursor-pointer border
-                    ${styleFilter === s
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-white text-gray-500 hover:text-gray-700 border-gray-200 hover:border-gray-300'}`}
-                >{s}</button>
-              ))}
-            </div>
+              {/* Style filter */}
+              <div className="flex gap-1.5 flex-wrap">
+                {styles.map(s => (
+                  <button key={s} onClick={() => setStyleFilter(s)}
+                    className={`px-3 py-1 rounded-full text-xs transition-colors cursor-pointer border
+                      ${styleFilter === s
+                        ? 'bg-gray-900 text-white border-gray-900'
+                        : 'bg-white text-gray-500 hover:text-gray-700 border-gray-200 hover:border-gray-300'}`}
+                  >{s}</button>
+                ))}
+              </div>
 
-            {/* Template grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {filteredTemplates.map(t => {
-                const realIdx = PROGRESSION_TEMPLATES.indexOf(t);
-                return (
-                  <button key={realIdx} onClick={() => handleTemplateSelect(realIdx)}
-                    className={`text-left p-3 rounded-lg transition-all cursor-pointer border
-                      ${selectedTemplateIdx === realIdx
-                        ? 'border-gray-900 bg-gray-50'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'}`}
-                  >
-                    <div className="font-medium text-sm text-gray-900">{t.name}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{t.degrees.join(' - ')}</div>
-                    <div className="text-[10px] text-gray-300 mt-1">{t.style}</div>
-                  </button>
-                );
-              })}
+              {/* Template grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {filteredTemplates.map(t => {
+                  const realIdx = PROGRESSION_TEMPLATES.indexOf(t);
+                  return (
+                    <button key={realIdx} onClick={() => handleTemplateSelect(realIdx)}
+                      className={`text-left p-3 rounded-lg transition-all cursor-pointer border
+                        ${selectedTemplateIdx === realIdx
+                          ? 'border-gray-900 bg-gray-50'
+                          : 'border-gray-200 hover:border-gray-300 bg-white'}`}
+                    >
+                      <div className="font-medium text-sm text-gray-900">{t.name}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{t.degrees.join(' - ')}</div>
+                      <div className="text-[10px] text-gray-300 mt-1">{t.style}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Progression editor */}
