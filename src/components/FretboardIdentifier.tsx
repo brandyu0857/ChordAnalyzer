@@ -9,7 +9,8 @@ interface FretboardIdentifierProps {
 }
 
 const NUM_FRETS = 15;
-const STRING_LABELS = ['E', 'A', 'D', 'G', 'B', 'e'];
+// Visual order top-to-bottom: high e → low E
+const VISUAL_STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E'];
 // Fret inlay positions (standard guitar dots)
 const INLAY_FRETS = [3, 5, 7, 9, 12, 15];
 const DOUBLE_INLAY_FRETS = [12];
@@ -154,18 +155,20 @@ function Fretboard({ frets, onFretClick, onStringToggle }: FretboardProps) {
   const dotRadius = 10;
 
   const fretboardWidth = nutWidth + NUM_FRETS * fretWidth;
-  const fretboardHeight = (5 * stringSpacing);
+  const fretboardHeight = 5 * stringSpacing;
   const totalWidth = leftPad + fretboardWidth + 10;
   const totalHeight = topPad + fretboardHeight + bottomPad;
 
-  // X position of fret wire (right edge of fret)
+  // Visual row 0 (top) = 1st string (high e) = frets[5]
+  // Visual row 5 (bottom) = 6th string (low E) = frets[0]
+  const dataIdx = (visualIdx: number) => 5 - visualIdx;
+
   const fretX = (fret: number) => leftPad + nutWidth + fret * fretWidth;
-  // X center of a fret cell (where finger goes)
   const fretCenterX = (fret: number) => {
     if (fret === 0) return leftPad + nutWidth / 2;
     return leftPad + nutWidth + (fret - 0.5) * fretWidth;
   };
-  const stringY = (s: number) => topPad + s * stringSpacing;
+  const stringY = (visualIdx: number) => topPad + visualIdx * stringSpacing;
 
   return (
     <svg
@@ -188,25 +191,20 @@ function Fretboard({ frets, onFretClick, onStringToggle }: FretboardProps) {
       {Array.from({ length: NUM_FRETS }, (_, i) => (
         <line
           key={`fw-${i}`}
-          x1={fretX(i + 1)}
-          y1={topPad - 2}
-          x2={fretX(i + 1)}
-          y2={topPad + fretboardHeight + 2}
-          stroke="#c4c4c4"
-          strokeWidth={1.5}
+          x1={fretX(i + 1)} y1={topPad - 2}
+          x2={fretX(i + 1)} y2={topPad + fretboardHeight + 2}
+          stroke="#c4c4c4" strokeWidth={1.5}
         />
       ))}
 
-      {/* Strings */}
-      {Array.from({ length: 6 }, (_, i) => (
+      {/* Strings — thinnest at top (high e), thickest at bottom (low E) */}
+      {Array.from({ length: 6 }, (_, visualIdx) => (
         <line
-          key={`str-${i}`}
-          x1={leftPad}
-          y1={stringY(i)}
-          x2={leftPad + fretboardWidth}
-          y2={stringY(i)}
+          key={`str-${visualIdx}`}
+          x1={leftPad} y1={stringY(visualIdx)}
+          x2={leftPad + fretboardWidth} y2={stringY(visualIdx)}
           stroke="#a3a3a3"
-          strokeWidth={1.6 - i * 0.15}
+          strokeWidth={0.85 + visualIdx * 0.15}
         />
       ))}
 
@@ -224,13 +222,7 @@ function Fretboard({ frets, onFretClick, onStringToggle }: FretboardProps) {
           );
         }
         return (
-          <circle
-            key={`inlay-${f}`}
-            cx={cx}
-            cy={topPad + 2.5 * stringSpacing}
-            r={3.5}
-            fill="#e0e0e0"
-          />
+          <circle key={`inlay-${f}`} cx={cx} cy={topPad + 2.5 * stringSpacing} r={3.5} fill="#e0e0e0" />
         );
       })}
 
@@ -238,126 +230,74 @@ function Fretboard({ frets, onFretClick, onStringToggle }: FretboardProps) {
       {[1, 3, 5, 7, 9, 12, 15].map(f => {
         if (f > NUM_FRETS) return null;
         return (
-          <text
-            key={`fn-${f}`}
-            x={fretCenterX(f)}
-            y={topPad + fretboardHeight + 18}
-            textAnchor="middle"
-            fill="#bbb"
-            fontSize={10}
-            fontFamily="Inter, sans-serif"
-          >
+          <text key={`fn-${f}`} x={fretCenterX(f)} y={topPad + fretboardHeight + 18}
+            textAnchor="middle" fill="#bbb" fontSize={10} fontFamily="Inter, sans-serif">
             {f}
           </text>
         );
       })}
 
-      {/* String labels (left side) */}
-      {STRING_LABELS.map((label, i) => (
-        <text
-          key={`sl-${i}`}
-          x={leftPad - 10}
-          y={stringY(i) + 4}
-          textAnchor="middle"
-          fill="#999"
-          fontSize={11}
-          fontWeight="500"
-          fontFamily="Inter, sans-serif"
-          className="cursor-pointer"
-          onClick={() => onStringToggle(i)}
-        >
-          {label}
-        </text>
-      ))}
+      {/* String labels + open-string dots (left side) */}
+      {VISUAL_STRING_LABELS.map((label, visualIdx) => {
+        const di = dataIdx(visualIdx);
+        const fretVal = frets[di];
+        const y = stringY(visualIdx);
+        const labelX = leftPad - 10;
 
-      {/* Open / Muted indicators above nut */}
-      {frets.map((f, i) => {
-        const x = fretCenterX(0);
-        const y = stringY(i);
-        if (f === 0) {
-          return (
-            <g key={`open-${i}`} className="cursor-pointer" onClick={() => onStringToggle(i)}>
-              <circle cx={x} cy={y} r={dotRadius} fill="#2563eb" opacity={0.9} />
-              <text
-                x={x} y={y + 3.5}
-                textAnchor="middle" fill="white"
-                fontSize={8} fontWeight="bold" fontFamily="Inter, sans-serif"
-              >
-                {getNoteAtFret(i, 0)}
-              </text>
-            </g>
-          );
-        }
-        return null;
+        return (
+          <g key={`label-${visualIdx}`} className="cursor-pointer" onClick={() => onStringToggle(di)}>
+            {/* Open string: filled dot in the nut zone */}
+            {fretVal === 0 && (
+              <>
+                <circle cx={fretCenterX(0)} cy={y} r={dotRadius} fill="#2563eb" opacity={0.9} />
+                <text x={fretCenterX(0)} y={y + 3.5} textAnchor="middle" fill="white"
+                  fontSize={8} fontWeight="bold" fontFamily="Inter, sans-serif">
+                  {getNoteAtFret(di, 0)}
+                </text>
+              </>
+            )}
+            {/* String name label */}
+            <text x={labelX} y={y + 4} textAnchor="middle"
+              fill={fretVal === -1 ? '#ccc' : '#999'}
+              fontSize={11} fontWeight="500" fontFamily="Inter, sans-serif">
+              {label}
+            </text>
+          </g>
+        );
       })}
 
       {/* Clickable fret zones */}
-      {Array.from({ length: 6 }, (_, stringIdx) =>
-        Array.from({ length: NUM_FRETS }, (_, fretIdx) => {
+      {Array.from({ length: 6 }, (_, visualIdx) => {
+        const di = dataIdx(visualIdx);
+        return Array.from({ length: NUM_FRETS }, (_, fretIdx) => {
           const fret = fretIdx + 1;
           const cx = fretCenterX(fret);
-          const cy = stringY(stringIdx);
-          const isSelected = frets[stringIdx] === fret;
+          const cy = stringY(visualIdx);
+          const isSelected = frets[di] === fret;
 
           return (
-            <g
-              key={`zone-${stringIdx}-${fret}`}
-              className="cursor-pointer"
-              onClick={() => onFretClick(stringIdx, fret)}
-            >
-              {/* Hit area */}
+            <g key={`zone-${visualIdx}-${fret}`} className="cursor-pointer" onClick={() => onFretClick(di, fret)}>
               <rect
-                x={cx - fretWidth / 2}
-                y={cy - stringSpacing / 2}
-                width={fretWidth}
-                height={stringSpacing}
+                x={cx - fretWidth / 2} y={cy - stringSpacing / 2}
+                width={fretWidth} height={stringSpacing}
                 fill="transparent"
               />
-              {/* Hover indicator */}
               {!isSelected && (
-                <circle
-                  cx={cx} cy={cy} r={dotRadius}
-                  fill="transparent"
-                  className="hover:fill-gray-200 transition-colors"
-                />
+                <circle cx={cx} cy={cy} r={dotRadius}
+                  fill="transparent" className="hover:fill-gray-200 transition-colors" />
               )}
-              {/* Selected dot */}
               {isSelected && (
                 <>
                   <circle cx={cx} cy={cy} r={dotRadius} fill="#2563eb" />
-                  <text
-                    x={cx} y={cy + 3.5}
-                    textAnchor="middle" fill="white"
-                    fontSize={8} fontWeight="bold" fontFamily="Inter, sans-serif"
-                  >
-                    {getNoteAtFret(stringIdx, fret)}
+                  <text x={cx} y={cy + 3.5} textAnchor="middle" fill="white"
+                    fontSize={8} fontWeight="bold" fontFamily="Inter, sans-serif">
+                    {getNoteAtFret(di, fret)}
                   </text>
                 </>
               )}
             </g>
           );
-        })
-      )}
-
-      {/* Muted string indicators */}
-      {frets.map((f, i) => {
-        if (f !== -1) return null;
-        return (
-          <text
-            key={`mute-${i}`}
-            x={leftPad - 10}
-            y={stringY(i) + 4}
-            textAnchor="middle"
-            fill="#ccc"
-            fontSize={11}
-            fontWeight="500"
-            fontFamily="Inter, sans-serif"
-            className="cursor-pointer"
-            onClick={() => onStringToggle(i)}
-          >
-            {STRING_LABELS[i]}
-          </text>
-        );
+        });
       })}
     </svg>
   );
