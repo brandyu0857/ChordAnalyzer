@@ -27,6 +27,7 @@ export const CHORD_TYPES: Record<string, ChordType> = {
   m11:   { name: '小十一和弦',     symbol: 'm11',  intervals: [0, 3, 7, 10, 14, 17], description: '温暖、神秘' },
   '7b9': { name: '属七降九和弦',   symbol: '7b9',  intervals: [0, 4, 7, 10, 13], description: '紧张、蓝调' },
   '7#9': { name: '属七升九和弦',   symbol: '7#9',  intervals: [0, 4, 7, 10, 15], description: '强烈、布鲁斯摇滚' },
+  maj13: { name: '大十三和弦',     symbol: 'maj13', intervals: [0, 4, 7, 11, 14, 21], description: '华丽、爵士流行' },
 };
 
 // Guitar string tuning: E2 A2 D3 G3 B3 E4 (low to high)
@@ -353,6 +354,23 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
   'Am11':  { frets: [-1, 0, 2, 0, 1, 3] },
   'A#m11': { frets: [-1, 1, 3, 1, 1, 3], barreAt: 1, startFret: 1 },
   'Bm11':  { frets: [-1, 2, 0, 2, 2, 0] },
+
+  // ============================================================
+  // MAJOR 13TH CHORDS (maj13 = R M3 P5 M7 M9 M13)
+  // A-string root pattern: [-1, n, n-1, n+1, n+1, n+2]
+  // ============================================================
+  'Cmaj13':  { frets: [-1, 3, 2, 4, 4, 5], startFret: 2 },
+  'C#maj13': { frets: [-1, 4, 3, 5, 5, 6], startFret: 3 },
+  'Dmaj13':  { frets: [-1, 5, 4, 6, 6, 7], startFret: 4 },
+  'D#maj13': { frets: [-1, 6, 5, 7, 7, 8], startFret: 5 },
+  'Emaj13':  { frets: [-1, 7, 6, 8, 8, 9], startFret: 6 },
+  'Fmaj13':  { frets: [-1, 8, 7, 9, 9, 10], startFret: 7 },
+  'F#maj13': { frets: [-1, 9, 8, 10, 10, 11], startFret: 8 },
+  'Gmaj13':  { frets: [-1, 10, 9, 11, 11, 12], startFret: 9 },
+  'G#maj13': { frets: [-1, 11, 10, 12, 12, 13], startFret: 10 },
+  'Amaj13':  { frets: [-1, 0, 11, 1, 1, 2], startFret: 0 },
+  'A#maj13': { frets: [-1, 1, 0, 2, 2, 3], startFret: 0 },
+  'Bmaj13':  { frets: [-1, 2, 1, 3, 3, 4], startFret: 1 },
 
   // ============================================================
   // DOMINANT 7b9 CHORDS (7b9 = R M3 P5 m7 b9)

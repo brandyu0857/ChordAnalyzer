@@ -98,6 +98,8 @@ export function parseChordName(name: string): ParsedChord | null {
     type = '6';
   } else if (suffixLower === 'm6' || suffixLower === 'min6') {
     type = 'm6';
+  } else if (suffixLower === 'maj13') {
+    type = 'maj13';
   } else if (suffixLower === 'maj9') {
     type = 'maj9';
   } else if (suffixLower === 'm9' || suffixLower === 'min9') {
