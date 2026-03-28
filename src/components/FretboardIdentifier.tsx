@@ -100,7 +100,7 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
       )}
 
       {/* Results */}
-      {(results.length > 0 || hasNonDefault) && (
+      {hasNonDefault && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-gray-700">
             {results.length > 0 ? '识别结果' : '无法识别'}
