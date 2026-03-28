@@ -32,18 +32,18 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
     });
   }, []);
 
-  const handleStringToggle = useCallback((stringIdx: number) => {
+  const handleStringOpen = useCallback((stringIdx: number) => {
     setFrets(prev => {
       const next = [...prev];
-      // Cycle: muted → open → muted
-      if (next[stringIdx] === -1) {
-        next[stringIdx] = 0;
-      } else if (next[stringIdx] === 0) {
-        next[stringIdx] = -1;
-      } else {
-        // If a fret is selected, clicking the header mutes it
-        next[stringIdx] = -1;
-      }
+      next[stringIdx] = next[stringIdx] === 0 ? -1 : 0;
+      return next;
+    });
+  }, []);
+
+  const handleStringMute = useCallback((stringIdx: number) => {
+    setFrets(prev => {
+      const next = [...prev];
+      next[stringIdx] = -1;
       return next;
     });
   }, []);
@@ -92,7 +92,8 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
           <Fretboard
             frets={frets}
             onFretClick={handleFretClick}
-            onStringToggle={handleStringToggle}
+            onStringOpen={handleStringOpen}
+            onStringMute={handleStringMute}
           />
         </div>
       </div>
@@ -142,19 +143,21 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
 interface FretboardProps {
   frets: number[];
   onFretClick: (stringIdx: number, fret: number) => void;
-  onStringToggle: (stringIdx: number) => void;
+  onStringOpen: (stringIdx: number) => void;
+  onStringMute: (stringIdx: number) => void;
 }
 
-function Fretboard({ frets, onFretClick, onStringToggle }: FretboardProps) {
+function Fretboard({ frets, onFretClick, onStringOpen, onStringMute }: FretboardProps) {
   const stringSpacing = 28;
   const fretWidth = 56;
-  const nutWidth = 36;
-  const leftPad = 30;
+  const nutWidth = 10;  // narrow nut visual
+  const controlW = 60;  // space for O / X buttons left of nut
+  const leftPad = controlW + nutWidth;
   const topPad = 8;
   const bottomPad = 24;
   const dotRadius = 10;
 
-  const fretboardWidth = nutWidth + NUM_FRETS * fretWidth;
+  const fretboardWidth = NUM_FRETS * fretWidth;
   const fretboardHeight = 5 * stringSpacing;
   const totalWidth = leftPad + fretboardWidth + 10;
   const totalHeight = topPad + fretboardHeight + bottomPad;
@@ -163,12 +166,16 @@ function Fretboard({ frets, onFretClick, onStringToggle }: FretboardProps) {
   // Visual row 5 (bottom) = 6th string (low E) = frets[0]
   const dataIdx = (visualIdx: number) => 5 - visualIdx;
 
-  const fretX = (fret: number) => leftPad + nutWidth + fret * fretWidth;
-  const fretCenterX = (fret: number) => {
-    if (fret === 0) return leftPad + nutWidth / 2;
-    return leftPad + nutWidth + (fret - 0.5) * fretWidth;
-  };
+  // X of fret wire i (0-based, so i=0 is the nut line)
+  const fretX = (fret: number) => leftPad + fret * fretWidth;
+  // X center of fret cell
+  const fretCenterX = (fret: number) => leftPad + (fret - 0.5) * fretWidth;
   const stringY = (visualIdx: number) => topPad + visualIdx * stringSpacing;
+
+  // Control button positions
+  const openBtnX = 14;   // ○ button center X
+  const muteBtnX = 38;   // × button center X
+  const labelX = 56;     // string letter
 
   return (
     <svg
@@ -179,7 +186,7 @@ function Fretboard({ frets, onFretClick, onStringToggle }: FretboardProps) {
     >
       {/* Nut */}
       <rect
-        x={leftPad + nutWidth - 3}
+        x={leftPad - 4}
         y={topPad - 4}
         width={5}
         height={fretboardHeight + 8}
@@ -237,28 +244,45 @@ function Fretboard({ frets, onFretClick, onStringToggle }: FretboardProps) {
         );
       })}
 
-      {/* String labels + open-string dots (left side) */}
+      {/* Per-string controls: ○ open / × mute / label */}
       {VISUAL_STRING_LABELS.map((label, visualIdx) => {
         const di = dataIdx(visualIdx);
         const fretVal = frets[di];
         const y = stringY(visualIdx);
-        const labelX = leftPad - 10;
+        const isOpen = fretVal === 0;
+        const isMuted = fretVal === -1;
 
         return (
-          <g key={`label-${visualIdx}`} className="cursor-pointer" onClick={() => onStringToggle(di)}>
-            {/* Open string: filled dot in the nut zone */}
-            {fretVal === 0 && (
-              <>
-                <circle cx={fretCenterX(0)} cy={y} r={dotRadius} fill="#2563eb" opacity={0.9} />
-                <text x={fretCenterX(0)} y={y + 3.5} textAnchor="middle" fill="white"
-                  fontSize={8} fontWeight="bold" fontFamily="Inter, sans-serif">
+          <g key={`ctrl-${visualIdx}`}>
+            {/* ○ Open button */}
+            <g className="cursor-pointer" onClick={() => onStringOpen(di)}>
+              <rect x={openBtnX - 11} y={y - 11} width={22} height={22} fill="transparent" />
+              <circle
+                cx={openBtnX} cy={y} r={8}
+                fill={isOpen ? '#2563eb' : 'none'}
+                stroke={isOpen ? '#2563eb' : '#d1d5db'}
+                strokeWidth={1.5}
+              />
+              {isOpen && (
+                <text x={openBtnX} y={y + 3.5} textAnchor="middle" fill="white"
+                  fontSize={7} fontWeight="bold" fontFamily="Inter, sans-serif">
                   {getNoteAtFret(di, 0)}
                 </text>
-              </>
-            )}
-            {/* String name label */}
+              )}
+            </g>
+
+            {/* × Mute button */}
+            <g className="cursor-pointer" onClick={() => onStringMute(di)}>
+              <rect x={muteBtnX - 10} y={y - 11} width={20} height={22} fill="transparent" />
+              <text x={muteBtnX} y={y + 5} textAnchor="middle"
+                fill={isMuted ? '#ef4444' : '#d1d5db'}
+                fontSize={16} fontWeight="bold" fontFamily="Inter, sans-serif"
+              >×</text>
+            </g>
+
+            {/* String label */}
             <text x={labelX} y={y + 4} textAnchor="middle"
-              fill={fretVal === -1 ? '#ccc' : '#999'}
+              fill={isMuted ? '#bbb' : '#555'}
               fontSize={11} fontWeight="500" fontFamily="Inter, sans-serif">
               {label}
             </text>
