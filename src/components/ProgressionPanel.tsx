@@ -13,7 +13,7 @@ import { findSongExamples } from '../utils/progressionMatcher';
 
 interface Props {
   onChordSelect?: (chord: ParsedChord) => void;
-  appendChord?: string | null;
+  appendChord?: { display: string; fingeringIndex: number } | null;
   onAppendDone?: () => void;
 }
 
@@ -33,6 +33,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [activeIdx, setActiveIdx] = useState<number | undefined>(undefined);
   const [isNashville, setIsNashville] = useState(false);
+  const [fingeringIndices, setFingeringIndices] = useState<number[]>([]);
   const skipParse = useRef(false);
 
   const styles = ['全部', ...new Set(PROGRESSION_TEMPLATES.map(t => t.style))];
@@ -53,6 +54,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
     skipParse.current = true;
     setInput(chordStr);
     setBaseChords(parsed);
+    setFingeringIndices(parsed.map(() => 0));
     setSemitones(0);
     setSelectedTemplateIdx(idx);
     setTemplatesOpen(false);
@@ -71,7 +73,9 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
       if (isNashvilleNotation(tokens)) {
         const nashville = tokens.map(t => parseNashvilleToken(t, templateKey));
         if (nashville.every(c => c !== null)) {
-          setBaseChords(nashville as ParsedChord[]);
+          const chords = nashville as ParsedChord[];
+          setBaseChords(chords);
+          setFingeringIndices(chords.map(() => 0));
           setParseError('');
           setIsNashville(true);
           setSemitones(0);
@@ -94,6 +98,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
       if (!parsed.length) return;
       setParseError(failed.length ? `无法识别：${failed.join(', ')}` : '');
       setBaseChords(parsed);
+      setFingeringIndices(parsed.map(() => 0));
       setSemitones(0);
       setSelectedTemplateIdx(null);
       setExpandedIdx(null);
@@ -105,12 +110,14 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
   // Append a chord pushed from the chord query page
   useEffect(() => {
     if (!appendChord) return;
+    const { display, fingeringIndex } = appendChord;
     skipParse.current = true;
-    setInput(prev => (prev.trim() ? prev.trim() + ' ' + appendChord : appendChord));
+    setInput(prev => (prev.trim() ? prev.trim() + ' ' + display : display));
     setBaseChords(prev => {
-      const c = parseChordName(appendChord);
+      const c = parseChordName(display);
       return c ? [...prev, c] : prev;
     });
+    setFingeringIndices(prev => [...prev, fingeringIndex]);
     setSelectedTemplateIdx(null);
     setSemitones(0);
     setExpandedIdx(null);
@@ -126,6 +133,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
     const newBase = baseChords.map((c, i) => i === expandedIdx ? inBase : c);
     skipParse.current = true;
     setBaseChords(newBase);
+    setFingeringIndices(prev => prev.map((fi, i) => i === expandedIdx ? 0 : fi));
     setInput(newBase.map(c => c.display).join(' '));
     setExpandedIdx(null);
   }, [expandedIdx, semitones, baseChords]);
@@ -226,7 +234,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           <span className="text-sm font-medium text-gray-900">自定义和弦进行</span>
           {input.trim() && (
             <button
-              onClick={() => { setInput(''); setBaseChords([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); }}
+              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); }}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               清空
@@ -279,7 +287,9 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
             {/* Chord grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
               {chords.map((chord, i) => {
-                const fingering = getGuitarFingerings(chord.root, chord.type, chord.bassNote)[0];
+                const allFingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
+                const fi = Math.min(fingeringIndices[i] ?? 0, allFingerings.length - 1);
+                const fingering = allFingerings[fi];
                 const isExpanded = expandedIdx === i;
                 const isActive = activeIdx === i;
 

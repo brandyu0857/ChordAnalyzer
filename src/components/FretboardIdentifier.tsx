@@ -53,9 +53,8 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
     });
   }, [frets]);
 
-  const uniqueNoteNames = useMemo(() => {
-    const names = selectedNotes.filter(Boolean) as string[];
-    return [...new Set(names)];
+  const soundingNotes = useMemo(() => {
+    return selectedNotes.filter((n): n is string => n !== null);
   }, [selectedNotes]);
 
   return (
@@ -91,8 +90,8 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
       {hasNonDefault && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-500">发音音符：</span>
-          {uniqueNoteNames.map(note => (
-            <span key={note} className="px-2 py-0.5 text-sm font-medium bg-gray-100 text-gray-700 rounded">
+          {soundingNotes.map((note, i) => (
+            <span key={i} className="px-2 py-0.5 text-sm font-medium bg-gray-100 text-gray-700 rounded">
               {note}
             </span>
           ))}
