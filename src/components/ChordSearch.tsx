@@ -53,7 +53,7 @@ export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps
       else if (name.toLowerCase().startsWith(input.toLowerCase())) startsWith.push(name);
       else sameRoot.push(name);
     });
-    return [...exact, ...startsWith, ...sameRoot].slice(0, 15);
+    return [...exact, ...startsWith, ...sameRoot].slice(0, 30);
   }, [input]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
