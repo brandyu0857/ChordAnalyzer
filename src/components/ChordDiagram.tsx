@@ -12,9 +12,14 @@ interface ChordDiagramProps {
 }
 
 export default function ChordDiagram({ fingering, chordName, size = 'medium', interactive = true }: ChordDiagramProps) {
-  const { locale } = useLocale();
+  const { locale, isDark } = useLocale();
   const isEn = locale === 'en';
   const [showNotes, setShowNotes] = useState(false);
+
+  // SVG colors adapt to dark mode
+  const c = isDark
+    ? { text: '#fafafa', solid: '#e5e5e5', fret: '#3a3a3a', string: '#525252', muted: '#666', note: '#888', hint: '#444', dotText: '#121212' }
+    : { text: '#111', solid: '#1a1a1a', fret: '#d4d4d4', string: '#a3a3a3', muted: '#999', note: '#888', hint: '#ccc', dotText: 'white' };
   const scale = size === 'small' ? 0.65 : size === 'large' ? 1.2 : 1;
   const stringSpacing = 28 * scale;
   const fretSpacing = 32 * scale;
@@ -51,7 +56,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
         x={paddingLeft + ((numStrings - 1) * stringSpacing) / 2}
         y={14 * scale}
         textAnchor="middle"
-        fill="#111"
+        fill={c.text}
         fontSize={16 * scale}
         fontWeight="bold"
         fontFamily="Inter, sans-serif"
@@ -66,7 +71,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
           y={paddingTop - 3 * scale}
           width={(numStrings - 1) * stringSpacing + 4}
           height={5 * scale}
-          fill="#1a1a1a"
+          fill={c.solid}
           rx={1}
         />
       )}
@@ -77,7 +82,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
           x={paddingLeft - 14 * scale}
           y={paddingTop + fretSpacing / 2 + 4 * scale}
           textAnchor="middle"
-          fill="#999"
+          fill={c.muted}
           fontSize={11 * scale}
           fontFamily="Inter, sans-serif"
         >
@@ -93,7 +98,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
           y1={paddingTop + i * fretSpacing}
           x2={paddingLeft + (numStrings - 1) * stringSpacing}
           y2={paddingTop + i * fretSpacing}
-          stroke="#d4d4d4"
+          stroke={c.fret}
           strokeWidth={1}
         />
       ))}
@@ -106,7 +111,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
           y1={paddingTop}
           x2={paddingLeft + i * stringSpacing}
           y2={paddingTop + numFrets * fretSpacing}
-          stroke="#a3a3a3"
+          stroke={c.string}
           strokeWidth={1 + (5 - i) * 0.15}
         />
       ))}
@@ -129,7 +134,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
               width={(lastStr - firstStr) * stringSpacing + dotRadius * 2}
               height={dotRadius * 1.4}
               rx={dotRadius * 0.7}
-              fill="#1a1a1a"
+              fill={c.solid}
               opacity={0.9}
             />
           );
@@ -147,11 +152,11 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
 
         return (
           <g key={`dot-${stringIdx}`}>
-            <circle cx={x} cy={y} r={dotRadius} fill="#1a1a1a" />
+            <circle cx={x} cy={y} r={dotRadius} fill={c.solid} />
             {showNotes ? (
               <text
                 x={x} y={y + 3.5 * scale}
-                textAnchor="middle" fill="white"
+                textAnchor="middle" fill={c.dotText}
                 fontSize={noteName.length > 1 ? 7.5 * scale : 9 * scale}
                 fontWeight="bold" fontFamily="Inter, sans-serif"
               >
@@ -161,7 +166,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
               fingering.fingers && fingering.fingers[stringIdx] > 0 && (
                 <text
                   x={x} y={y + 3.5 * scale}
-                  textAnchor="middle" fill="white"
+                  textAnchor="middle" fill={c.dotText}
                   fontSize={9 * scale} fontWeight="bold" fontFamily="Inter, sans-serif"
                 >
                   {fingering.fingers[stringIdx]}
@@ -182,8 +187,8 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
             const noteName = noteNames[stringIdx];
             return (
               <g key={`open-${stringIdx}`}>
-                <circle cx={x} cy={y} r={dotRadius * 0.7} fill="#1a1a1a" />
-                <text x={x} y={y + 3 * scale} textAnchor="middle" fill="white"
+                <circle cx={x} cy={y} r={dotRadius * 0.7} fill={c.solid} />
+                <text x={x} y={y + 3 * scale} textAnchor="middle" fill={c.dotText}
                   fontSize={noteName.length > 1 ? 6.5 * scale : 8 * scale}
                   fontWeight="bold" fontFamily="Inter, sans-serif"
                 >{noteName}</text>
@@ -192,13 +197,13 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
           }
           return (
             <circle key={`open-${stringIdx}`} cx={x} cy={y} r={5 * scale}
-              fill="none" stroke="#999" strokeWidth={1.5} />
+              fill="none" stroke={c.muted} strokeWidth={1.5} />
           );
         }
         if (fret === -1) {
           return (
             <text key={`mute-${stringIdx}`} x={x} y={y + 4 * scale}
-              textAnchor="middle" fill="#999" fontSize={12 * scale}
+              textAnchor="middle" fill={c.muted} fontSize={12 * scale}
               fontWeight="bold" fontFamily="Inter, sans-serif"
             >X</text>
           );
@@ -212,7 +217,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
           x={paddingLeft + i * stringSpacing}
           y={paddingTop + numFrets * fretSpacing + 18 * scale}
           textAnchor="middle"
-          fill={note === 'X' ? '#ccc' : '#888'}
+          fill={note === 'X' ? c.hint : c.note}
           fontSize={10 * scale} fontFamily="Inter, sans-serif"
         >{note}</text>
       ))}
@@ -222,7 +227,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
         <text
           x={paddingLeft + ((numStrings - 1) * stringSpacing) / 2}
           y={height - 2}
-          textAnchor="middle" fill="#ccc"
+          textAnchor="middle" fill={c.hint}
           fontSize={8 * scale} fontFamily="Inter, sans-serif"
         >
           {showNotes
