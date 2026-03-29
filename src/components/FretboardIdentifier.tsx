@@ -3,6 +3,7 @@ import { identifyChords, getNoteAtFret } from '../utils/chordIdentifier';
 import type { IdentifiedChord } from '../utils/chordIdentifier';
 import type { ParsedChord } from '../utils/chordUtils';
 import { parseChordName } from '../utils/chordUtils';
+import { useLocale } from '../i18n/context';
 
 interface FretboardIdentifierProps {
   onChordSelect?: (chord: ParsedChord) => void;
@@ -16,6 +17,8 @@ const INLAY_FRETS = [3, 5, 7, 9, 12, 15];
 const DOUBLE_INLAY_FRETS = [12];
 
 export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifierProps) {
+  const { locale } = useLocale();
+  const isEn = locale === 'en';
   // -1 = muted, 0 = open (default), 1+ = fret number
   const [frets, setFrets] = useState<number[]>([0, 0, 0, 0, 0, 0]);
 
@@ -62,15 +65,19 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
       {/* Instructions */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">指板和弦识别</h2>
-          <p className="text-sm text-gray-500 mt-1">点击指板上的位置标记按弦，系统自动识别和弦</p>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {isEn ? 'Fretboard Chord Identifier' : '指板和弦识别'}
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            {isEn ? 'Click positions on the fretboard to mark frets, chords are identified automatically' : '点击指板上的位置标记按弦，系统自动识别和弦'}
+          </p>
         </div>
         {hasNonDefault && (
           <button
             onClick={handleClear}
             className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer shrink-0"
           >
-            重置
+            {isEn ? 'Reset' : '重置'}
           </button>
         )}
       </div>
@@ -89,7 +96,7 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
       {/* Selected notes */}
       {hasNonDefault && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-gray-500">发音音符：</span>
+          <span className="text-sm text-gray-500">{isEn ? 'Sounding notes:' : '发音音符：'}</span>
           {soundingNotes.map((note, i) => (
             <span key={i} className="px-2 py-0.5 text-sm font-medium bg-gray-100 text-gray-700 rounded">
               {note}
@@ -101,7 +108,9 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
       {/* Results */}
       {results.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700">识别结果</h3>
+          <h3 className="text-sm font-medium text-gray-700">
+            {isEn ? 'Results' : '识别结果'}
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {results.map((chord, idx) => (
               <ChordResultCard
@@ -131,8 +140,7 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
   const fretWidth = 56;
   const controlW = 46;  // space for × button + string label
   const nutX = controlW;
-  const nutZoneW = 18;  // small space right of nut (for muted × indicator)
-  const leftPad = nutX + nutZoneW;
+  const leftPad = nutX;
   const topPad = 8;
   const bottomPad = 24;
   const dotRadius = 10;
@@ -152,7 +160,6 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
 
   const muteBtnX = 14;
   const labelX = 34;
-  const openDotX = nutX + nutZoneW / 2;  // center of open-string zone
 
   return (
     <svg
@@ -202,7 +209,7 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
           textAnchor="middle" fill="#bbb" fontSize={10} fontFamily="Inter, sans-serif">{f}</text>
       ))}
 
-      {/* Per-string: × mute button + label + open/muted indicator */}
+      {/* Per-string: × mute button + label */}
       {VISUAL_STRING_LABELS.map((label, visualIdx) => {
         const di = dataIdx(visualIdx);
         const fretVal = frets[di];
@@ -223,12 +230,6 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
             <text x={labelX} y={y + 4} textAnchor="middle"
               fill={isMuted ? '#bbb' : '#555'}
               fontSize={11} fontWeight="500" fontFamily="Inter, sans-serif">{label}</text>
-
-            {/* Muted indicator in nut zone */}
-            {isMuted && (
-              <text x={openDotX} y={y + 5} textAnchor="middle" fill="#ef4444"
-                fontSize={14} fontWeight="bold" fontFamily="Inter, sans-serif">×</text>
-            )}
           </g>
         );
       })}
@@ -276,6 +277,9 @@ interface ChordResultCardProps {
 }
 
 function ChordResultCard({ chord, rank, onSelect }: ChordResultCardProps) {
+  const { locale } = useLocale();
+  const isEn = locale === 'en';
+
   const handleClick = () => {
     if (!onSelect) return;
     // Parse the chord to get a full ParsedChord object
@@ -295,9 +299,9 @@ function ChordResultCard({ chord, rank, onSelect }: ChordResultCardProps) {
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
           <span className="text-base font-bold text-gray-900">{chord.symbol}</span>
-          <span className="text-xs text-gray-500">{chord.name}</span>
+          <span className="text-xs text-gray-500">{isEn ? chord.nameEn : chord.name}</span>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">{chord.description}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{isEn ? chord.descriptionEn : chord.description}</p>
       </div>
     </button>
   );

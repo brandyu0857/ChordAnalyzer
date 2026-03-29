@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocale } from '../i18n/context';
 
 interface PlayButtonProps {
   onPlay: () => Promise<void>;
@@ -6,8 +7,11 @@ interface PlayButtonProps {
   small?: boolean;
 }
 
-export default function PlayButton({ onPlay, label = '播放', small = false }: PlayButtonProps) {
+export default function PlayButton({ onPlay, label, small = false }: PlayButtonProps) {
+  const { locale } = useLocale();
   const [playing, setPlaying] = useState(false);
+  const defaultLabel = locale === 'en' ? 'Play' : '播放';
+  const playingLabel = locale === 'en' ? 'Playing...' : '播放中...';
 
   const handleClick = async () => {
     if (playing) return;
@@ -37,7 +41,7 @@ export default function PlayButton({ onPlay, label = '播放', small = false }: 
           <path d="M4 2.5v11l10-5.5z" />
         )}
       </svg>
-      {playing ? '播放中...' : label}
+      {playing ? playingLabel : (label || defaultLabel)}
     </button>
   );
 }

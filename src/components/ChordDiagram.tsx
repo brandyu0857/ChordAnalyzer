@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { GuitarFingering } from '../data/chords';
 import { GUITAR_TUNING } from '../data/chords';
 import { NOTES } from '../data/notes';
+import { useLocale } from '../i18n/context';
 
 interface ChordDiagramProps {
   fingering: GuitarFingering;
@@ -11,6 +12,8 @@ interface ChordDiagramProps {
 }
 
 export default function ChordDiagram({ fingering, chordName, size = 'medium', interactive = true }: ChordDiagramProps) {
+  const { locale } = useLocale();
+  const isEn = locale === 'en';
   const [showNotes, setShowNotes] = useState(false);
   const scale = size === 'small' ? 0.65 : size === 'large' ? 1.2 : 1;
   const stringSpacing = 28 * scale;
@@ -222,7 +225,9 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
           textAnchor="middle" fill="#ccc"
           fontSize={8 * scale} fontFamily="Inter, sans-serif"
         >
-          {showNotes ? '点击切换为指法' : '点击显示音名'}
+          {showNotes
+            ? (isEn ? 'Click to show fingering' : '点击切换为指法')
+            : (isEn ? 'Click to show note names' : '点击显示音名')}
         </text>
       )}
     </svg>

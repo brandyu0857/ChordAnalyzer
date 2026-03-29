@@ -9,6 +9,7 @@ import { getGuitarFingerings } from '../data/chords';
 import ChordDiagram from './ChordDiagram';
 import { playChordStrum, playChordBlock } from '../utils/audioUtils';
 import { getChordNotes } from '../utils/chordUtils';
+import { useLocale } from '../i18n/context';
 
 interface ChordEntry {
   root: string;
@@ -59,7 +60,7 @@ function ChordCard({
         <button
           onClick={onPlay}
           className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 cursor-pointer"
-          title="试听"
+          title="Preview"
         >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 5v14l11-7z" />
@@ -77,6 +78,8 @@ function SubCard({
   onSelect: () => void;
   onPlay: () => void;
 }) {
+  const { locale } = useLocale();
+  const isEn = locale === 'en';
   const fingerings = getGuitarFingerings(sub.root, sub.type);
   const fingering = fingerings[0];
   const [expanded, setExpanded] = useState(false);
@@ -108,7 +111,7 @@ function SubCard({
         <button
           onClick={onPlay}
           className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex-shrink-0"
-          title="试听"
+          title="Preview"
         >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 5v14l11-7z" />
@@ -125,7 +128,9 @@ function SubCard({
           {sub.explanation}
         </p>
         {!expanded && (
-          <span className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors">展开 ↓</span>
+          <span className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors">
+            {isEn ? 'More ↓' : '展开 ↓'}
+          </span>
         )}
       </button>
     </div>
@@ -133,6 +138,8 @@ function SubCard({
 }
 
 export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelProps) {
+  const { locale } = useLocale();
+  const isEn = locale === 'en';
   const [input, setInput] = useState('C - Am - F - G');
   const [progression, setProgression] = useState<ChordEntry[]>([]);
   const [analyzed, setAnalyzed] = useState(false);
@@ -153,16 +160,20 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
     }
 
     if (parsed.length === 0) {
-      setError('未能识别出任何和弦，请检查格式（如 C - Am - F - G）');
+      setError(isEn
+        ? 'No chords recognized, check format (e.g. C - Am - F - G)'
+        : '未能识别出任何和弦，请检查格式（如 C - Am - F - G）');
       setProgression([]);
       setAnalyzed(false);
       return;
     }
 
-    setError(failed.length > 0 ? `无法识别：${failed.join(', ')}` : '');
+    setError(failed.length > 0
+      ? (isEn ? `Unrecognized: ${failed.join(', ')}` : `无法识别：${failed.join(', ')}`)
+      : '');
     setProgression(parsed);
     setAnalyzed(true);
-  }, [input]);
+  }, [input, isEn]);
 
   const handlePlay = async (root: string, type: string) => {
     const fingerings = getGuitarFingerings(root, type);
@@ -185,20 +196,20 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
             value={input}
             onChange={e => { setInput(e.target.value); setAnalyzed(false); setError(''); }}
             onKeyDown={e => e.key === 'Enter' && handleAnalyze()}
-            placeholder="输入和弦进行，如 C - Am - F - G"
+            placeholder={isEn ? 'Enter chord progression, e.g. C - Am - F - G' : '输入和弦进行，如 C - Am - F - G'}
             className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
           />
           <button
             onClick={handleAnalyze}
             className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer"
           >
-            分析
+            {isEn ? 'Analyze' : '分析'}
           </button>
         </div>
 
         {/* Examples */}
         <div className="flex flex-wrap gap-x-4 gap-y-1">
-          <span className="text-xs text-gray-300">示例：</span>
+          <span className="text-xs text-gray-300">{isEn ? 'Examples:' : '示例：'}</span>
           {EXAMPLES.map(ex => (
             <button
               key={ex}
@@ -217,7 +228,7 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
       {analyzed && progression.length > 0 && (
         <div className="space-y-10">
           {progression.map((chord, idx) => {
-            const subs = getSubstitutions(chord.root, chord.type);
+            const subs = getSubstitutions(chord.root, chord.type, locale);
 
             return (
               <section key={idx} className="space-y-4">
@@ -238,7 +249,7 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
                       root={chord.root}
                       type={chord.type}
                       display={chord.display}
-                      label="原和弦"
+                      label={isEn ? 'Original' : '原和弦'}
                       onClick={() => onChordSelect?.(chord.display)}
                       onPlay={() => handlePlay(chord.root, chord.type)}
                     />
@@ -260,7 +271,7 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
                       />
                     )) : (
                       <div className="flex items-center self-center mt-6 text-sm text-gray-300">
-                        暂无替代建议
+                        {isEn ? 'No substitution suggestions' : '暂无替代建议'}
                       </div>
                     )}
                   </div>
@@ -279,8 +290,12 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
               <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
             </svg>
           </div>
-          <p className="text-sm text-gray-400">输入和弦进行，查看每个和弦的替代建议</p>
-          <p className="text-xs text-gray-300 mt-1">支持三全音替代、关系调替代、延伸音版本等多种和声手法</p>
+          <p className="text-sm text-gray-400">
+            {isEn ? 'Enter a chord progression to see substitution suggestions for each chord' : '输入和弦进行，查看每个和弦的替代建议'}
+          </p>
+          <p className="text-xs text-gray-300 mt-1">
+            {isEn ? 'Supports tritone substitution, relative key substitution, extensions, and more' : '支持三全音替代、关系调替代、延伸音版本等多种和声手法'}
+          </p>
         </div>
       )}
     </div>

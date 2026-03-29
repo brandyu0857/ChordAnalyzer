@@ -9,10 +9,13 @@ import type { ParsedChord } from './utils/chordUtils';
 import { parseChordName, getChordNotes } from './utils/chordUtils';
 import { getGuitarFingerings } from './data/chords';
 import { playChordStrum, playChordBlock } from './utils/audioUtils';
+import { useLocale } from './i18n/context';
 
 type Page = 'chord' | 'progression' | 'identify';
 
 function App() {
+  const { locale, setLocale } = useLocale();
+  const isEn = locale === 'en';
   const [page, setPage] = useState<Page>('chord');
   const [currentChord, setCurrentChord] = useState<ParsedChord | null>(() => parseChordName('C'));
   const [searchInput, setSearchInput] = useState('C');
@@ -31,8 +34,8 @@ function App() {
   const handleAddToProgression = useCallback(() => {
     if (!currentChord) return;
     setChordToAppend({ display: currentChord.display, fingeringIndex: voicingIndex });
-    showToast('已添加到和弦进行');
-  }, [currentChord, voicingIndex, showToast]);
+    showToast(isEn ? 'Added to progression' : '已添加到和弦进行');
+  }, [currentChord, voicingIndex, showToast, isEn]);
 
   const handleSearch = useCallback((name: string) => {
     setSearchInput(name);
@@ -42,9 +45,11 @@ function App() {
       setVoicingIndex(0);
       setError('');
     } else {
-      setError(`无法识别和弦 "${name}"。试试 C, Am, G7, Dmaj7 等格式。`);
+      setError(isEn
+        ? `Unrecognized chord "${name}". Try C, Am, G7, Dmaj7, etc.`
+        : `无法识别和弦 "${name}"。试试 C, Am, G7, Dmaj7 等格式。`);
     }
-  }, []);
+  }, [isEn]);
 
   const handleChordSelect = useCallback((chord: ParsedChord) => {
     setCurrentChord(chord);
@@ -84,6 +89,18 @@ function App() {
               </svg>
             </div>
             <h1 className="text-base font-semibold text-gray-900">ChordAnalyzer</h1>
+            <div className="ml-auto flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setLocale('en')}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer
+                  ${locale === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >EN</button>
+              <button
+                onClick={() => setLocale('zh')}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer
+                  ${locale === 'zh' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >CN</button>
+            </div>
           </div>
 
           <nav className="flex gap-0 -mb-px">
@@ -92,7 +109,7 @@ function App() {
               className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
                 ${page === 'chord' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              和弦查询
+              {isEn ? 'Chord Lookup' : '和弦查询'}
               {page === 'chord' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
             </button>
             <button
@@ -100,7 +117,7 @@ function App() {
               className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
                 ${page === 'progression' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              和弦进行
+              {isEn ? 'Progressions' : '和弦进行'}
               {page === 'progression' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
             </button>
             <button
@@ -108,7 +125,7 @@ function App() {
               className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
                 ${page === 'identify' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              反查和弦
+              {isEn ? 'Identify' : '反查和弦'}
               {page === 'identify' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
             </button>
           </nav>
@@ -141,7 +158,7 @@ function App() {
                             </svg>
                           </button>
                           <span className="text-xs text-gray-400 tabular-nums">
-                            按法 {voicingIndex + 1} / {totalVoicings}
+                            {isEn ? 'Voicing' : '按法'} {voicingIndex + 1} / {totalVoicings}
                           </span>
                           <button
                             onClick={() => setVoicingIndex((voicingIndex + 1) % totalVoicings)}
@@ -155,8 +172,8 @@ function App() {
                       )}
 
                       <div className="flex gap-2 flex-wrap justify-center">
-                        <PlayButton onPlay={handlePlayStrum} label="扫弦" small />
-                        <PlayButton onPlay={handlePlayBlock} label="和弦" small />
+                        <PlayButton onPlay={handlePlayStrum} label={isEn ? 'Strum' : '扫弦'} small />
+                        <PlayButton onPlay={handlePlayBlock} label={isEn ? 'Chord' : '和弦'} small />
                         <button
                           onClick={handleAddToProgression}
                           className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer flex items-center gap-1"
@@ -164,16 +181,16 @@ function App() {
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                           </svg>
-                          加入进行
+                          {isEn ? 'Add to progression' : '加入进行'}
                         </button>
                       </div>
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center w-48 h-48 rounded-xl border border-gray-200">
                       <span className="text-3xl font-bold text-gray-900 mb-1">{currentChord.display}</span>
-                      <span className="text-xs text-gray-400">指法图暂无</span>
+                      <span className="text-xs text-gray-400">{isEn ? 'No fingering available' : '指法图暂无'}</span>
                       <div className="mt-3">
-                        <PlayButton onPlay={handlePlayBlock} label="播放" small />
+                        <PlayButton onPlay={handlePlayBlock} label={isEn ? 'Play' : '播放'} small />
                       </div>
                     </div>
                   )}
