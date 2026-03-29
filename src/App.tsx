@@ -38,7 +38,6 @@ function App() {
   }, [currentChord, voicingIndex, showToast, isEn]);
 
   const handleSearch = useCallback((name: string) => {
-    setSearchInput(name);
     const parsed = parseChordName(name);
     if (parsed) {
       setCurrentChord(parsed);
