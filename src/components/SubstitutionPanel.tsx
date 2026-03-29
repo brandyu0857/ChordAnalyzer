@@ -146,7 +146,7 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
   const [error, setError] = useState('');
 
   const handleAnalyze = useCallback(() => {
-    const tokens = input.split(/[\s\-,|\/]+/).filter(t => t.trim().length > 0);
+    const tokens = input.split(/[\s\-,|/]+/).filter(t => t.trim().length > 0);
     const parsed: ChordEntry[] = [];
     const failed: string[] = [];
 
