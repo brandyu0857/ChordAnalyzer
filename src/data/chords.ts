@@ -835,18 +835,16 @@ const ALTERNATIVE_VOICINGS: Record<string, GuitarFingering[]> = {
   'A#add9': [{ frets: [6,8,8,7,6,6],      barreAt:6,  startFret:6  }],
   'Badd9':  [{ frets: [7,9,9,8,7,7],      barreAt:7,  startFret:7  }],
 
-  // ---- 7sus4  (A-shape barre: [-1,n,n,n,n-2,n]) ----
-  'C7sus4':  [{ frets: [-1,3,3,3,1,3], startFret:1 }],
-  'C#7sus4': [{ frets: [-1,4,4,4,2,4], startFret:2 }],
-  'D7sus4':  [{ frets: [-1,5,5,5,3,5], startFret:3 }],
-  'D#7sus4': [{ frets: [-1,6,6,6,4,6], startFret:4 }],
-  'E7sus4':  [{ frets: [-1,7,7,7,5,7], startFret:5 }],
-  'F7sus4':  [{ frets: [-1,8,8,8,6,8], startFret:6 }],
-  'F#7sus4': [{ frets: [-1,9,9,9,7,9], startFret:7 }],
-  'G7sus4':  [{ frets: [-1,10,10,10,8,10], startFret:8 }],
-  'G#7sus4': [{ frets: [-1,11,11,11,9,11], startFret:9 }],
-  'A#7sus4': [{ frets: [-1,1,1,1,0,1] }],
-  'B7sus4':  [{ frets: [-1,2,2,2,0,2] }],
+  // ---- 7sus4  (A7sus4 barre shape: [-1,n,n+2,n,n+3,n]) ----
+  'C7sus4':  [{ frets: [-1,3,5,3,6,3],     barreAt:3, startFret:3 }],
+  'C#7sus4': [{ frets: [-1,4,6,4,7,4],     barreAt:4, startFret:4 }],
+  'D7sus4':  [{ frets: [-1,5,7,5,8,5],     barreAt:5, startFret:5 }],
+  'D#7sus4': [{ frets: [-1,6,8,6,9,6],     barreAt:6, startFret:6 }],
+  'E7sus4':  [{ frets: [-1,7,9,7,10,7],    barreAt:7, startFret:7 }],
+  'F7sus4':  [{ frets: [-1,8,10,8,11,8],   barreAt:8, startFret:8 }],
+  'F#7sus4': [{ frets: [-1,9,11,9,12,9],   barreAt:9, startFret:9 }],
+  'G7sus4':  [{ frets: [-1,10,12,10,13,10],barreAt:10,startFret:10 }],
+  'G#7sus4': [{ frets: [-1,11,13,11,14,11],barreAt:11,startFret:11 }],
 
   // ---- dom9  (E-shape: [n,n+2,n,n+1,n,n+2]; A-shape: [-1,n,n-1,n,n,n]) ----
   'C9':  [{ frets: [8,10,8,9,8,10],     barreAt:8,  startFret:8  }],
