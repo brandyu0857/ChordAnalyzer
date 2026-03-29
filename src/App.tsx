@@ -14,7 +14,7 @@ import { useLocale } from './i18n/context';
 type Page = 'chord' | 'progression' | 'identify';
 
 function App() {
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, theme, setTheme } = useLocale();
   const isEn = locale === 'en';
   const [page, setPage] = useState<Page>('chord');
   const [currentChord, setCurrentChord] = useState<ParsedChord | null>(() => parseChordName('C'));
@@ -83,23 +83,59 @@ function App() {
       <header className="border-b border-gray-200 bg-white sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 pt-4">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-7 h-7 bg-black rounded-md flex items-center justify-center">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <div className="w-7 h-7 bg-gray-900 rounded-md flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-white dark:text-gray-900">
                 <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
               </svg>
             </div>
             <h1 className="text-base font-semibold text-gray-900">ChordAnalyzer</h1>
-            <div className="ml-auto flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-              <button
-                onClick={() => setLocale('en')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer
-                  ${locale === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >EN</button>
-              <button
-                onClick={() => setLocale('zh')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer
-                  ${locale === 'zh' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >CN</button>
+            <div className="ml-auto flex items-center gap-3">
+              {/* Theme toggle */}
+              <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setTheme('light')}
+                  className={`p-1.5 rounded-md transition-colors cursor-pointer
+                    ${theme === 'light' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                  title={isEn ? 'Light' : '浅色'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setTheme('dark')}
+                  className={`p-1.5 rounded-md transition-colors cursor-pointer
+                    ${theme === 'dark' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                  title={isEn ? 'Dark' : '深色'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setTheme('system')}
+                  className={`p-1.5 rounded-md transition-colors cursor-pointer
+                    ${theme === 'system' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                  title={isEn ? 'System' : '跟随系统'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20V2z" fill="currentColor"/>
+                  </svg>
+                </button>
+              </div>
+              {/* Locale toggle */}
+              <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setLocale('en')}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer
+                    ${locale === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >EN</button>
+                <button
+                  onClick={() => setLocale('zh')}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer
+                    ${locale === 'zh' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >CN</button>
+              </div>
             </div>
           </div>
 

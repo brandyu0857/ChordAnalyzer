@@ -136,6 +136,10 @@ interface FretboardProps {
 }
 
 function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
+  const { isDark } = useLocale();
+  const fc = isDark
+    ? { nut: '#e5e5e5', fretWire: '#3a3a3a', string: '#525252', inlay: '#333', fretNum: '#555', muted: '#ef4444', muteOff: '#444' }
+    : { nut: '#1a1a1a', fretWire: '#c4c4c4', string: '#a3a3a3', inlay: '#e0e0e0', fretNum: '#bbb', muted: '#ef4444', muteOff: '#d1d5db' };
   const stringSpacing = 28;
   const fretWidth = 56;
   const controlW = 46;  // space for × button + string label
@@ -169,14 +173,14 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
       style={{ maxHeight: 280 }}
     >
       {/* Nut */}
-      <rect x={nutX - 3} y={topPad - 4} width={5} height={fretboardHeight + 8} fill="#1a1a1a" rx={1} />
+      <rect x={nutX - 3} y={topPad - 4} width={5} height={fretboardHeight + 8} fill={fc.nut} rx={1} />
 
       {/* Fret wires */}
       {Array.from({ length: NUM_FRETS }, (_, i) => (
         <line key={`fw-${i}`}
           x1={fretX(i + 1)} y1={topPad - 2}
           x2={fretX(i + 1)} y2={topPad + fretboardHeight + 2}
-          stroke="#c4c4c4" strokeWidth={1.5}
+          stroke={fc.fretWire} strokeWidth={1.5}
         />
       ))}
 
@@ -185,7 +189,7 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
         <line key={`str-${visualIdx}`}
           x1={nutX} y1={stringY(visualIdx)}
           x2={leftPad + fretboardWidth} y2={stringY(visualIdx)}
-          stroke="#a3a3a3" strokeWidth={0.85 + visualIdx * 0.15}
+          stroke={fc.string} strokeWidth={0.85 + visualIdx * 0.15}
         />
       ))}
 
@@ -195,18 +199,18 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
         const cx = fretCenterX(f);
         return DOUBLE_INLAY_FRETS.includes(f) ? (
           <g key={`inlay-${f}`}>
-            <circle cx={cx} cy={topPad + 1.5 * stringSpacing} r={3.5} fill="#e0e0e0" />
-            <circle cx={cx} cy={topPad + 3.5 * stringSpacing} r={3.5} fill="#e0e0e0" />
+            <circle cx={cx} cy={topPad + 1.5 * stringSpacing} r={3.5} fill={fc.inlay} />
+            <circle cx={cx} cy={topPad + 3.5 * stringSpacing} r={3.5} fill={fc.inlay} />
           </g>
         ) : (
-          <circle key={`inlay-${f}`} cx={cx} cy={topPad + 2.5 * stringSpacing} r={3.5} fill="#e0e0e0" />
+          <circle key={`inlay-${f}`} cx={cx} cy={topPad + 2.5 * stringSpacing} r={3.5} fill={fc.inlay} />
         );
       })}
 
       {/* Fret numbers */}
       {[1, 3, 5, 7, 9, 12, 15].map(f => f <= NUM_FRETS && (
         <text key={`fn-${f}`} x={fretCenterX(f)} y={topPad + fretboardHeight + 18}
-          textAnchor="middle" fill="#bbb" fontSize={10} fontFamily="Inter, sans-serif">{f}</text>
+          textAnchor="middle" fill={fc.fretNum} fontSize={10} fontFamily="Inter, sans-serif">{f}</text>
       ))}
 
       {/* Per-string: × mute button + label */}
@@ -222,7 +226,7 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
             <g className="cursor-pointer" onClick={() => onStringMute(di)}>
               <rect x={muteBtnX - 12} y={y - 12} width={24} height={24} fill="transparent" />
               <text x={muteBtnX} y={y + 5} textAnchor="middle"
-                fill={isMuted ? '#ef4444' : '#d1d5db'}
+                fill={isMuted ? fc.muted : fc.muteOff}
                 fontSize={17} fontWeight="bold" fontFamily="Inter, sans-serif">×</text>
             </g>
 

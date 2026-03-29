@@ -181,7 +181,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
             )}
           </div>
           <svg
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"
+            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-gray-400" strokeWidth="2"
             style={{ transform: templatesOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
           >
             <polyline points="6 9 12 15 18 9" />
@@ -374,12 +374,12 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                       {subs.map((sub, si) => {
                         const sf = getGuitarFingerings(sub.root, sub.type)[0];
                         return (
-                          <div key={si} className="flex-shrink-0 flex flex-col items-center gap-1 w-28">
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full leading-4 ${CATEGORY_STYLES[sub.category]}`}>
+                          <div key={si} className="group flex-shrink-0 flex flex-col items-center gap-1 w-32">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full leading-4 ${CATEGORY_STYLES[sub.category]}`}>
                               {sub.categoryLabel}
                             </span>
                             <div
-                              className="bg-gray-50 rounded-xl p-2 cursor-pointer hover:bg-gray-100 transition-colors w-full flex flex-col items-center"
+                              className="bg-gray-50 dark:bg-gray-100 rounded-xl p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-200 transition-colors w-full flex flex-col items-center"
                               onClick={() => handleReplace(sub.display)}
                             >
                               {sf ? (
@@ -389,13 +389,13 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                               )}
                             </div>
                             <div className="flex items-center gap-1 w-full">
-                              <span className="text-xs font-semibold text-gray-700 flex-1 text-center">{sub.display}</span>
+                              <span className="text-sm font-semibold text-gray-700 flex-1 text-center">{sub.display}</span>
                               <button onClick={() => handlePlay(sub.root, sub.type)}
                                 className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 cursor-pointer flex-shrink-0">
                                 <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                               </button>
                             </div>
-                            <p className="text-[10px] text-gray-400 leading-relaxed text-center line-clamp-2">{sub.explanation}</p>
+                            <p className="text-xs text-gray-400 leading-relaxed text-center line-clamp-2 group-hover:line-clamp-none transition-all">{sub.explanation}</p>
                           </div>
                         );
                       })}
@@ -444,7 +444,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           return (
             <div className="rounded-xl p-4 bg-gray-50">
               <div className="flex items-center gap-2 mb-3">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-gray-400" strokeWidth="2">
                   <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
                 </svg>
                 <span className="text-xs font-medium text-gray-500">
@@ -468,7 +468,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
         {baseChords.length === 0 && !parseError && (
           <div className="py-12 text-center">
             <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-gray-400" strokeWidth="1.5">
                 <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
               </svg>
             </div>
