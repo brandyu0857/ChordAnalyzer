@@ -376,9 +376,9 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
   'F#m11': { frets: [-1, 9, 7, 9, 9, 7], startFret: 7 },
   'Gm11':  { frets: [-1, 10, 8, 10, 10, 8], startFret: 8 },
   'G#m11': { frets: [-1, 11, 9, 11, 11, 9], startFret: 9 },
-  'Am11':  { frets: [-1, 0, 2, 0, 1, 3] },
+  'Am11':  { frets: [-1, 0, 0, 0, 1, 0] },
   'A#m11': { frets: [-1, 1, 3, 1, 1, 3], barreAt: 1, startFret: 1 },
-  'Bm11':  { frets: [-1, 2, 0, 2, 2, 0] },
+  'Bm11':  { frets: [-1, 2, 2, 2, 3, 2], barreAt: 2, startFret: 2 },
 
   // ============================================================
   // MAJOR 13TH CHORDS (maj13 = R M3 P5 M7 M9 M13)
@@ -393,7 +393,7 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
   'F#maj13': { frets: [-1, 9, 8, 10, 10, 11], startFret: 8 },
   'Gmaj13':  { frets: [-1, 10, 9, 11, 11, 12], startFret: 9 },
   'G#maj13': { frets: [-1, 11, 10, 12, 12, 13], startFret: 10 },
-  'Amaj13':  { frets: [-1, 0, 11, 1, 1, 2], startFret: 0 },
+  'Amaj13':  { frets: [-1, 0, 2, 1, 2, 2] },
   'A#maj13': { frets: [-1, 1, 0, 2, 2, 3], startFret: 0 },
   'Bmaj13':  { frets: [-1, 2, 1, 3, 3, 4], startFret: 1 },
 
@@ -405,12 +405,12 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
   'C#7b9': { frets: [-1, 4, 3, 4, 3, 1], startFret: 1 },
   'D7b9':  { frets: [-1, 5, 4, 5, 4, 2], startFret: 2 },
   'D#7b9': { frets: [-1, 6, 5, 6, 5, 3], startFret: 3 },
-  'E7b9':  { frets: [-1, 7, 6, 7, 6, 4], startFret: 4 },
+  'E7b9':  { frets: [0, 2, 0, 1, 0, 1], fingers: [0, 2, 0, 1, 0, 1] },
   'F7b9':  { frets: [-1, 8, 7, 8, 7, 5], startFret: 5 },
   'F#7b9': { frets: [-1, 9, 8, 9, 8, 6], startFret: 6 },
   'G7b9':  { frets: [-1, 10, 9, 10, 9, 7], startFret: 7 },
   'G#7b9': { frets: [-1, 11, 10, 11, 10, 8], startFret: 8 },
-  'A7b9':  { frets: [-1, 12, 11, 12, 11, 9], startFret: 9 },
+  'A7b9':  { frets: [-1, 0, 2, 3, 2, 3] },
 
   // ============================================================
   // DOMINANT 7#9 CHORDS (7#9 = R M3 P5 m7 #9, "Hendrix chord")
@@ -420,14 +420,164 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
   'C#7#9': { frets: [-1, 4, 3, 4, 5, 4], startFret: 3 },
   'D7#9':  { frets: [-1, 5, 4, 5, 6, 5], startFret: 4 },
   'D#7#9': { frets: [-1, 6, 5, 6, 7, 6], startFret: 5 },
-  'E7#9':  { frets: [-1, 7, 6, 7, 8, 7], startFret: 6 },
+  'E7#9':  { frets: [0, 7, 6, 7, 8, 0], startFret: 6 },
   'F7#9':  { frets: [-1, 8, 7, 8, 9, 8], startFret: 7 },
   'F#7#9': { frets: [-1, 9, 8, 9, 10, 9], startFret: 8 },
   'G7#9':  { frets: [-1, 10, 9, 10, 11, 10], startFret: 9 },
   'G#7#9': { frets: [-1, 11, 10, 11, 12, 11], startFret: 10 },
-  'A7#9':  { frets: [-1, 12, 11, 12, 13, 12], startFret: 11 },
+  'A7#9':  { frets: [5, 7, 5, 6, 8, 5], barreAt: 5, startFret: 5 },
   'A#7#9': { frets: [-1, 1, 0, 1, 2, 1] },
   'B7#9':  { frets: [-1, 2, 1, 2, 3, 2], startFret: 1 },
+
+  // ============================================================
+  // 7sus4 CHORDS (R P4 P5 m7)
+  // ============================================================
+  'C7sus4':  { frets: [-1, 3, 3, 3, 1, 1], fingers: [0, 2, 3, 4, 1, 1], startFret: 1 },
+  'C#7sus4': { frets: [-1, 4, 4, 4, 2, 2], fingers: [0, 2, 3, 4, 1, 1], startFret: 2 },
+  'D7sus4':  { frets: [-1, -1, 0, 2, 1, 3], fingers: [0, 0, 0, 2, 1, 3] },
+  'D#7sus4': { frets: [-1, 6, 6, 6, 4, 4], fingers: [0, 2, 3, 4, 1, 1], startFret: 4 },
+  'E7sus4':  { frets: [0, 2, 0, 2, 0, 0], fingers: [0, 2, 0, 3, 0, 0] },
+  'F7sus4':  { frets: [1, 3, 1, 3, 1, 1], fingers: [1, 3, 1, 4, 1, 1], barreAt: 1 },
+  'F#7sus4': { frets: [2, 4, 2, 4, 2, 2], fingers: [1, 3, 1, 4, 1, 1], barreAt: 2, startFret: 2 },
+  'G7sus4':  { frets: [3, 3, 0, 0, 1, 1], fingers: [2, 3, 0, 0, 1, 1] },
+  'G#7sus4': { frets: [4, 6, 4, 6, 4, 4], fingers: [1, 3, 1, 4, 1, 1], barreAt: 4, startFret: 4 },
+  'A7sus4':  { frets: [-1, 0, 2, 0, 3, 0], fingers: [0, 0, 1, 0, 3, 0] },
+  'A#7sus4': { frets: [-1, 1, 3, 1, 4, 1], fingers: [0, 1, 3, 1, 4, 1], barreAt: 1, startFret: 1 },
+  'B7sus4':  { frets: [-1, 2, 4, 2, 5, 2], fingers: [0, 1, 3, 1, 4, 1], barreAt: 2, startFret: 2 },
+
+  // ============================================================
+  // 7sus2 CHORDS (R M2 P5 m7)
+  // ============================================================
+  'C7sus2':  { frets: [-1, 3, 3, 3, 3, 3], barreAt: 3, startFret: 3 },
+  'C#7sus2': { frets: [-1, 4, 4, 4, 4, 4], barreAt: 4, startFret: 4 },
+  'D7sus2':  { frets: [-1, -1, 0, 2, 1, 0], fingers: [0, 0, 0, 2, 1, 0] },
+  'D#7sus2': { frets: [-1, 6, 6, 6, 6, 6], barreAt: 6, startFret: 6 },
+  'E7sus2':  { frets: [0, 2, 0, 4, 0, 0], fingers: [0, 1, 0, 4, 0, 0] },
+  'F7sus2':  { frets: [1, 3, 1, 1, 1, 1], fingers: [1, 3, 1, 1, 1, 1], barreAt: 1 },
+  'F#7sus2': { frets: [2, 4, 2, 2, 2, 2], fingers: [1, 3, 1, 1, 1, 1], barreAt: 2, startFret: 2 },
+  'G7sus2':  { frets: [3, 0, 0, 0, 0, 1], fingers: [3, 0, 0, 0, 0, 1] },
+  'G#7sus2': { frets: [4, 6, 4, 4, 4, 4], fingers: [1, 3, 1, 1, 1, 1], barreAt: 4, startFret: 4 },
+  'A7sus2':  { frets: [-1, 0, 2, 0, 0, 0], fingers: [0, 0, 2, 0, 0, 0] },
+  'A#7sus2': { frets: [-1, 1, 3, 1, 1, 1], fingers: [0, 1, 3, 1, 1, 1], barreAt: 1, startFret: 1 },
+  'B7sus2':  { frets: [-1, 2, 4, 2, 2, 2], fingers: [0, 1, 3, 1, 1, 1], barreAt: 2, startFret: 2 },
+
+  // ============================================================
+  // POWER CHORDS (5 = R P5)
+  // ============================================================
+  'C5':  { frets: [-1, 3, 5, -1, -1, -1], fingers: [0, 1, 3, 0, 0, 0], startFret: 3 },
+  'C#5': { frets: [-1, 4, 6, -1, -1, -1], fingers: [0, 1, 3, 0, 0, 0], startFret: 4 },
+  'D5':  { frets: [-1, -1, 0, 2, 3, -1], fingers: [0, 0, 0, 1, 3, 0] },
+  'D#5': { frets: [-1, 6, 8, -1, -1, -1], fingers: [0, 1, 3, 0, 0, 0], startFret: 6 },
+  'E5':  { frets: [0, 2, 2, -1, -1, -1], fingers: [0, 1, 2, 0, 0, 0] },
+  'F5':  { frets: [1, 3, 3, -1, -1, -1], fingers: [1, 3, 4, 0, 0, 0] },
+  'F#5': { frets: [2, 4, 4, -1, -1, -1], fingers: [1, 3, 4, 0, 0, 0], startFret: 2 },
+  'G5':  { frets: [3, 5, 5, -1, -1, -1], fingers: [1, 3, 4, 0, 0, 0], startFret: 3 },
+  'G#5': { frets: [4, 6, 6, -1, -1, -1], fingers: [1, 3, 4, 0, 0, 0], startFret: 4 },
+  'A5':  { frets: [-1, 0, 2, 2, -1, -1], fingers: [0, 0, 1, 2, 0, 0] },
+  'A#5': { frets: [-1, 1, 3, 3, -1, -1], fingers: [0, 1, 3, 4, 0, 0], startFret: 1 },
+  'B5':  { frets: [-1, 2, 4, 4, -1, -1], fingers: [0, 1, 3, 4, 0, 0], startFret: 2 },
+
+  // ============================================================
+  // MINOR-MAJOR 7TH CHORDS (mmaj7 = R m3 P5 M7)
+  // ============================================================
+  'Cm(maj7)':  { frets: [-1, 3, 5, 4, 4, 3], fingers: [0, 1, 4, 2, 3, 1], barreAt: 3, startFret: 3 },
+  'C#m(maj7)': { frets: [-1, 4, 6, 5, 5, 4], fingers: [0, 1, 4, 2, 3, 1], barreAt: 4, startFret: 4 },
+  'Dm(maj7)':  { frets: [-1, -1, 0, 2, 2, 1], fingers: [0, 0, 0, 2, 3, 1] },
+  'D#m(maj7)': { frets: [-1, 6, 8, 7, 7, 6], fingers: [0, 1, 4, 2, 3, 1], barreAt: 6, startFret: 6 },
+  'Em(maj7)':  { frets: [0, 2, 1, 0, 0, 0], fingers: [0, 2, 1, 0, 0, 0] },
+  'Fm(maj7)':  { frets: [1, 3, 2, 1, 1, 1], fingers: [1, 4, 2, 1, 1, 1], barreAt: 1 },
+  'F#m(maj7)': { frets: [2, 4, 3, 2, 2, 2], fingers: [1, 4, 2, 1, 1, 1], barreAt: 2, startFret: 2 },
+  'Gm(maj7)':  { frets: [3, 5, 4, 3, 3, 3], fingers: [1, 4, 2, 1, 1, 1], barreAt: 3, startFret: 3 },
+  'G#m(maj7)': { frets: [4, 6, 5, 4, 4, 4], fingers: [1, 4, 2, 1, 1, 1], barreAt: 4, startFret: 4 },
+  'Am(maj7)':  { frets: [-1, 0, 2, 1, 1, 0], fingers: [0, 0, 3, 1, 2, 0] },
+  'A#m(maj7)': { frets: [-1, 1, 3, 2, 2, 1], fingers: [0, 1, 4, 2, 3, 1], barreAt: 1, startFret: 1 },
+  'Bm(maj7)':  { frets: [-1, 2, 4, 3, 3, 2], fingers: [0, 1, 4, 2, 3, 1], barreAt: 2, startFret: 2 },
+
+  // ============================================================
+  // DOMINANT 7b5 CHORDS (R M3 b5 m7)
+  // ============================================================
+  'C7b5':  { frets: [-1, 3, 4, 3, 5, -1], startFret: 3 },
+  'C#7b5': { frets: [-1, 4, 5, 4, 6, -1], startFret: 4 },
+  'D7b5':  { frets: [-1, -1, 0, 1, 1, 2], fingers: [0, 0, 0, 1, 1, 2] },
+  'D#7b5': { frets: [-1, 6, 7, 6, 8, -1], startFret: 6 },
+  'E7b5':  { frets: [0, 1, 0, 1, 0, -1], fingers: [0, 1, 0, 2, 0, 0] },
+  'F7b5':  { frets: [1, -1, 1, 2, 0, -1] },
+  'F#7b5': { frets: [2, -1, 2, 3, 1, -1], startFret: 1 },
+  'G7b5':  { frets: [3, -1, 3, 4, 2, -1], startFret: 2 },
+  'G#7b5': { frets: [4, -1, 4, 5, 3, -1], startFret: 3 },
+  'A7b5':  { frets: [-1, 0, 1, 0, 2, -1], fingers: [0, 0, 1, 0, 3, 0] },
+  'A#7b5': { frets: [-1, 1, 2, 1, 3, -1], barreAt: 1, startFret: 1 },
+  'B7b5':  { frets: [-1, 2, 1, 2, 0, -1] },
+
+  // ============================================================
+  // DOMINANT 7#5 CHORDS (R M3 #5 m7)
+  // ============================================================
+  'C7#5':  { frets: [-1, 3, 2, 3, 1, -1] },
+  'C#7#5': { frets: [-1, 4, 3, 4, 2, -1], startFret: 2 },
+  'D7#5':  { frets: [-1, -1, 0, 3, 1, 2] },
+  'D#7#5': { frets: [-1, 6, 5, 6, 4, -1], startFret: 4 },
+  'E7#5':  { frets: [0, 3, 0, 1, 1, 0] },
+  'F7#5':  { frets: [1, 0, 1, 2, 2, 1], barreAt: 1 },
+  'F#7#5': { frets: [2, 1, 2, 3, 3, 2], barreAt: 2, startFret: 1 },
+  'G7#5':  { frets: [3, 2, 3, 4, 4, 3], barreAt: 3, startFret: 2 },
+  'G#7#5': { frets: [4, 3, 4, 5, 5, 4], barreAt: 4, startFret: 3 },
+  'A7#5':  { frets: [-1, 0, 3, 0, 2, 1] },
+  'A#7#5': { frets: [-1, 1, 0, 1, 3, 2], startFret: 1 },
+  'B7#5':  { frets: [-1, 2, 1, 2, 0, 3] },
+
+  // ============================================================
+  // 9sus4 CHORDS (R P4 P5 m7 M9)
+  // ============================================================
+  'C9sus4':  { frets: [-1, 3, 3, 3, 3, 3], barreAt: 3, startFret: 3 },
+  'D9sus4':  { frets: [-1, -1, 0, 2, 1, 0] },
+  'E9sus4':  { frets: [0, 2, 0, 2, 0, 2], fingers: [0, 1, 0, 2, 0, 3] },
+  'G9sus4':  { frets: [3, 3, 0, 0, 1, 3], fingers: [2, 3, 0, 0, 1, 4] },
+  'A9sus4':  { frets: [-1, 0, 2, 0, 0, 0], fingers: [0, 0, 2, 0, 0, 0] },
+
+  // ============================================================
+  // DOMINANT 11TH CHORDS (11 = R M3 P5 m7 M9 P11)
+  // ============================================================
+  'C11':  { frets: [-1, 3, 3, 3, 3, 3], barreAt: 3, startFret: 3 },
+  'D11':  { frets: [-1, -1, 0, 0, 1, 0], fingers: [0, 0, 0, 0, 1, 0] },
+  'E11':  { frets: [0, 0, 0, 1, 0, 0], fingers: [0, 0, 0, 1, 0, 0] },
+  'F11':  { frets: [1, 1, 1, 2, 1, 1], barreAt: 1 },
+  'G11':  { frets: [3, 3, 0, 0, 1, 1], fingers: [2, 3, 0, 0, 1, 1] },
+  'A11':  { frets: [-1, 0, 0, 0, 3, 0] },
+
+  // ============================================================
+  // MAJOR 11TH CHORDS (maj11 = R M3 P5 M7 M9 P11)
+  // ============================================================
+  'Cmaj11':  { frets: [-1, 3, 2, 0, 0, 0], fingers: [0, 3, 2, 0, 0, 0] },
+  'Dmaj11':  { frets: [-1, -1, 0, 2, 2, 2], fingers: [0, 0, 0, 1, 1, 1] },
+  'Emaj11':  { frets: [0, 2, 1, 1, 0, 0], fingers: [0, 3, 1, 2, 0, 0] },
+  'Gmaj11':  { frets: [3, 2, 0, 0, 0, 2], fingers: [3, 2, 0, 0, 0, 1] },
+  'Amaj11':  { frets: [-1, 0, 2, 1, 2, 0], fingers: [0, 0, 2, 1, 3, 0] },
+
+  // ============================================================
+  // MINOR ADD9 CHORDS (madd9 = R m3 P5 M9)
+  // ============================================================
+  'Cmadd9':  { frets: [-1, 3, 1, 0, 3, 3], startFret: 1 },
+  'Dmadd9':  { frets: [-1, -1, 0, 2, 3, 0], fingers: [0, 0, 0, 1, 2, 0] },
+  'Emadd9':  { frets: [0, 2, 2, 0, 0, 2], fingers: [0, 2, 3, 0, 0, 4] },
+  'Fmadd9':  { frets: [-1, -1, 3, 1, 1, 3], startFret: 1 },
+  'Gmadd9':  { frets: [3, 1, 0, 0, 3, 3], startFret: 1 },
+  'Amadd9':  { frets: [-1, 0, 2, 2, 1, 0], fingers: [0, 0, 2, 3, 1, 0] },
+
+  // ============================================================
+  // 6/9 CHORDS (R M3 P5 M6 M9)
+  // ============================================================
+  'C6/9':  { frets: [-1, 3, 2, 2, 3, 0] },
+  'D6/9':  { frets: [-1, -1, 0, 2, 0, 2], fingers: [0, 0, 0, 1, 0, 2] },
+  'E6/9':  { frets: [0, 2, 2, 1, 2, 2], fingers: [0, 1, 2, 1, 3, 4] },
+  'G6/9':  { frets: [3, 2, 0, 0, 0, 0], fingers: [2, 1, 0, 0, 0, 0] },
+  'A6/9':  { frets: [-1, 0, 2, 2, 2, 2], fingers: [0, 0, 1, 1, 1, 1], barreAt: 2 },
+
+  // ============================================================
+  // AUGMENTED 7TH CHORDS (aug7 = R M3 #5 m7, same as 7#5)
+  // ============================================================
+  'Caug7':  { frets: [-1, 3, 2, 3, 1, -1] },
+  'Eaug7':  { frets: [0, 3, 0, 1, 1, 0] },
+  'Aaug7':  { frets: [-1, 0, 3, 0, 2, 1] },
 };
 
 // ============================================================
@@ -737,7 +887,7 @@ const ALTERNATIVE_VOICINGS: Record<string, GuitarFingering[]> = {
   'F#maj9': [{ frets: [-1,9,8,10,11,10],  startFret:8  }],
   'Gmaj9':  [{ frets: [-1,10,9,11,12,11], startFret:9  }],
   'G#maj9': [{ frets: [-1,11,10,12,13,12],startFret:10 }],
-  'Amaj9':  [{ frets: [-1,0,4,4,5,4]                   }],
+  'Amaj9':  [{ frets: [-1,0,2,1,0,0]                   }],
 
   // ---- m9  (second position) ----
   'Cm9':  [{ frets: [-1,3,1,3,4,3],    startFret:1  }],
@@ -777,9 +927,9 @@ const ALTERNATIVE_VOICINGS: Record<string, GuitarFingering[]> = {
   'F#m11': [{ frets: [-1,9,7,9,10,7],  startFret:7  }],
   'Gm11':  [{ frets: [-1,10,8,10,11,8],startFret:8  }],
   'G#m11': [{ frets: [-1,11,9,11,12,9],startFret:9  }],
-  'Am11':  [{ frets: [-1,0,3,0,1,4]                  }],
+  'Am11':  [{ frets: [-1,0,2,0,3,0]                  }],
   'A#m11': [{ frets: [-1,1,4,1,2,4],   barreAt:1, startFret:1 }],
-  'Bm11':  [{ frets: [-1,2,5,2,3,5],   startFret:2  }],
+  'Bm11':  [{ frets: [-1,2,0,2,3,0]                  }],
 
   // ---- 7b9  (second position) ----
   'C7b9':  [{ frets: [8,10,8,9,7,8],    startFret:7  }],
