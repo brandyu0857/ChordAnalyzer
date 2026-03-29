@@ -206,7 +206,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
               </div>
 
               {/* Template grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
                 {filteredTemplates.map(t => {
                   const realIdx = PROGRESSION_TEMPLATES.indexOf(t);
                   return (
