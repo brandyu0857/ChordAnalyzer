@@ -134,7 +134,7 @@ function App() {
                   onClick={() => setLocale('zh')}
                   className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer
                     ${locale === 'zh' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                >CN</button>
+                >中</button>
               </div>
             </div>
           </div>
