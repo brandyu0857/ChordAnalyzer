@@ -1,33 +1,35 @@
 export interface ChordType {
   name: string;
+  nameEn: string;
   symbol: string;
   intervals: number[];
   description: string;
+  descriptionEn: string;
 }
 
 export const CHORD_TYPES: Record<string, ChordType> = {
-  major: { name: '大三和弦', symbol: '', intervals: [0, 4, 7], description: '明亮、稳定' },
-  minor: { name: '小三和弦', symbol: 'm', intervals: [0, 3, 7], description: '柔和、忧郁' },
-  '7': { name: '属七和弦', symbol: '7', intervals: [0, 4, 7, 10], description: '有张力、需要解决' },
-  maj7: { name: '大七和弦', symbol: 'maj7', intervals: [0, 4, 7, 11], description: '梦幻、优雅' },
-  m7: { name: '小七和弦', symbol: 'm7', intervals: [0, 3, 7, 10], description: '温暖、爵士感' },
-  dim: { name: '减三和弦', symbol: 'dim', intervals: [0, 3, 6], description: '紧张、不稳定' },
-  dim7: { name: '减七和弦', symbol: 'dim7', intervals: [0, 3, 6, 9], description: '极度紧张' },
-  aug: { name: '增三和弦', symbol: 'aug', intervals: [0, 4, 8], description: '飘忽、神秘' },
-  sus2: { name: '挂二和弦', symbol: 'sus2', intervals: [0, 2, 7], description: '开放、现代' },
-  sus4: { name: '挂四和弦', symbol: 'sus4', intervals: [0, 5, 7], description: '悬浮、待解决' },
-  add9: { name: '加九和弦', symbol: 'add9', intervals: [0, 4, 7, 14], description: '丰富、明亮' },
-  m7b5: { name: '半减七和弦', symbol: 'm7b5', intervals: [0, 3, 6, 10], description: '半减、过渡性' },
-  '9': { name: '属九和弦', symbol: '9', intervals: [0, 4, 7, 10, 14], description: '丰满、蓝调' },
-  '6': { name: '大六和弦', symbol: '6', intervals: [0, 4, 7, 9], description: '温暖、复古' },
-  m6: { name: '小六和弦', symbol: 'm6', intervals: [0, 3, 7, 9], description: '忧郁中带温暖' },
-  maj9:  { name: '大九和弦',       symbol: 'maj9', intervals: [0, 4, 7, 11, 14], description: '梦幻、层次丰富' },
-  m9:    { name: '小九和弦',       symbol: 'm9',   intervals: [0, 3, 7, 10, 14], description: '柔美、爵士感' },
-  '13':  { name: '属十三和弦',     symbol: '13',   intervals: [0, 4, 7, 10, 14, 17, 21], description: '丰满、蓝调爵士' },
-  m11:   { name: '小十一和弦',     symbol: 'm11',  intervals: [0, 3, 7, 10, 14, 17], description: '温暖、神秘' },
-  '7b9': { name: '属七降九和弦',   symbol: '7b9',  intervals: [0, 4, 7, 10, 13], description: '紧张、蓝调' },
-  '7#9': { name: '属七升九和弦',   symbol: '7#9',  intervals: [0, 4, 7, 10, 15], description: '强烈、布鲁斯摇滚' },
-  maj13: { name: '大十三和弦',     symbol: 'maj13', intervals: [0, 4, 7, 11, 14, 21], description: '华丽、爵士流行' },
+  major: { name: '大三和弦', nameEn: 'Major Triad', symbol: '', intervals: [0, 4, 7], description: '明亮、稳定', descriptionEn: 'Bright, stable' },
+  minor: { name: '小三和弦', nameEn: 'Minor Triad', symbol: 'm', intervals: [0, 3, 7], description: '柔和、忧郁', descriptionEn: 'Soft, melancholic' },
+  '7': { name: '属七和弦', nameEn: 'Dominant 7th', symbol: '7', intervals: [0, 4, 7, 10], description: '有张力、需要解决', descriptionEn: 'Tension, needs resolution' },
+  maj7: { name: '大七和弦', nameEn: 'Major 7th', symbol: 'maj7', intervals: [0, 4, 7, 11], description: '梦幻、优雅', descriptionEn: 'Dreamy, elegant' },
+  m7: { name: '小七和弦', nameEn: 'Minor 7th', symbol: 'm7', intervals: [0, 3, 7, 10], description: '温暖、爵士感', descriptionEn: 'Warm, jazzy' },
+  dim: { name: '减三和弦', nameEn: 'Diminished', symbol: 'dim', intervals: [0, 3, 6], description: '紧张、不稳定', descriptionEn: 'Tense, unstable' },
+  dim7: { name: '减七和弦', nameEn: 'Diminished 7th', symbol: 'dim7', intervals: [0, 3, 6, 9], description: '极度紧张', descriptionEn: 'Extremely tense' },
+  aug: { name: '增三和弦', nameEn: 'Augmented', symbol: 'aug', intervals: [0, 4, 8], description: '飘忽、神秘', descriptionEn: 'Ethereal, mysterious' },
+  sus2: { name: '挂二和弦', nameEn: 'Suspended 2nd', symbol: 'sus2', intervals: [0, 2, 7], description: '开放、现代', descriptionEn: 'Open, modern' },
+  sus4: { name: '挂四和弦', nameEn: 'Suspended 4th', symbol: 'sus4', intervals: [0, 5, 7], description: '悬浮、待解决', descriptionEn: 'Suspended, unresolved' },
+  add9: { name: '加九和弦', nameEn: 'Add 9', symbol: 'add9', intervals: [0, 4, 7, 14], description: '丰富、明亮', descriptionEn: 'Rich, bright' },
+  m7b5: { name: '半减七和弦', nameEn: 'Half-Diminished 7th', symbol: 'm7b5', intervals: [0, 3, 6, 10], description: '半减、过渡性', descriptionEn: 'Half-diminished, transitional' },
+  '9': { name: '属九和弦', nameEn: 'Dominant 9th', symbol: '9', intervals: [0, 4, 7, 10, 14], description: '丰满、蓝调', descriptionEn: 'Full, bluesy' },
+  '6': { name: '大六和弦', nameEn: 'Major 6th', symbol: '6', intervals: [0, 4, 7, 9], description: '温暖、复古', descriptionEn: 'Warm, vintage' },
+  m6: { name: '小六和弦', nameEn: 'Minor 6th', symbol: 'm6', intervals: [0, 3, 7, 9], description: '忧郁中带温暖', descriptionEn: 'Melancholic yet warm' },
+  maj9:  { name: '大九和弦', nameEn: 'Major 9th', symbol: 'maj9', intervals: [0, 4, 7, 11, 14], description: '梦幻、层次丰富', descriptionEn: 'Dreamy, layered' },
+  m9:    { name: '小九和弦', nameEn: 'Minor 9th', symbol: 'm9', intervals: [0, 3, 7, 10, 14], description: '柔美、爵士感', descriptionEn: 'Gentle, jazzy' },
+  '13':  { name: '属十三和弦', nameEn: 'Dominant 13th', symbol: '13', intervals: [0, 4, 7, 10, 14, 17, 21], description: '丰满、蓝调爵士', descriptionEn: 'Full, blues-jazz' },
+  m11:   { name: '小十一和弦', nameEn: 'Minor 11th', symbol: 'm11', intervals: [0, 3, 7, 10, 14, 17], description: '温暖、神秘', descriptionEn: 'Warm, mysterious' },
+  '7b9': { name: '属七降九和弦', nameEn: 'Dominant 7b9', symbol: '7b9', intervals: [0, 4, 7, 10, 13], description: '紧张、蓝调', descriptionEn: 'Tense, bluesy' },
+  '7#9': { name: '属七升九和弦', nameEn: 'Dominant 7#9', symbol: '7#9', intervals: [0, 4, 7, 10, 15], description: '强烈、布鲁斯摇滚', descriptionEn: 'Intense, blues-rock' },
+  maj13: { name: '大十三和弦', nameEn: 'Major 13th', symbol: 'maj13', intervals: [0, 4, 7, 11, 14, 21], description: '华丽、爵士流行', descriptionEn: 'Lush, jazz-pop' },
 };
 
 // Guitar string tuning: E2 A2 D3 G3 B3 E4 (low to high)

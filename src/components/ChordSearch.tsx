@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { CHORD_TYPES } from '../data/chords';
 import { NOTES } from '../data/notes';
+import { useLocale } from '../i18n/context';
 
 interface ChordSearchProps {
   onSearch: (chordName: string) => void;
@@ -8,6 +9,8 @@ interface ChordSearchProps {
 }
 
 export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps) {
+  const { locale } = useLocale();
+  const isEn = locale === 'en';
   const [input, setInput] = useState(currentChord);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const skipSearch = useRef(false);
@@ -43,13 +46,13 @@ export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps
             }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            placeholder="输入和弦名称（如 Am, G7, Cmaj7）"
+            placeholder={isEn ? 'Enter chord name (e.g. Am, G7, Cmaj7)' : '输入和弦名称（如 Am, G7, Cmaj7）'}
             className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 text-base"
           />
 
           {showSuggestions && input.length === 0 && (
             <div className="absolute z-10 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-              <div className="text-xs text-gray-400 mb-2">快速选择</div>
+              <div className="text-xs text-gray-400 mb-2">{isEn ? 'Quick select' : '快速选择'}</div>
               <div className="flex flex-wrap gap-1.5">
                 {quickChords.map(chord => (
                   <button

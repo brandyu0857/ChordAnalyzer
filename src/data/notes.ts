@@ -16,6 +16,13 @@ export const INTERVAL_NAMES: Record<number, string> = {
   9: '大六度 (6)', 10: '小七度 (b7)', 11: '大七度 (7)',
 };
 
+export const INTERVAL_NAMES_EN: Record<number, string> = {
+  0: 'Root (R)', 1: 'Minor 2nd (b2)', 2: 'Major 2nd (2)',
+  3: 'Minor 3rd (b3)', 4: 'Major 3rd (3)', 5: 'Perfect 4th (4)',
+  6: 'Tritone (b5)', 7: 'Perfect 5th (5)', 8: 'Minor 6th (b6)',
+  9: 'Major 6th (6)', 10: 'Minor 7th (b7)', 11: 'Major 7th (7)',
+};
+
 export const SCALE_DEGREES = ['I', 'bII', 'II', 'bIII', 'III', 'IV', 'bV', 'V', 'bVI', 'VI', 'bVII', 'VII'] as const;
 
 // Major scale intervals: W W H W W W H

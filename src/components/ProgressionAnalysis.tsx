@@ -3,6 +3,7 @@ import { getChordNotes } from '../utils/chordUtils';
 import type { ChordAnalysis, ConnectionAnalysis } from '../utils/progressionAnalysis';
 import { analyzeProgression } from '../utils/progressionAnalysis';
 import { useState } from 'react';
+import { useLocale } from '../i18n/context';
 
 interface ProgressionAnalysisProps {
   chords: ParsedChord[];
@@ -50,8 +51,9 @@ function ConnectionArrow({ connection }: { connection: ConnectionAnalysis }) {
 export default function ProgressionAnalysisView({
   chords, musicalKey, activeChordIndex, onChordClick,
 }: ProgressionAnalysisProps) {
+  const { locale } = useLocale();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-  const { chordAnalyses, connections } = analyzeProgression(chords, musicalKey);
+  const { chordAnalyses, connections } = analyzeProgression(chords, musicalKey, locale);
 
   if (chords.length === 0) return null;
 
@@ -100,6 +102,8 @@ function ExpandedChordAnalysis({
   nextConnection: ConnectionAnalysis | null;
   chord: ParsedChord;
 }) {
+  const { locale } = useLocale();
+  const isEn = locale === 'en';
   const notes = getChordNotes(chord.root, chord.type);
 
   return (
@@ -109,7 +113,7 @@ function ExpandedChordAnalysis({
           <h4 className="font-semibold text-gray-900">
             {analysis.chord.display}
             <span className="text-gray-400 font-normal text-sm ml-2">
-              {analysis.degree} 级 - {analysis.chord.chordType.name}
+              {analysis.degree} {isEn ? '- ' : '级 - '}{isEn ? analysis.chord.chordType.nameEn : analysis.chord.chordType.name}
             </span>
           </h4>
           <p className="text-sm text-gray-500 mt-1">{analysis.functionDescription}</p>
@@ -118,7 +122,7 @@ function ExpandedChordAnalysis({
       </div>
 
       <div className="flex gap-2 items-center">
-        <span className="text-xs text-gray-400">组成音:</span>
+        <span className="text-xs text-gray-400">{isEn ? 'Notes:' : '组成音:'}</span>
         {notes.map((n, i) => (
           <span key={i} className="text-xs px-2 py-0.5 bg-gray-50 rounded border border-gray-100 text-gray-600">{n}</span>
         ))}

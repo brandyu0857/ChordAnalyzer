@@ -4,9 +4,11 @@ import { CHORD_TYPES, GUITAR_TUNING } from '../data/chords';
 export interface IdentifiedChord {
   root: string;
   type: string;
-  name: string;        // Chinese name
+  name: string;
+  nameEn: string;
   symbol: string;      // e.g. "Cmaj7"
   description: string;
+  descriptionEn: string;
   bassNote?: string;   // If lowest note != root → slash chord
   confidence: number;  // Higher = better match
 }
@@ -120,8 +122,10 @@ export function identifyChords(frets: number[]): IdentifiedChord[] {
         root,
         type: typeKey,
         name: chordType.name,
+        nameEn: chordType.nameEn,
         symbol: bassNote ? `${symbol}/${bassNote}` : symbol,
         description: chordType.description,
+        descriptionEn: chordType.descriptionEn,
         bassNote,
         confidence,
       });

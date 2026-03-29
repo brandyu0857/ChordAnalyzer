@@ -10,6 +10,7 @@ import ProgressionAnalysisView from './ProgressionAnalysis';
 import { playChordStrum, playChordBlock, playProgression } from '../utils/audioUtils';
 import { NOTES } from '../data/notes';
 import { findSongExamples } from '../utils/progressionMatcher';
+import { useLocale } from '../i18n/context';
 
 interface Props {
   onChordSelect?: (chord: ParsedChord) => void;
@@ -18,9 +19,12 @@ interface Props {
 }
 
 export default function ProgressionPanel({ onChordSelect: _onChordSelect, appendChord, onAppendDone }: Props) {
+  const { locale } = useLocale();
+  const isEn = locale === 'en';
+
   // Template section
   const [templatesOpen, setTemplatesOpen] = useState(true);
-  const [styleFilter, setStyleFilter] = useState('全部');
+  const [styleFilter, setStyleFilter] = useState(isEn ? 'All' : '全部');
   const [selectedTemplateIdx, setSelectedTemplateIdx] = useState<number | null>(null);
   const [templateKey, setTemplateKey] = useState('C');
   const [analysisKey, setAnalysisKey] = useState('C');
@@ -36,10 +40,16 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
   const [fingeringIndices, setFingeringIndices] = useState<number[]>([]);
   const skipParse = useRef(false);
 
-  const styles = ['全部', ...new Set(PROGRESSION_TEMPLATES.map(t => t.style))];
-  const filteredTemplates = styleFilter === '全部'
+  const allLabel = isEn ? 'All' : '全部';
+  const styles = [allLabel, ...new Set(PROGRESSION_TEMPLATES.map(t => isEn ? t.styleEn : t.style))];
+  const filteredTemplates = styleFilter === allLabel
     ? PROGRESSION_TEMPLATES
-    : PROGRESSION_TEMPLATES.filter(t => t.style === styleFilter);
+    : PROGRESSION_TEMPLATES.filter(t => (isEn ? t.styleEn : t.style) === styleFilter);
+
+  // Reset style filter when locale changes
+  useEffect(() => {
+    setStyleFilter(allLabel);
+  }, [locale, allLabel]);
 
   const chords = useMemo(() => {
     if (semitones === 0) return baseChords;
@@ -96,7 +106,9 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
         else failed.push(t);
       }
       if (!parsed.length) return;
-      setParseError(failed.length ? `无法识别：${failed.join(', ')}` : '');
+      setParseError(failed.length
+        ? (isEn ? `Unrecognized: ${failed.join(', ')}` : `无法识别：${failed.join(', ')}`)
+        : '');
       setBaseChords(parsed);
       setFingeringIndices(parsed.map(() => 0));
       setSemitones(0);
@@ -105,7 +117,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
       setTemplatesOpen(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [input, templateKey]);
+  }, [input, templateKey, isEn]);
 
   // Append a chord pushed from the chord query page
   useEffect(() => {
@@ -159,10 +171,12 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-900">常用模板</span>
+            <span className="text-sm font-medium text-gray-900">
+              {isEn ? 'Common Templates' : '常用模板'}
+            </span>
             {selectedTemplateIdx !== null && !templatesOpen && (
               <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                {PROGRESSION_TEMPLATES[selectedTemplateIdx].name}
+                {isEn ? PROGRESSION_TEMPLATES[selectedTemplateIdx].nameEn : PROGRESSION_TEMPLATES[selectedTemplateIdx].name}
               </span>
             )}
           </div>
@@ -182,15 +196,15 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
             <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
               {/* Key selector */}
               <div className="flex items-center gap-2 pt-3">
-                <span className="text-xs text-gray-500">以</span>
+                <span className="text-xs text-gray-500">{isEn ? 'Load template in' : '以'}</span>
                 <select
                   value={templateKey}
                   onChange={e => setTemplateKey(e.target.value)}
                   className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none cursor-pointer"
                 >
-                  {NOTES.map(n => <option key={n} value={n}>{n} 大调</option>)}
+                  {NOTES.map(n => <option key={n} value={n}>{n} {isEn ? 'Major' : '大调'}</option>)}
                 </select>
-                <span className="text-xs text-gray-500">加载模板</span>
+                {!isEn && <span className="text-xs text-gray-500">加载模板</span>}
               </div>
 
               {/* Style filter */}
@@ -216,9 +230,9 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                           ? 'border-gray-900 bg-gray-50'
                           : 'border-gray-200 hover:border-gray-300 bg-white'}`}
                     >
-                      <div className="font-medium text-sm text-gray-900">{t.name}</div>
+                      <div className="font-medium text-sm text-gray-900">{isEn ? t.nameEn : t.name}</div>
                       <div className="text-xs text-gray-400 mt-0.5">{t.degrees.join(' - ')}</div>
-                      <div className="text-[10px] text-gray-300 mt-1">{t.style}</div>
+                      <div className="text-[10px] text-gray-300 mt-1">{isEn ? t.styleEn : t.style}</div>
                     </button>
                   );
                 })}
@@ -231,13 +245,15 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
       {/* Progression editor */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-900">自定义和弦进行</span>
+          <span className="text-sm font-medium text-gray-900">
+            {isEn ? 'Custom Chord Progression' : '自定义和弦进行'}
+          </span>
           {input.trim() && (
             <button
               onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); }}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
-              清空
+              {isEn ? 'Clear' : '清空'}
             </button>
           )}
         </div>
@@ -246,15 +262,15 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           <input
             value={input}
             onChange={e => { setInput(e.target.value); setParseError(''); }}
-            placeholder="输入和弦：C Em F G，或级数：1 6m 4 5"
+            placeholder={isEn ? 'Enter chords: C Em F G, or degrees: 1 6m 4 5' : '输入和弦：C Em F G，或级数：1 6m 4 5'}
             className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
           />
-          {chords.length > 0 && <PlayButton onPlay={handlePlayAll} label="播放" />}
+          {chords.length > 0 && <PlayButton onPlay={handlePlayAll} label={isEn ? 'Play' : '播放'} />}
         </div>
         {parseError && <p className="text-xs text-red-400">{parseError}</p>}
         {isNashville && baseChords.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-gray-400 shrink-0">{templateKey} 大调 →</span>
+            <span className="text-xs text-gray-400 shrink-0">{templateKey} {isEn ? 'Major' : '大调'} →</span>
             {baseChords.map((c, i) => (
               <span key={i} className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
                 {c.display}
@@ -267,17 +283,21 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           <>
             {/* Transpose bar */}
             <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-2.5">
-              <span className="text-sm text-gray-500 flex-shrink-0">转调</span>
+              <span className="text-sm text-gray-500 flex-shrink-0">{isEn ? 'Transpose' : '转调'}</span>
               <button onClick={() => setSemitones(s => s - 1)}
                 className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">-</button>
               <span className="text-sm font-medium text-gray-900 w-16 text-center tabular-nums">
-                {semitones === 0 ? '原调' : `${semitones > 0 ? '+' : ''}${semitones} 半音`}
+                {semitones === 0
+                  ? (isEn ? 'Original' : '原调')
+                  : `${semitones > 0 ? '+' : ''}${semitones} ${isEn ? 'st' : '半音'}`}
               </span>
               <button onClick={() => setSemitones(s => s + 1)}
                 className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">+</button>
               {semitones !== 0 && (
                 <button onClick={() => setSemitones(0)}
-                  className="ml-2 text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">重置</button>
+                  className="ml-2 text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
+                  {isEn ? 'Reset' : '重置'}
+                </button>
               )}
               {baseChords[0] && semitones !== 0 && (
                 <span className="ml-auto text-xs text-gray-400">{baseChords[0].display} → {chords[0].display}</span>
@@ -315,11 +335,13 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                       <button
                         onClick={e => { e.stopPropagation(); handlePlay(chord.root, chord.type); }}
                         className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                        title="试听"
+                        title={isEn ? 'Preview' : '试听'}
                       >
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                       </button>
-                      <span className={`text-[10px] ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>替代</span>
+                      <span className={`text-[10px] ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>
+                        {isEn ? 'Sub' : '替代'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -329,7 +351,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
             {/* Substitution panel */}
             {expandedIdx !== null && chords[expandedIdx] && (() => {
               const chord = chords[expandedIdx];
-              const subs = getSubstitutions(chord.root, chord.type);
+              const subs = getSubstitutions(chord.root, chord.type, locale);
               return (
                 <div className="border border-gray-200 rounded-xl p-4 bg-white">
                   <div className="flex items-center gap-2 mb-3">
@@ -337,9 +359,13 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                       {expandedIdx + 1}
                     </div>
                     <span className="text-sm font-semibold text-gray-900">{chord.display}</span>
-                    <span className="text-xs text-gray-400">的替代和弦</span>
+                    <span className="text-xs text-gray-400">
+                      {isEn ? 'substitutions' : '的替代和弦'}
+                    </span>
                     <button onClick={() => setExpandedIdx(null)}
-                      className="ml-auto text-xs text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded hover:bg-gray-50 transition-colors">收起</button>
+                      className="ml-auto text-xs text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded hover:bg-gray-50 transition-colors">
+                      {isEn ? 'Collapse' : '收起'}
+                    </button>
                   </div>
                   <div className="overflow-x-auto pb-2 -mx-1 px-1">
                     <div className="flex gap-4 items-start" style={{ minWidth: 'max-content' }}>
@@ -371,7 +397,11 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                           </div>
                         );
                       })}
-                      {subs.length === 0 && <span className="text-sm text-gray-300 py-4">暂无替代建议</span>}
+                      {subs.length === 0 && (
+                        <span className="text-sm text-gray-300 py-4">
+                          {isEn ? 'No substitution suggestions' : '暂无替代建议'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -384,9 +414,11 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
         {chords.length > 0 && (
           <div className="rounded-xl p-5 border border-gray-200">
             <div className="flex items-center gap-3 mb-3">
-              <h3 className="text-sm font-semibold text-gray-500">和弦进行分析</h3>
+              <h3 className="text-sm font-semibold text-gray-500">
+                {isEn ? 'Progression Analysis' : '和弦进行分析'}
+              </h3>
               <div className="flex items-center gap-1.5 ml-auto">
-                <span className="text-xs text-gray-400">调式</span>
+                <span className="text-xs text-gray-400">{isEn ? 'Key' : '调式'}</span>
                 <select
                   value={analysisKey}
                   onChange={e => setAnalysisKey(e.target.value)}
@@ -415,7 +447,9 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
                   <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
                 </svg>
-                <span className="text-xs font-medium text-gray-500">使用此进行的歌曲</span>
+                <span className="text-xs font-medium text-gray-500">
+                  {isEn ? 'Songs using this progression' : '使用此进行的歌曲'}
+                </span>
                 <span className="text-[10px] text-gray-300 font-mono">{match.progressionKey}</span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -438,7 +472,9 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                 <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
               </svg>
             </div>
-            <p className="text-sm text-gray-400">从上方选择模板，或直接输入和弦进行</p>
+            <p className="text-sm text-gray-400">
+              {isEn ? 'Select a template above, or enter a chord progression directly' : '从上方选择模板，或直接输入和弦进行'}
+            </p>
           </div>
         )}
       </div>
