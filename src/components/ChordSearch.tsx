@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { CHORD_TYPES } from '../data/chords';
 import { NOTES } from '../data/notes';
 import { useLocale } from '../i18n/context';
@@ -13,6 +13,7 @@ export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps
   const isEn = locale === 'en';
   const [input, setInput] = useState(currentChord);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(0);
   const skipSearch = useRef(false);
 
   // Sync when parent changes currentChord (e.g. clicking a chord in progression)
@@ -31,7 +32,53 @@ export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps
     return () => clearTimeout(timer);
   }, [input, onSearch]);
 
+  // Reset highlight when input changes
+  useEffect(() => { setHighlightIdx(0); }, [input]);
+
   const quickChords = ['C', 'Dm', 'Em', 'F', 'G', 'Am', 'G7', 'Cmaj7', 'Am7', 'Bdim'];
+
+  const getSuggestions = useCallback((): string[] => {
+    if (input.length === 0) return [];
+    const root = input.length >= 2 && (input[1] === '#' || input[1] === 'b')
+      ? input.substring(0, 2) : input[0]?.toUpperCase() || '';
+    const isValidRoot = NOTES.includes(root as typeof NOTES[number]) || ['Db', 'Eb', 'Gb', 'Ab', 'Bb'].includes(root);
+    if (!isValidRoot) return [];
+
+    const exact: string[] = [];
+    const startsWith: string[] = [];
+    const sameRoot: string[] = [];
+    Object.values(CHORD_TYPES).forEach(ct => {
+      const name = root + ct.symbol;
+      if (name.toLowerCase() === input.toLowerCase()) exact.push(name);
+      else if (name.toLowerCase().startsWith(input.toLowerCase())) startsWith.push(name);
+      else sameRoot.push(name);
+    });
+    return [...exact, ...startsWith, ...sameRoot].slice(0, 15);
+  }, [input]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions) return;
+    const suggestions = getSuggestions();
+    if (suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightIdx(i => (i + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightIdx(i => (i - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const selected = suggestions[highlightIdx];
+      if (selected) {
+        setInput(selected);
+        onSearch(selected);
+        setShowSuggestions(false);
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
 
   return (
     <div className="relative">
@@ -46,6 +93,7 @@ export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps
             }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            onKeyDown={handleKeyDown}
             placeholder={isEn ? 'Enter chord name (e.g. Am, G7, Cmaj7)' : '输入和弦名称（如 Am, G7, Cmaj7）'}
             className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 text-base"
           />
@@ -69,38 +117,16 @@ export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps
           )}
 
           {showSuggestions && input.length > 0 && (() => {
-            const root = input.length >= 2 && (input[1] === '#' || input[1] === 'b')
-              ? input.substring(0, 2) : input[0]?.toUpperCase() || '';
-
-            const isValidRoot = NOTES.includes(root as typeof NOTES[number]) || ['Db', 'Eb', 'Gb', 'Ab', 'Bb'].includes(root);
-            if (!isValidRoot) return null;
-
-            // Show all chords for this root, with matches first
-            const exact: string[] = [];
-            const startsWith: string[] = [];
-            const sameRoot: string[] = [];
-
-            Object.values(CHORD_TYPES).forEach(ct => {
-              const name = root + ct.symbol;
-              if (name.toLowerCase() === input.toLowerCase()) {
-                exact.push(name);
-              } else if (name.toLowerCase().startsWith(input.toLowerCase())) {
-                startsWith.push(name);
-              } else {
-                sameRoot.push(name);
-              }
-            });
-
-            const suggestions = [...exact, ...startsWith, ...sameRoot];
+            const suggestions = getSuggestions();
             if (suggestions.length === 0) return null;
 
             return (
               <div className="absolute z-10 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm max-h-60 overflow-y-auto">
-                {suggestions.slice(0, 15).map(s => (
+                {suggestions.map((s, i) => (
                   <button key={s} type="button"
                     onClick={() => { setInput(s); onSearch(s); setShowSuggestions(false); }}
                     className={`block w-full text-left px-3 py-2 rounded-md text-sm transition-colors cursor-pointer
-                      ${s.toLowerCase() === input.toLowerCase()
+                      ${i === highlightIdx
                         ? 'bg-gray-100 text-gray-900 font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
                       }`}
