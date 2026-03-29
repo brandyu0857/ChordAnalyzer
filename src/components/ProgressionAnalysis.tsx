@@ -67,10 +67,10 @@ export default function ProgressionAnalysisView({
                 onChordClick?.(i);
                 setExpandedIndex(expandedIndex === i ? null : i);
               }}
-              className={`flex flex-col items-center p-3 rounded-lg transition-all cursor-pointer min-w-[80px] border
+              className={`flex flex-col items-center p-3 rounded-lg transition-all cursor-pointer min-w-[80px]
                 ${activeChordIndex === i
-                  ? 'border-gray-900 bg-gray-50'
-                  : 'border-gray-200 hover:border-gray-300 bg-white'
+                  ? 'bg-gray-100 ring-1 ring-gray-900'
+                  : 'bg-gray-50 hover:bg-gray-100'
                 }`}
             >
               <span className="text-xs text-gray-400 mb-1">{analysis.degreeDisplay}</span>
@@ -107,7 +107,7 @@ function ExpandedChordAnalysis({
   const notes = getChordNotes(chord.root, chord.type);
 
   return (
-    <div className="rounded-lg p-4 border border-gray-200 space-y-3">
+    <div className="rounded-lg p-4 bg-gray-50 space-y-3">
       <div className="flex items-start justify-between">
         <div>
           <h4 className="font-semibold text-gray-900">
@@ -124,13 +124,13 @@ function ExpandedChordAnalysis({
       <div className="flex gap-2 items-center">
         <span className="text-xs text-gray-400">{isEn ? 'Notes:' : '组成音:'}</span>
         {notes.map((n, i) => (
-          <span key={i} className="text-xs px-2 py-0.5 bg-gray-50 rounded border border-gray-100 text-gray-600">{n}</span>
+          <span key={i} className="text-xs px-2 py-0.5 bg-white rounded text-gray-600">{n}</span>
         ))}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {prevConnection && (
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+          <div className="bg-white rounded-lg p-3">
             <div className="text-xs text-gray-400 mb-1">
               {prevConnection.fromChord.display} → {prevConnection.toChord.display}
             </div>
@@ -139,7 +139,7 @@ function ExpandedChordAnalysis({
           </div>
         )}
         {nextConnection && (
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+          <div className="bg-white rounded-lg p-3">
             <div className="text-xs text-gray-400 mb-1">
               {nextConnection.fromChord.display} → {nextConnection.toChord.display}
             </div>

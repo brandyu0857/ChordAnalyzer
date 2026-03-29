@@ -83,7 +83,7 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
       </div>
 
       {/* Fretboard */}
-      <div className="border border-gray-200 rounded-xl bg-white overflow-x-auto">
+      <div className="bg-gray-50 rounded-xl overflow-x-auto">
         <div className="min-w-[640px] p-4">
           <Fretboard
             frets={frets}
@@ -291,7 +291,7 @@ function ChordResultCard({ chord, rank, onSelect }: ChordResultCardProps) {
   return (
     <button
       onClick={handleClick}
-      className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors text-left cursor-pointer"
+      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left cursor-pointer"
     >
       <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-xs text-gray-400 shrink-0">
         {rank}

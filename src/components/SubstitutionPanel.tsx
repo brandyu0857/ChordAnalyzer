@@ -44,7 +44,7 @@ function ChordCard({
         <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{label}</span>
       )}
       <div
-        className="border border-gray-200 rounded-xl p-2 cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-colors w-full flex flex-col items-center"
+        className="bg-gray-50 rounded-xl p-2 cursor-pointer hover:bg-gray-100 transition-colors w-full flex flex-col items-center"
         onClick={onClick}
       >
         {fingering ? (
@@ -93,7 +93,7 @@ function SubCard({
 
       {/* Diagram */}
       <div
-        className="border border-gray-100 rounded-xl p-2 cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-colors flex flex-col items-center bg-white"
+        className="bg-gray-50 rounded-xl p-2 cursor-pointer hover:bg-gray-100 transition-colors flex flex-col items-center"
         onClick={onSelect}
       >
         {fingering ? (
