@@ -30,6 +30,27 @@ export const CHORD_TYPES: Record<string, ChordType> = {
   '7b9': { name: '属七降九和弦', nameEn: 'Dominant 7b9', symbol: '7b9', intervals: [0, 4, 7, 10, 13], description: '紧张、蓝调', descriptionEn: 'Tense, bluesy' },
   '7#9': { name: '属七升九和弦', nameEn: 'Dominant 7#9', symbol: '7#9', intervals: [0, 4, 7, 10, 15], description: '强烈、布鲁斯摇滚', descriptionEn: 'Intense, blues-rock' },
   maj13: { name: '大十三和弦', nameEn: 'Major 13th', symbol: 'maj13', intervals: [0, 4, 7, 11, 14, 21], description: '华丽、爵士流行', descriptionEn: 'Lush, jazz-pop' },
+  // Suspended 7th chords
+  '7sus4': { name: '属七挂四和弦', nameEn: 'Dominant 7sus4', symbol: '7sus4', intervals: [0, 5, 7, 10], description: '悬浮、蓝调', descriptionEn: 'Suspended, bluesy' },
+  '7sus2': { name: '属七挂二和弦', nameEn: 'Dominant 7sus2', symbol: '7sus2', intervals: [0, 2, 7, 10], description: '开放、现代', descriptionEn: 'Open, modern' },
+  '9sus4': { name: '属九挂四和弦', nameEn: 'Dominant 9sus4', symbol: '9sus4', intervals: [0, 5, 7, 10, 14], description: '丰满、悬浮', descriptionEn: 'Full, suspended' },
+  // 11th chord
+  '11':  { name: '属十一和弦', nameEn: 'Dominant 11th', symbol: '11', intervals: [0, 4, 7, 10, 14, 17], description: '丰满、放克', descriptionEn: 'Full, funky' },
+  // Minor-major 7th
+  mmaj7: { name: '小大七和弦', nameEn: 'Minor-Major 7th', symbol: 'm(maj7)', intervals: [0, 3, 7, 11], description: '紧张、神秘', descriptionEn: 'Tense, mysterious' },
+  // Altered dominant chords
+  '7b5': { name: '属七降五和弦', nameEn: 'Dominant 7b5', symbol: '7b5', intervals: [0, 4, 6, 10], description: '不稳定、爵士', descriptionEn: 'Unstable, jazzy' },
+  '7#5': { name: '属七升五和弦', nameEn: 'Dominant 7#5', symbol: '7#5', intervals: [0, 4, 8, 10], description: '紧张、增色彩', descriptionEn: 'Tense, augmented color' },
+  // Power chord
+  '5':   { name: '强力和弦', nameEn: 'Power Chord', symbol: '5', intervals: [0, 7], description: '有力、摇滚', descriptionEn: 'Powerful, rock' },
+  // Add chords
+  madd9: { name: '小加九和弦', nameEn: 'Minor Add 9', symbol: 'madd9', intervals: [0, 3, 7, 14], description: '忧郁、层次感', descriptionEn: 'Melancholic, layered' },
+  // 6/9 chords
+  '6/9': { name: '六九和弦', nameEn: 'Major 6/9', symbol: '6/9', intervals: [0, 4, 7, 9, 14], description: '明亮、爵士', descriptionEn: 'Bright, jazzy' },
+  // Augmented 7th
+  aug7:  { name: '增七和弦', nameEn: 'Augmented 7th', symbol: 'aug7', intervals: [0, 4, 8, 10], description: '紧张、增色彩', descriptionEn: 'Tense, augmented color' },
+  // Major 11th
+  maj11: { name: '大十一和弦', nameEn: 'Major 11th', symbol: 'maj11', intervals: [0, 4, 7, 11, 14, 17], description: '梦幻、层次丰富', descriptionEn: 'Dreamy, layered' },
 };
 
 // Guitar string tuning: E2 A2 D3 G3 B3 E4 (low to high)

@@ -319,10 +319,10 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                   <div key={i}
                     className={`rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
                       ${isActive
-                        ? 'bg-white ring-1 ring-gray-900 scale-105 shadow-sm'
+                        ? 'bg-white ring-1 ring-gray-900 scale-105'
                         : isExpanded
                           ? 'bg-white ring-1 ring-gray-900'
-                          : 'bg-white shadow-sm hover:shadow-md'}`}
+                          : 'bg-white hover:bg-gray-50'}`}
                     onClick={() => setExpandedIdx(isExpanded ? null : i)}
                   >
                     {fingering ? (

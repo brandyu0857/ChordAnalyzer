@@ -143,7 +143,7 @@ function App() {
                 <div className="flex flex-col items-center gap-3">
                   {fingering ? (
                     <>
-                      <div className="rounded-xl bg-gray-50 relative flex justify-center">
+                      <div className="p-4 rounded-xl bg-gray-50 relative flex justify-center">
                         <ChordDiagram fingering={fingering} chordName={currentChord.display} size="large" />
                       </div>
 
