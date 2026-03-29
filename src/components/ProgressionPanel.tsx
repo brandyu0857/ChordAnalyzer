@@ -7,7 +7,7 @@ import { getSubstitutions, CATEGORY_STYLES } from '../utils/substitutionUtils';
 import ChordDiagram from './ChordDiagram';
 import PlayButton from './PlayButton';
 import ProgressionAnalysisView from './ProgressionAnalysis';
-import { playChordStrum, playChordBlock, playProgression } from '../utils/audioUtils';
+import { playChordStrum, playChordBlock, playProgression, stopProgression } from '../utils/audioUtils';
 import { NOTES } from '../data/notes';
 import { findSongExamples } from '../utils/progressionMatcher';
 import { useLocale } from '../i18n/context';
@@ -18,7 +18,7 @@ interface Props {
   onAppendDone?: () => void;
 }
 
-export default function ProgressionPanel({ onChordSelect: _onChordSelect, appendChord, onAppendDone }: Props) {
+export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const { locale } = useLocale();
   const isEn = locale === 'en';
 
@@ -156,10 +156,18 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
     else await playChordBlock(getChordNotes(root, type));
   };
 
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const handlePlayAll = async () => {
-    const notesList = chords.map(c => getChordNotes(c.root, c.type));
-    await playProgression(notesList, 90, i => setActiveIdx(i));
-    setTimeout(() => setActiveIdx(undefined), 500);
+    if (isPlaying) { stopProgression(); setIsPlaying(false); setActiveIdx(undefined); return; }
+    setIsPlaying(true);
+    try {
+      const notesList = chords.map(c => getChordNotes(c.root, c.type));
+      await playProgression(notesList, 90, i => setActiveIdx(i));
+    } finally {
+      setIsPlaying(false);
+      setTimeout(() => setActiveIdx(undefined), 500);
+    }
   };
 
   return (
@@ -267,7 +275,14 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
               placeholder={isEn ? 'Enter chords: C Em F G, or degrees: 1 6m 4 5' : '输入和弦：C Em F G，或级数：1 6m 4 5'}
               className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
             />
-            {chords.length > 0 && <PlayButton onPlay={handlePlayAll} label={isEn ? 'Play' : '播放'} />}
+            {chords.length > 0 && (
+              isPlaying
+                ? <button onClick={() => { stopProgression(); setIsPlaying(false); setActiveIdx(undefined); }}
+                    className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors">
+                    {isEn ? 'Stop' : '停止'}
+                  </button>
+                : <PlayButton onPlay={handlePlayAll} label={isEn ? 'Play' : '播放'} />
+            )}
           </div>
           {parseError && <p className="text-xs text-red-400">{parseError}</p>}
           {isNashville && baseChords.length > 0 && (

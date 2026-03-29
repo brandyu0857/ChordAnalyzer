@@ -161,10 +161,15 @@ export function getChordNotes(root: string, type: string): string[] {
 
 export function transposeChord(chord: ParsedChord, semitones: number): ParsedChord {
   const newRoot = getNoteAtInterval(chord.root, semitones);
+  const newBass = chord.bassNote ? getNoteAtInterval(chord.bassNote, semitones) : undefined;
+  const display = newBass
+    ? `${newRoot}${chord.chordType.symbol}/${newBass}`
+    : newRoot + chord.chordType.symbol;
   return {
     ...chord,
     root: newRoot,
-    display: newRoot + chord.chordType.symbol,
+    bassNote: newBass,
+    display,
   };
 }
 

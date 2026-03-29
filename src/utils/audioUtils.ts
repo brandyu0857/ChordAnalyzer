@@ -1,7 +1,22 @@
-import * as Tone from 'tone';
 import { getNoteIndex } from '../data/notes';
 import { GUITAR_TUNING } from '../data/chords';
 import type { GuitarFingering } from '../data/chords';
+
+// ---------------------------------------------------------------------------
+// Lazy-load Tone.js -- only imported when audio is first needed
+// ---------------------------------------------------------------------------
+
+let Tone: typeof import('tone') | null = null;
+let toneLoadPromise: Promise<typeof import('tone')> | null = null;
+
+async function getTone() {
+  if (Tone) return Tone;
+  if (!toneLoadPromise) {
+    toneLoadPromise = import('tone');
+  }
+  Tone = await toneLoadPromise;
+  return Tone;
+}
 
 // ---------------------------------------------------------------------------
 // Real acoustic guitar samples via Tone.Sampler
@@ -11,70 +26,59 @@ import type { GuitarFingering } from '../data/chords';
 const SAMPLE_BASE_URL =
   'https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/guitar-acoustic/';
 
-// Map notes to .mp3 sample files
 const SAMPLE_MAP: Record<string, string> = {
-  'A2': 'A2.mp3',
-  'A3': 'A3.mp3',
-  'A4': 'A4.mp3',
-  'B2': 'B2.mp3',
-  'B3': 'B3.mp3',
-  'C3': 'C3.mp3',
-  'C4': 'C4.mp3',
-  'D2': 'D2.mp3',
-  'D3': 'D3.mp3',
-  'D4': 'D4.mp3',
-  'E2': 'E2.mp3',
-  'E3': 'E3.mp3',
-  'E4': 'E4.mp3',
-  'F2': 'F2.mp3',
-  'F3': 'F3.mp3',
-  'F4': 'F4.mp3',
-  'G2': 'G2.mp3',
-  'G3': 'G3.mp3',
-  'G4': 'G4.mp3',
+  'A2': 'A2.mp3', 'A3': 'A3.mp3', 'A4': 'A4.mp3',
+  'B2': 'B2.mp3', 'B3': 'B3.mp3',
+  'C3': 'C3.mp3', 'C4': 'C4.mp3',
+  'D2': 'D2.mp3', 'D3': 'D3.mp3', 'D4': 'D4.mp3',
+  'E2': 'E2.mp3', 'E3': 'E3.mp3', 'E4': 'E4.mp3',
+  'F2': 'F2.mp3', 'F3': 'F3.mp3', 'F4': 'F4.mp3',
+  'G2': 'G2.mp3', 'G3': 'G3.mp3', 'G4': 'G4.mp3',
 };
 
-let sampler: Tone.Sampler | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sampler: any = null;
 let samplerReady = false;
 let loadPromise: Promise<void> | null = null;
 
-function loadSampler(): Promise<void> {
+async function loadSampler(): Promise<void> {
   if (loadPromise) return loadPromise;
 
-  loadPromise = new Promise<void>((resolve) => {
-    // loading started
+  loadPromise = (async () => {
+    const T = await getTone();
+    const reverb = new T.Reverb({ decay: 1.4, wet: 0.18 }).toDestination();
 
-    const reverb = new Tone.Reverb({ decay: 1.4, wet: 0.18 }).toDestination();
-
-    sampler = new Tone.Sampler({
-      urls: SAMPLE_MAP,
-      baseUrl: SAMPLE_BASE_URL,
-      release: 1.5,
-      volume: -2,
-      onload: () => {
-        samplerReady = true;
-        // loading done
-        resolve();
-      },
-      onerror: (err) => {
-        console.warn('Guitar sampler failed to load, falling back to synth', err);
-        // loading done
-        resolve(); // resolve anyway so playback can fall back
-      },
-    }).connect(reverb);
-  });
+    await new Promise<void>((resolve) => {
+      sampler = new T.Sampler({
+        urls: SAMPLE_MAP,
+        baseUrl: SAMPLE_BASE_URL,
+        release: 1.5,
+        volume: -2,
+        onload: () => {
+          samplerReady = true;
+          resolve();
+        },
+        onerror: (err: unknown) => {
+          console.warn('Guitar sampler failed to load, falling back to synth', err);
+          resolve();
+        },
+      }).connect(reverb);
+    });
+  })();
 
   return loadPromise;
 }
 
 // Fallback PluckSynth in case samples haven't loaded yet
-let pluckSynths: Tone.PluckSynth[] | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let pluckSynths: any[] | null = null;
 
-function getPluckFallback(): Tone.PluckSynth[] {
+async function getPluckFallback() {
+  const T = await getTone();
   if (!pluckSynths) {
-    const reverb = new Tone.Reverb({ decay: 1.2, wet: 0.2 }).toDestination();
+    const reverb = new T.Reverb({ decay: 1.2, wet: 0.2 }).toDestination();
     pluckSynths = Array.from({ length: 6 }, () =>
-      new Tone.PluckSynth({
+      new T.PluckSynth({
         attackNoise: 2,
         dampening: 3200,
         resonance: 0.98,
@@ -90,10 +94,10 @@ function getPluckFallback(): Tone.PluckSynth[] {
 // ---------------------------------------------------------------------------
 
 export async function ensureAudioReady(): Promise<void> {
-  if (Tone.getContext().state !== 'running') {
-    await Tone.start();
+  const T = await getTone();
+  if (T.getContext().state !== 'running') {
+    await T.start();
   }
-  // Load and WAIT for sampler to be ready
   if (!samplerReady) {
     await loadSampler();
   }
@@ -133,45 +137,52 @@ export function getGuitarChordFrequencies(fingering: GuitarFingering): string[] 
 }
 
 // ---------------------------------------------------------------------------
+// Abort controller for progression playback
+// ---------------------------------------------------------------------------
+
+let currentAbort: AbortController | null = null;
+
+export function stopProgression(): void {
+  if (currentAbort) {
+    currentAbort.abort();
+    currentAbort = null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Playback
 // ---------------------------------------------------------------------------
 
-/**
- * Strum: play each string with a slight delay, like a real guitar strum.
- * Uses real samples when loaded, PluckSynth as fallback.
- */
 export async function playChordStrum(fingering: GuitarFingering): Promise<void> {
   await ensureAudioReady();
+  const T = await getTone();
   const freqs = getGuitarChordFrequencies(fingering);
-  const now = Tone.now();
+  const now = T.now();
 
   if (samplerReady && sampler) {
     freqs.forEach((freq, i) => {
-      sampler!.triggerAttackRelease(freq, '2n', now + i * 0.04);
+      sampler.triggerAttackRelease(freq, '2n', now + i * 0.04);
     });
   } else {
-    // Fallback while samples load
-    const pool = getPluckFallback();
+    const pool = await getPluckFallback();
     freqs.forEach((freq, i) => {
       pool[i % pool.length].triggerAttackRelease(freq, '2n', now + i * 0.04);
     });
   }
 }
 
-/**
- * Block chord: all notes at once.
- */
 export async function playChordBlock(notes: string[]): Promise<void> {
   await ensureAudioReady();
+  const T = await getTone();
   const freqs = getChordFrequencies(notes);
-  const now = Tone.now();
+  const now = T.now();
 
   if (samplerReady && sampler) {
     freqs.forEach((freq, i) => {
-      sampler!.triggerAttackRelease(freq, '2n', now + i * 0.008);
+      sampler.triggerAttackRelease(freq, '2n', now + i * 0.008);
     });
   } else {
-    const pool = getPluckFallback();
+    const pool = await getPluckFallback();
     freqs.forEach((freq, i) => {
       pool[i % pool.length].triggerAttackRelease(freq, '2n', now + i * 0.008);
     });
@@ -180,6 +191,7 @@ export async function playChordBlock(notes: string[]): Promise<void> {
 
 /**
  * Play a chord progression with strum-style playback.
+ * Returns a promise that resolves when done or when aborted via stopProgression().
  */
 export async function playProgression(
   chordNotesList: string[][],
@@ -187,30 +199,50 @@ export async function playProgression(
   onChordPlay?: (index: number) => void
 ): Promise<void> {
   await ensureAudioReady();
+  const T = await getTone();
+
+  // Abort any previous progression
+  stopProgression();
+  const abort = new AbortController();
+  currentAbort = abort;
 
   const beatDuration = 60 / bpm;
 
   for (let ci = 0; ci < chordNotesList.length; ci++) {
+    if (abort.signal.aborted) return;
+
     const freqs = getChordFrequencies(chordNotesList[ci]);
-    const now = Tone.now();
+    const now = T.now();
     onChordPlay?.(ci);
 
     if (samplerReady && sampler) {
       freqs.forEach((freq, i) => {
-        sampler!.triggerAttackRelease(freq, '2n', now + i * 0.035);
+        sampler.triggerAttackRelease(freq, '2n', now + i * 0.035);
       });
     } else {
-      const pool = getPluckFallback();
+      const pool = await getPluckFallback();
       freqs.forEach((freq, i) => {
         pool[i % pool.length].triggerAttackRelease(freq, '2n', now + i * 0.035);
       });
     }
 
-    await new Promise(resolve => setTimeout(resolve, beatDuration * 2 * 1000));
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, beatDuration * 2 * 1000);
+      abort.signal.addEventListener('abort', () => {
+        clearTimeout(timer);
+        reject(new DOMException('Aborted', 'AbortError'));
+      }, { once: true });
+    }).catch(e => {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+      throw e;
+    });
   }
+
+  if (currentAbort === abort) currentAbort = null;
 }
 
-export function dispose(): void {
+export async function dispose(): Promise<void> {
+  stopProgression();
   if (sampler) {
     sampler.dispose();
     sampler = null;
@@ -218,7 +250,7 @@ export function dispose(): void {
     loadPromise = null;
   }
   if (pluckSynths) {
-    pluckSynths.forEach(p => p.dispose());
+    pluckSynths.forEach((p: { dispose: () => void }) => p.dispose());
     pluckSynths = null;
   }
 }
