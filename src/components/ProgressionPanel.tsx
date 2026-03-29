@@ -257,55 +257,57 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
             </button>
           )}
         </div>
-        {/* Input row */}
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={e => { setInput(e.target.value); setParseError(''); }}
-            placeholder={isEn ? 'Enter chords: C Em F G, or degrees: 1 6m 4 5' : '输入和弦：C Em F G，或级数：1 6m 4 5'}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
-          />
-          {chords.length > 0 && <PlayButton onPlay={handlePlayAll} label={isEn ? 'Play' : '播放'} />}
-        </div>
-        {parseError && <p className="text-xs text-red-400">{parseError}</p>}
-        {isNashville && baseChords.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-gray-400 shrink-0">{templateKey} {isEn ? 'Major' : '大调'} →</span>
-            {baseChords.map((c, i) => (
-              <span key={i} className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-                {c.display}
-              </span>
-            ))}
+        {/* Unified editor container */}
+        <div className="border border-gray-200 rounded-xl p-4 space-y-4">
+          {/* Input row */}
+          <div className="flex gap-2">
+            <input
+              value={input}
+              onChange={e => { setInput(e.target.value); setParseError(''); }}
+              placeholder={isEn ? 'Enter chords: C Em F G, or degrees: 1 6m 4 5' : '输入和弦：C Em F G，或级数：1 6m 4 5'}
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
+            />
+            {chords.length > 0 && <PlayButton onPlay={handlePlayAll} label={isEn ? 'Play' : '播放'} />}
           </div>
-        )}
-
-        {chords.length > 0 && (
-          <>
-            {/* Transpose bar */}
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-2.5">
-              <span className="text-sm text-gray-500 flex-shrink-0">{isEn ? 'Transpose' : '转调'}</span>
-              <button onClick={() => setSemitones(s => s - 1)}
-                className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">-</button>
-              <span className="text-sm font-medium text-gray-900 w-16 text-center tabular-nums">
-                {semitones === 0
-                  ? (isEn ? 'Original' : '原调')
-                  : `${semitones > 0 ? '+' : ''}${semitones} ${isEn ? 'st' : '半音'}`}
-              </span>
-              <button onClick={() => setSemitones(s => s + 1)}
-                className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">+</button>
-              {semitones !== 0 && (
-                <button onClick={() => setSemitones(0)}
-                  className="ml-2 text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
-                  {isEn ? 'Reset' : '重置'}
-                </button>
-              )}
-              {baseChords[0] && semitones !== 0 && (
-                <span className="ml-auto text-xs text-gray-400">{baseChords[0].display} → {chords[0].display}</span>
-              )}
+          {parseError && <p className="text-xs text-red-400">{parseError}</p>}
+          {isNashville && baseChords.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-400 shrink-0">{templateKey} {isEn ? 'Major' : '大调'} →</span>
+              {baseChords.map((c, i) => (
+                <span key={i} className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                  {c.display}
+                </span>
+              ))}
             </div>
+          )}
 
-            {/* Chord grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          {chords.length > 0 && (
+            <>
+              {/* Transpose bar */}
+              <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2.5">
+                <span className="text-sm text-gray-500 flex-shrink-0">{isEn ? 'Transpose' : '转调'}</span>
+                <button onClick={() => setSemitones(s => s - 1)}
+                  className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">-</button>
+                <span className="text-sm font-medium text-gray-900 w-16 text-center tabular-nums">
+                  {semitones === 0
+                    ? (isEn ? 'Original' : '原调')
+                    : `${semitones > 0 ? '+' : ''}${semitones} ${isEn ? 'st' : '半音'}`}
+                </span>
+                <button onClick={() => setSemitones(s => s + 1)}
+                  className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">+</button>
+                {semitones !== 0 && (
+                  <button onClick={() => setSemitones(0)}
+                    className="ml-2 text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
+                    {isEn ? 'Reset' : '重置'}
+                  </button>
+                )}
+                {baseChords[0] && semitones !== 0 && (
+                  <span className="ml-auto text-xs text-gray-400">{baseChords[0].display} → {chords[0].display}</span>
+                )}
+              </div>
+
+              {/* Chord grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
               {chords.map((chord, i) => {
                 const allFingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
                 const fi = Math.min(fingeringIndices[i] ?? 0, allFingerings.length - 1);
@@ -407,35 +409,33 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                 </div>
               );
             })()}
-          </>
-        )}
-
-        {/* Analysis */}
-        {chords.length > 0 && (
-          <div className="rounded-xl p-5 border border-gray-200">
-            <div className="flex items-center gap-3 mb-3">
-              <h3 className="text-sm font-semibold text-gray-500">
-                {isEn ? 'Progression Analysis' : '和弦进行分析'}
-              </h3>
-              <div className="flex items-center gap-1.5 ml-auto">
-                <span className="text-xs text-gray-400">{isEn ? 'Key' : '调式'}</span>
-                <select
-                  value={analysisKey}
-                  onChange={e => setAnalysisKey(e.target.value)}
-                  className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none cursor-pointer"
-                >
-                  {NOTES.map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
+              {/* Analysis */}
+              <div className="border-t border-gray-100 pt-4 mt-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="text-sm font-semibold text-gray-500">
+                    {isEn ? 'Progression Analysis' : '和弦进行分析'}
+                  </h3>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <span className="text-xs text-gray-400">{isEn ? 'Key' : '调式'}</span>
+                    <select
+                      value={analysisKey}
+                      onChange={e => setAnalysisKey(e.target.value)}
+                      className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none cursor-pointer"
+                    >
+                      {NOTES.map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <ProgressionAnalysisView
+                  chords={chords}
+                  musicalKey={analysisKey}
+                  activeChordIndex={activeIdx}
+                  onChordClick={i => setActiveIdx(i)}
+                />
               </div>
-            </div>
-            <ProgressionAnalysisView
-              chords={chords}
-              musicalKey={analysisKey}
-              activeChordIndex={activeIdx}
-              onChordClick={i => setActiveIdx(i)}
-            />
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         {/* Song examples */}
         {chords.length > 0 && (() => {
