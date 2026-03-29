@@ -664,7 +664,7 @@ const ALTERNATIVE_VOICINGS: Record<string, GuitarFingering[]> = {
   'Cmaj7':  [{ frets: [-1,3,5,4,5,3],     barreAt:3,  startFret:3  }],
   'Dmaj7':  [{ frets: [-1,5,7,6,7,5],     barreAt:5,  startFret:5  }],
   'Emaj7':  [{ frets: [-1,7,9,8,9,7],     barreAt:7,  startFret:7  }],
-  'Gmaj7':  [{ frets: [3,-1,4,4,3,-1], startFret:3 }, { frets: [-1,-1,5,4,3,2], startFret:2 }],
+  'Gmaj7':  [{ frets: [-1,2,-1,4,3,2], startFret:2 }, { frets: [3,-1,4,4,3,-1], startFret:3 }, { frets: [-1,-1,5,4,3,2], startFret:2 }],
   'Amaj7':  [{ frets: [5,7,6,6,5,5],      barreAt:5,  startFret:5  }],
   'A#maj7': [{ frets: [6,8,7,7,6,6],      barreAt:6,  startFret:6  }],
   'Bmaj7':  [{ frets: [7,9,8,8,7,7],      barreAt:7,  startFret:7  }],
