@@ -143,7 +143,7 @@ function App() {
                 <div className="flex flex-col items-center gap-3">
                   {fingering ? (
                     <>
-                      <div className="p-4 border border-gray-200 rounded-xl bg-white relative">
+                      <div className="p-4 rounded-xl bg-gray-50 relative">
                         <ChordDiagram fingering={fingering} chordName={currentChord.display} size="large" />
                       </div>
 
@@ -186,7 +186,7 @@ function App() {
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-col items-center justify-center w-48 h-48 rounded-xl border border-gray-200">
+                    <div className="flex flex-col items-center justify-center w-48 h-48 rounded-xl bg-gray-50">
                       <span className="text-3xl font-bold text-gray-900 mb-1">{currentChord.display}</span>
                       <span className="text-xs text-gray-400">{isEn ? 'No fingering available' : '指法图暂无'}</span>
                       <div className="mt-3">

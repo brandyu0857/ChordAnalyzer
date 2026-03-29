@@ -48,7 +48,7 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
   const intervalNames = isEn ? INTERVAL_NAMES_EN : INTERVAL_NAMES;
 
   return (
-    <div className="rounded-xl p-5 border border-gray-200">
+    <div className="rounded-xl p-5 bg-gray-50">
       <h3 className="text-xl font-semibold text-gray-900 mb-1">
         {chord.display}
         <span className="text-base font-normal text-gray-400 ml-2">
@@ -62,7 +62,7 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
 
       {/* Inversion / slash chord info */}
       {inversion && (
-        <div className="mb-4 flex items-start gap-2.5 px-3.5 py-2.5 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="mb-4 flex items-start gap-2.5 px-3.5 py-2.5 bg-white rounded-lg">
           <span className="text-xs font-semibold px-2 py-0.5 bg-gray-200 text-gray-700 rounded-full flex-shrink-0 mt-0.5 whitespace-nowrap">
             {inversion.label}
           </span>
@@ -90,7 +90,7 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
           {notes.map((note, i) => (
             <span key={i}
               className={`inline-flex items-center justify-center w-11 h-11 rounded-lg text-base font-bold
-                ${i === 0 ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}
+                ${i === 0 ? 'bg-gray-900 text-white' : 'bg-white text-gray-700'}`}
             >{note}</span>
           ))}
         </div>
@@ -107,7 +107,7 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
         </div>
         <div className="flex flex-wrap gap-2">
           {intervals.map((interval, i) => (
-            <span key={i} className="text-sm px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 border border-gray-100">
+            <span key={i} className="text-sm px-2.5 py-1 rounded-md bg-white text-gray-600">
               {intervalNames[interval % 12] || (isEn ? `${interval} st` : `${interval}半音`)}
               <span className="text-gray-400 ml-1">({notes[i]})</span>
             </span>

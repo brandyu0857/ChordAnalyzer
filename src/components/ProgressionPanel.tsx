@@ -165,10 +165,10 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
   return (
     <div className="space-y-4">
       {/* Template section (collapsible) */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-gray-50 rounded-xl overflow-hidden">
         <button
           onClick={() => setTemplatesOpen(v => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-100 transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-900">
@@ -193,7 +193,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           style={{ gridTemplateRows: templatesOpen ? '1fr' : '0fr' }}
         >
           <div className="overflow-hidden">
-            <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
+            <div className="px-4 pb-4 space-y-3">
               {/* Key selector */}
               <div className="flex items-center gap-2 pt-3">
                 <span className="text-xs text-gray-500">{isEn ? 'Load template in' : '以'}</span>
@@ -225,10 +225,10 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                   const realIdx = PROGRESSION_TEMPLATES.indexOf(t);
                   return (
                     <button key={realIdx} onClick={() => handleTemplateSelect(realIdx)}
-                      className={`text-left p-3 rounded-lg transition-all cursor-pointer border
+                      className={`text-left p-3 rounded-lg transition-all cursor-pointer
                         ${selectedTemplateIdx === realIdx
-                          ? 'border-gray-900 bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-300 bg-white'}`}
+                          ? 'bg-white shadow-sm ring-1 ring-gray-900'
+                          : 'bg-white hover:shadow-sm'}`}
                     >
                       <div className="font-medium text-sm text-gray-900">{isEn ? t.nameEn : t.name}</div>
                       <div className="text-xs text-gray-400 mt-0.5">{t.degrees.join(' - ')}</div>
@@ -258,7 +258,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           )}
         </div>
         {/* Unified editor container */}
-        <div className="border border-gray-200 rounded-xl p-4 space-y-4">
+        <div className="bg-gray-50 rounded-xl p-4 space-y-4">
           {/* Input row */}
           <div className="flex gap-2">
             <input
@@ -317,12 +317,12 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
 
                 return (
                   <div key={i}
-                    className={`border rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
+                    className={`rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
                       ${isActive
-                        ? 'border-gray-900 bg-gray-50 scale-105 shadow-sm'
+                        ? 'bg-white ring-1 ring-gray-900 scale-105 shadow-sm'
                         : isExpanded
-                          ? 'border-gray-900 bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-400'}`}
+                          ? 'bg-white ring-1 ring-gray-900'
+                          : 'bg-white hover:shadow-sm'}`}
                     onClick={() => setExpandedIdx(isExpanded ? null : i)}
                   >
                     {fingering ? (
@@ -355,7 +355,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
               const chord = chords[expandedIdx];
               const subs = getSubstitutions(chord.root, chord.type, locale);
               return (
-                <div className="border border-gray-200 rounded-xl p-4 bg-white">
+                <div className="bg-white rounded-xl p-4 shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-6 h-6 bg-gray-900 text-white rounded-md flex items-center justify-center text-xs font-bold">
                       {expandedIdx + 1}
@@ -379,7 +379,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                               {sub.categoryLabel}
                             </span>
                             <div
-                              className="border border-gray-100 rounded-xl p-2 cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-colors w-full flex flex-col items-center"
+                              className="bg-gray-50 rounded-xl p-2 cursor-pointer hover:bg-gray-100 transition-colors w-full flex flex-col items-center"
                               onClick={() => handleReplace(sub.display)}
                             >
                               {sf ? (
@@ -442,7 +442,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
           const match = findSongExamples(chords);
           if (!match) return null;
           return (
-            <div className="rounded-xl p-4 border border-gray-200 bg-gray-50">
+            <div className="rounded-xl p-4 bg-gray-50">
               <div className="flex items-center gap-2 mb-3">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
                   <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
@@ -454,7 +454,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
               </div>
               <div className="flex flex-wrap gap-2">
                 {match.songs.map((song, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg">
+                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg shadow-sm">
                     <span className="text-sm font-medium text-gray-800">{song.title}</span>
                     <span className="text-xs text-gray-400">— {song.artist}</span>
                   </div>
