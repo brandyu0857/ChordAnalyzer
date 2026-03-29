@@ -28,8 +28,9 @@ export function parseChordName(name: string): ParsedChord | null {
   }
 
   // Extract bass note from slash chords like C/E, Am/G, D/F#, bE/bB
+  // But not 6/9 chords
   let bassNote: string | undefined;
-  if (trimmed.includes('/')) {
+  if (trimmed.includes('/') && !trimmed.match(/6\/9$/i)) {
     const slashIdx = trimmed.indexOf('/');
     const bassStr = normalizePrefixAccidental(trimmed.substring(slashIdx + 1).trim());
     trimmed = trimmed.substring(0, slashIdx).trim();
@@ -112,6 +113,30 @@ export function parseChordName(name: string): ParsedChord | null {
     type = '7b9';
   } else if (suffixLower === '7#9' || suffixLower === '7+9' || suffix === '7♯9') {
     type = '7#9';
+  } else if (suffixLower === '7sus4' || suffixLower === '7sus') {
+    type = '7sus4';
+  } else if (suffixLower === '7sus2') {
+    type = '7sus2';
+  } else if (suffixLower === '9sus4' || suffixLower === '9sus') {
+    type = '9sus4';
+  } else if (suffixLower === '11') {
+    type = '11';
+  } else if (suffixLower === 'mmaj7' || suffixLower === 'm(maj7)' || suffixLower === 'mmaj7' || suffix === 'mΔ7' || suffixLower === 'min(maj7)' || suffixLower === 'minmaj7') {
+    type = 'mmaj7';
+  } else if (suffixLower === '7b5') {
+    type = '7b5';
+  } else if (suffixLower === '7#5' || suffixLower === '7+5') {
+    type = '7#5';
+  } else if (suffixLower === '5') {
+    type = '5';
+  } else if (suffixLower === 'madd9' || suffixLower === 'minadd9') {
+    type = 'madd9';
+  } else if (suffix === '6/9' || suffixLower === '69') {
+    type = '6/9';
+  } else if (suffixLower === 'aug7' || suffix === '+7') {
+    type = 'aug7';
+  } else if (suffixLower === 'maj11') {
+    type = 'maj11';
   } else {
     return null;
   }
