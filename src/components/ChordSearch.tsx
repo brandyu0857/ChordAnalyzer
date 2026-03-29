@@ -22,7 +22,7 @@ export default function ChordSearch({ onSearch, currentChord }: ChordSearchProps
     if (!input.trim()) return;
     const timer = setTimeout(() => {
       onSearch(input.trim());
-    }, 300);
+    }, 80);
     return () => clearTimeout(timer);
   }, [input, onSearch]);
 
