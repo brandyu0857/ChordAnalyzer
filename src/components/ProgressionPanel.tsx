@@ -265,7 +265,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
               value={input}
               onChange={e => { setInput(e.target.value); setParseError(''); }}
               placeholder={isEn ? 'Enter chords: C Em F G, or degrees: 1 6m 4 5' : '输入和弦：C Em F G，或级数：1 6m 4 5'}
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
+              className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
             />
             {chords.length > 0 && <PlayButton onPlay={handlePlayAll} label={isEn ? 'Play' : '播放'} />}
           </div>
@@ -322,7 +322,7 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
                         ? 'bg-white ring-1 ring-gray-900 scale-105 shadow-sm'
                         : isExpanded
                           ? 'bg-white ring-1 ring-gray-900'
-                          : 'bg-white hover:shadow-sm'}`}
+                          : 'bg-white shadow-sm hover:shadow-md'}`}
                     onClick={() => setExpandedIdx(isExpanded ? null : i)}
                   >
                     {fingering ? (

@@ -69,8 +69,8 @@ export default function ProgressionAnalysisView({
               }}
               className={`flex flex-col items-center p-3 rounded-lg transition-all cursor-pointer min-w-[80px]
                 ${activeChordIndex === i
-                  ? 'bg-gray-100 ring-1 ring-gray-900'
-                  : 'bg-gray-50 hover:bg-gray-100'
+                  ? 'bg-white ring-1 ring-gray-900 shadow-sm'
+                  : 'bg-white shadow-sm hover:shadow-md'
                 }`}
             >
               <span className="text-xs text-gray-400 mb-1">{analysis.degreeDisplay}</span>
