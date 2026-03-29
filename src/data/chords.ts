@@ -660,14 +660,17 @@ const ALTERNATIVE_VOICINGS: Record<string, GuitarFingering[]> = {
   'A#7': [{ frets: [6,8,6,7,6,6],      barreAt:6,  startFret:6  }],
   'B7':  [{ frets: [7,9,7,8,7,7],      barreAt:7,  startFret:7  }],
 
-  // ---- MAJ7  (Emaj7-shape: [n,n+2,n+1,n+1,n,n]; Amaj7-shape: [-1,n,n+2,n+1,n+2,n]) ----
-  'Cmaj7':  [{ frets: [-1,3,5,4,5,3],     barreAt:3,  startFret:3  }],
+  // ---- MAJ7  (Amaj7-shape + partial shape: [-1,n,-1,n+2,n+1,n]) ----
+  'Cmaj7':  [{ frets: [-1,3,5,4,5,3],     barreAt:3,  startFret:3  }, { frets: [-1,7,-1,9,8,7], startFret:7 }],
   'Dmaj7':  [{ frets: [-1,5,7,6,7,5],     barreAt:5,  startFret:5  }],
   'Emaj7':  [{ frets: [-1,7,9,8,9,7],     barreAt:7,  startFret:7  }],
+  'Fmaj7':  [{ frets: [-1,0,-1,2,1,0] }],
+  'F#maj7': [{ frets: [-1,1,-1,3,2,1], startFret:1 }],
   'Gmaj7':  [{ frets: [-1,2,-1,4,3,2], startFret:2 }, { frets: [3,-1,4,4,3,-1], startFret:3 }, { frets: [-1,-1,5,4,3,2], startFret:2 }],
-  'Amaj7':  [{ frets: [5,7,6,6,5,5],      barreAt:5,  startFret:5  }],
-  'A#maj7': [{ frets: [6,8,7,7,6,6],      barreAt:6,  startFret:6  }],
-  'Bmaj7':  [{ frets: [7,9,8,8,7,7],      barreAt:7,  startFret:7  }],
+  'G#maj7': [{ frets: [-1,3,-1,5,4,3], startFret:3 }],
+  'Amaj7':  [{ frets: [5,7,6,6,5,5],      barreAt:5,  startFret:5  }, { frets: [-1,4,-1,6,5,4], startFret:4 }],
+  'A#maj7': [{ frets: [6,8,7,7,6,6],      barreAt:6,  startFret:6  }, { frets: [-1,5,-1,7,6,5], startFret:5 }],
+  'Bmaj7':  [{ frets: [7,9,8,8,7,7],      barreAt:7,  startFret:7  }, { frets: [-1,6,-1,8,7,6], startFret:6 }],
 
   // ---- m7  (Em7-shape: [n,n+2,n,n,n,n]; Am7-shape: [-1,n,n+2,n,n+1,n]) ----
   'Dm7':  [{ frets: [-1,5,7,5,6,5],     barreAt:5,  startFret:5  }],
