@@ -28,6 +28,11 @@ export const CHORD_TYPES: Record<string, ChordType> = {
   '7b9': { name: '属七降九和弦',   symbol: '7b9',  intervals: [0, 4, 7, 10, 13], description: '紧张、蓝调' },
   '7#9': { name: '属七升九和弦',   symbol: '7#9',  intervals: [0, 4, 7, 10, 15], description: '强烈、布鲁斯摇滚' },
   maj13: { name: '大十三和弦',     symbol: 'maj13', intervals: [0, 4, 7, 11, 14, 21], description: '华丽、爵士流行' },
+  '9sus4':   { name: '属九挂四和弦', symbol: '9sus4',   intervals: [0, 5, 7, 10, 14],     description: '开阔、悬浮感强' },
+  '7sus4':   { name: '属七挂四和弦', symbol: '7sus4',   intervals: [0, 5, 7, 10],          description: '开阔、有力' },
+  'add11':   { name: '加十一音和弦', symbol: 'add11',   intervals: [0, 4, 7, 17],          description: '明亮、神秘' },
+  'maj7sus2':{ name: '大七挂二和弦', symbol: 'maj7sus2',intervals: [0, 2, 7, 11],          description: '空灵、悬浮' },
+  'madd9':   { name: '小加九和弦',   symbol: 'madd9',   intervals: [0, 3, 7, 14],          description: '柔美、温暖' },
 };
 
 // Guitar string tuning: E2 A2 D3 G3 B3 E4 (low to high)
@@ -192,6 +197,27 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
   'Asus4': { frets: [-1, 0, 2, 2, 3, 0], fingers: [0, 0, 1, 2, 3, 0] },
   'A#sus4': { frets: [-1, 1, 3, 3, 4, 1], fingers: [0, 1, 2, 3, 4, 1], barreAt: 1, startFret: 1 },
   'Bsus4': { frets: [-1, 2, 4, 4, 5, 2], fingers: [0, 1, 2, 3, 4, 1], barreAt: 2, startFret: 2 },
+
+  // ============================================================
+  // 9SUS4 CHORDS (all 12 roots)
+  // Shape: root on D string fret n → x-n-n-n-(n+1)-n
+  // A=P5, D=root, G=sus4, B=b7, e=M9
+  // D9sus4 open position is the well-known x-0-0-0-1-0
+  // ============================================================
+  // Shape 1 (D-string root): x-n-n-n-(n+1)-n   — used when this gives a low fret position
+  // Shape 2 (A-string root): x-n-n-n-n-n (barre) — used when D-string position would be too high
+  'C9sus4':  { frets: [-1, 3, 3, 3, 3, 3],       fingers: [0,1,1,1,1,1], barreAt: 3,  startFret: 3  }, // Shape 2: A=C
+  'C#9sus4': { frets: [-1, 4, 4, 4, 4, 4],       fingers: [0,1,1,1,1,1], barreAt: 4,  startFret: 4  }, // Shape 2: A=C#
+  'D9sus4':  { frets: [-1, 0, 0, 0, 1, 0],       fingers: [0,0,0,0,1,0] },                             // Shape 1 open: iconic voicing
+  'D#9sus4': { frets: [-1, 1, 1, 1, 2, 1],       fingers: [0,1,1,1,2,1], barreAt: 1,  startFret: 1  }, // Shape 1
+  'E9sus4':  { frets: [-1, 2, 2, 2, 3, 2],       fingers: [0,1,1,1,2,1], barreAt: 2,  startFret: 2  },
+  'F9sus4':  { frets: [-1, 3, 3, 3, 4, 3],       fingers: [0,1,1,1,2,1], barreAt: 3,  startFret: 3  },
+  'F#9sus4': { frets: [-1, 4, 4, 4, 5, 4],       fingers: [0,1,1,1,2,1], barreAt: 4,  startFret: 4  },
+  'G9sus4':  { frets: [-1, 5, 5, 5, 6, 5],       fingers: [0,1,1,1,2,1], barreAt: 5,  startFret: 5  },
+  'G#9sus4': { frets: [-1, 6, 6, 6, 7, 6],       fingers: [0,1,1,1,2,1], barreAt: 6,  startFret: 6  },
+  'A9sus4':  { frets: [-1, 0, 0, 0, 0, 0],       fingers: [0,0,0,0,0,0] },                             // Shape 2 open: all open strings
+  'A#9sus4': { frets: [-1, 1, 1, 1, 1, 1],       fingers: [0,1,1,1,1,1], barreAt: 1,  startFret: 1  },
+  'B9sus4':  { frets: [-1, 2, 2, 2, 2, 2],       fingers: [0,1,1,1,1,1], barreAt: 2,  startFret: 2  },
 
   // ============================================================
   // DIMINISHED CHORDS (all 12 roots)
@@ -405,6 +431,81 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
   'A7#9':  { frets: [-1, 12, 11, 12, 13, 12], startFret: 11 },
   'A#7#9': { frets: [-1, 1, 0, 1, 2, 1] },
   'B7#9':  { frets: [-1, 2, 1, 2, 3, 2], startFret: 1 },
+
+  // ============================================================
+  // DOMINANT 7SUS4 CHORDS (all 12 roots)
+  // E-string root: n-(n+2)-(n+2)-(n+2)-(n+3)-n  (barre at n)
+  // A-string root: x-n-n-n-(n+3)-n
+  // D-string root: x-x-n-(n+2)-(n+1)-(n+3)
+  // ============================================================
+  'C7sus4':  { frets: [-1, 3, 3, 3, 6, 3],  fingers: [0,1,1,1,4,1], barreAt: 3, startFret: 3 },
+  'C#7sus4': { frets: [-1, 4, 4, 4, 7, 4],  fingers: [0,1,1,1,4,1], barreAt: 4, startFret: 4 },
+  'D7sus4':  { frets: [-1,-1, 0, 2, 1, 3],  fingers: [0,0,0,1,2,4] },
+  'D#7sus4': { frets: [-1,-1, 1, 3, 2, 4],  fingers: [0,0,1,3,2,4], startFret: 1 },
+  'E7sus4':  { frets: [ 0, 2, 2, 2, 3, 0],  fingers: [0,1,1,1,2,0], barreAt: 2 },
+  'F7sus4':  { frets: [ 1, 3, 3, 3, 4, 1],  fingers: [1,3,3,3,4,1], barreAt: 1 },
+  'F#7sus4': { frets: [ 2, 4, 4, 4, 5, 2],  fingers: [1,3,3,3,4,1], barreAt: 2, startFret: 2 },
+  'G7sus4':  { frets: [ 3, 5, 5, 5, 6, 3],  fingers: [1,3,3,3,4,1], barreAt: 3, startFret: 3 },
+  'G#7sus4': { frets: [ 4, 6, 6, 6, 7, 4],  fingers: [1,3,3,3,4,1], barreAt: 4, startFret: 4 },
+  'A7sus4':  { frets: [-1, 0, 0, 0, 3, 0],  fingers: [0,0,0,0,3,0] },
+  'A#7sus4': { frets: [-1, 1, 1, 1, 4, 1],  fingers: [0,1,1,1,4,1], barreAt: 1, startFret: 1 },
+  'B7sus4':  { frets: [-1, 2, 2, 2, 5, 2],  fingers: [0,1,1,1,4,1], barreAt: 2, startFret: 2 },
+
+  // ============================================================
+  // ADD11 CHORDS (all 12 roots)
+  // E-string root: n-n-(n+2)-(n+1)-n-n (barre at n)
+  // A-string root: x-n-n-(n+2)-(n+2)-n (barre at n)
+  // ============================================================
+  'Eadd11':  { frets: [ 0, 0, 2, 1, 0, 0],  fingers: [0,0,2,1,0,0] },
+  'Fadd11':  { frets: [ 1, 1, 3, 2, 1, 1],  fingers: [1,1,3,2,1,1], barreAt: 1 },
+  'F#add11': { frets: [ 2, 2, 4, 3, 2, 2],  fingers: [1,1,3,2,1,1], barreAt: 2, startFret: 2 },
+  'Gadd11':  { frets: [ 3, 3, 5, 4, 3, 3],  fingers: [1,1,3,2,1,1], barreAt: 3, startFret: 3 },
+  'G#add11': { frets: [ 4, 4, 6, 5, 4, 4],  fingers: [1,1,3,2,1,1], barreAt: 4, startFret: 4 },
+  'Aadd11':  { frets: [-1, 0, 0, 2, 2, 0],  fingers: [0,0,0,2,3,0] },
+  'A#add11': { frets: [-1, 1, 1, 3, 3, 1],  fingers: [0,1,1,3,4,1], barreAt: 1, startFret: 1 },
+  'Badd11':  { frets: [-1, 2, 2, 4, 4, 2],  fingers: [0,1,1,3,4,1], barreAt: 2, startFret: 2 },
+  'Cadd11':  { frets: [-1, 3, 3, 5, 5, 3],  fingers: [0,1,1,3,4,1], barreAt: 3, startFret: 3 },
+  'C#add11': { frets: [-1, 4, 4, 6, 6, 4],  fingers: [0,1,1,3,4,1], barreAt: 4, startFret: 4 },
+  'Dadd11':  { frets: [-1, 5, 5, 7, 7, 5],  fingers: [0,1,1,3,4,1], barreAt: 5, startFret: 5 },
+  'D#add11': { frets: [-1, 6, 6, 8, 8, 6],  fingers: [0,1,1,3,4,1], barreAt: 6, startFret: 6 },
+
+  // ============================================================
+  // MAJ7SUS2 CHORDS (all 12 roots)
+  // E-string root: n-(n+2)-(n+2)-(n+4)-(n+4)-(n+2)
+  // A-string root: x-n-(n+2)-(n+1)-n-n (barre at n)
+  // ============================================================
+  'Emaj7sus2':  { frets: [ 0, 2, 2, 4, 4, 2], startFret: 2 },
+  'Fmaj7sus2':  { frets: [ 1, 3, 3, 5, 5, 3], startFret: 3 },
+  'F#maj7sus2': { frets: [ 2, 4, 4, 6, 6, 4], startFret: 4 },
+  'Gmaj7sus2':  { frets: [ 3, 5, 5, 7, 7, 5], startFret: 5 },
+  'G#maj7sus2': { frets: [ 4, 6, 6, 8, 8, 6], startFret: 6 },
+  'Amaj7sus2':  { frets: [-1, 0, 2, 1, 0, 0], fingers: [0,0,2,1,0,0] },
+  'A#maj7sus2': { frets: [-1, 1, 3, 2, 1, 1], fingers: [0,1,3,2,1,1], barreAt: 1, startFret: 1 },
+  'Bmaj7sus2':  { frets: [-1, 2, 4, 3, 2, 2], fingers: [0,1,3,2,1,1], barreAt: 2, startFret: 2 },
+  'Cmaj7sus2':  { frets: [-1, 3, 5, 4, 3, 3], fingers: [0,1,3,2,1,1], barreAt: 3, startFret: 3 },
+  'C#maj7sus2': { frets: [-1, 4, 6, 5, 4, 4], fingers: [0,1,3,2,1,1], barreAt: 4, startFret: 4 },
+  'Dmaj7sus2':  { frets: [-1, 5, 7, 6, 5, 5], fingers: [0,1,3,2,1,1], barreAt: 5, startFret: 5 },
+  'D#maj7sus2': { frets: [-1, 6, 8, 7, 6, 6], fingers: [0,1,3,2,1,1], barreAt: 6, startFret: 6 },
+
+  // ============================================================
+  // MINOR ADD9 CHORDS (all 12 roots)
+  // E-string root: n-(n+2)-(n+2)-n-n-(n+2)
+  //   (G and B open at fret n = m3 and P5 of root)
+  // A-string root: x-n-(n+2)-(n+4)-(n+1)-n
+  // D+D# use E string as M9: [M9, x, root, P5, root, m3]
+  // ============================================================
+  'Emadd9':  { frets: [ 0, 2, 2, 0, 0, 2], fingers: [0,2,3,0,0,4] },
+  'Fmadd9':  { frets: [ 1, 3, 3, 1, 1, 3], fingers: [1,3,4,1,1,2], barreAt: 1 },
+  'F#madd9': { frets: [ 2, 4, 4, 2, 2, 4], fingers: [1,3,4,1,1,2], barreAt: 2, startFret: 2 },
+  'Gmadd9':  { frets: [ 3, 5, 5, 3, 3, 5], fingers: [1,3,4,1,1,2], barreAt: 3, startFret: 3 },
+  'G#madd9': { frets: [ 4, 6, 6, 4, 4, 6], fingers: [1,3,4,1,1,2], barreAt: 4, startFret: 4 },
+  'Amadd9':  { frets: [-1, 0, 2, 4, 1, 0], fingers: [0,0,1,3,2,0] },
+  'A#madd9': { frets: [-1, 1, 3, 5, 2, 1], fingers: [0,1,2,4,3,1], barreAt: 1, startFret: 1 },
+  'Bmadd9':  { frets: [-1, 2, 4, 6, 3, 2], fingers: [0,1,3,4,2,1], barreAt: 2, startFret: 2 },
+  'Cmadd9':  { frets: [-1, 3, 5, 7, 4, 3], fingers: [0,1,3,4,2,1], barreAt: 3, startFret: 3 },
+  'C#madd9': { frets: [-1, 4, 6, 8, 5, 4], fingers: [0,1,3,4,2,1], barreAt: 4, startFret: 4 },
+  'Dmadd9':  { frets: [ 0,-1, 0, 2, 3, 1], fingers: [0,0,0,2,4,1] },
+  'D#madd9': { frets: [ 1,-1, 1, 3, 4, 2], fingers: [1,0,1,3,4,2], startFret: 1 },
 };
 
 // ============================================================

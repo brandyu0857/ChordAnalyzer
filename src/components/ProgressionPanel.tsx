@@ -9,7 +9,6 @@ import PlayButton from './PlayButton';
 import ProgressionAnalysisView from './ProgressionAnalysis';
 import { playChordStrum, playChordBlock, playProgression } from '../utils/audioUtils';
 import { NOTES } from '../data/notes';
-import { findSongExamples } from '../utils/progressionMatcher';
 
 interface Props {
   onChordSelect?: (chord: ParsedChord) => void;
@@ -404,31 +403,6 @@ export default function ProgressionPanel({ onChordSelect: _onChordSelect, append
             />
           </div>
         )}
-
-        {/* Song examples */}
-        {chords.length > 0 && (() => {
-          const match = findSongExamples(chords);
-          if (!match) return null;
-          return (
-            <div className="rounded-xl p-4 border border-gray-200 bg-gray-50">
-              <div className="flex items-center gap-2 mb-3">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
-                </svg>
-                <span className="text-xs font-medium text-gray-500">使用此进行的歌曲</span>
-                <span className="text-[10px] text-gray-300 font-mono">{match.progressionKey}</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {match.songs.map((song, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg">
-                    <span className="text-sm font-medium text-gray-800">{song.title}</span>
-                    <span className="text-xs text-gray-400">— {song.artist}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Empty state */}
         {baseChords.length === 0 && !parseError && (

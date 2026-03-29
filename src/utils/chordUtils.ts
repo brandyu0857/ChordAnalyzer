@@ -74,7 +74,7 @@ export function parseChordName(name: string): ParsedChord | null {
     type = 'minor';
   } else if (suffixLower === '7' || suffixLower === 'dom7') {
     type = '7';
-  } else if (suffixLower === 'maj7' || suffixLower === 'M7' || suffix === 'Δ7') {
+  } else if (suffixLower === 'maj7' || suffix === 'M7' || suffix === 'Δ7' || suffix === 'Δ') {
     type = 'maj7';
   } else if (suffixLower === 'm7' || suffixLower === 'min7' || suffix === '-7') {
     type = 'm7';
@@ -88,13 +88,13 @@ export function parseChordName(name: string): ParsedChord | null {
     type = 'sus2';
   } else if (suffixLower === 'sus4' || suffixLower === 'sus') {
     type = 'sus4';
-  } else if (suffixLower === 'add9') {
+  } else if (suffixLower === 'add9' || suffixLower === 'add2') {
     type = 'add9';
   } else if (suffixLower === 'm7b5' || suffix === 'ø' || suffix === 'ø7') {
     type = 'm7b5';
   } else if (suffixLower === '9') {
     type = '9';
-  } else if (suffixLower === '6') {
+  } else if (suffixLower === '6' || suffixLower === 'maj6') {
     type = '6';
   } else if (suffixLower === 'm6' || suffixLower === 'min6') {
     type = 'm6';
@@ -112,6 +112,16 @@ export function parseChordName(name: string): ParsedChord | null {
     type = '7b9';
   } else if (suffixLower === '7#9' || suffixLower === '7+9' || suffix === '7♯9') {
     type = '7#9';
+  } else if (suffixLower === '9sus4' || suffixLower === '9sus' || suffixLower === 'sus9') {
+    type = '9sus4';
+  } else if (suffixLower === '7sus4' || suffixLower === '7sus') {
+    type = '7sus4';
+  } else if (suffixLower === 'add11' || suffixLower === 'add4') {
+    type = 'add11';
+  } else if (suffixLower === 'maj7sus2' || suffix === 'M7sus2' || suffix === '7Msus2' || suffix === 'Δsus2') {
+    type = 'maj7sus2';
+  } else if (suffixLower === 'madd9' || suffixLower === 'madd2' || suffixLower === 'm(add9)' || suffixLower === 'm(add2)') {
+    type = 'madd9';
   } else {
     return null;
   }
@@ -205,7 +215,9 @@ const NASHVILLE_DEFAULT_SYMBOLS = ['', 'm', 'm', '', '', 'm', 'dim'];
  */
 export function isNashvilleNotation(tokens: string[]): boolean {
   if (!tokens.length) return false;
-  return tokens.every(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t));
+  // The regex itself excludes note names (A–G) since they don't start with [b#]?[1-7]
+  // Note: 'b6', 'b3' etc. are flat Nashville degrees — must NOT be excluded by a letter check
+  return tokens.every(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t));
 }
 
 /**
