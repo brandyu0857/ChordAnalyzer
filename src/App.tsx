@@ -18,7 +18,7 @@ function App() {
   const [searchInput, setSearchInput] = useState('C');
   const [error, setError] = useState('');
   const [voicingIndex, setVoicingIndex] = useState(0);
-  const [chordToAppend, setChordToAppend] = useState<string | null>(null);
+  const [chordToAppend, setChordToAppend] = useState<{ display: string; fingeringIndex: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -30,9 +30,9 @@ function App() {
 
   const handleAddToProgression = useCallback(() => {
     if (!currentChord) return;
-    setChordToAppend(currentChord.display);
+    setChordToAppend({ display: currentChord.display, fingeringIndex: voicingIndex });
     showToast('已添加到和弦进行');
-  }, [currentChord, showToast]);
+  }, [currentChord, voicingIndex, showToast]);
 
   const handleSearch = useCallback((name: string) => {
     setSearchInput(name);
@@ -193,9 +193,9 @@ function App() {
           />
         </div>
 
-        {page === 'identify' && (
+        <div className={page !== 'identify' ? 'hidden' : ''}>
           <FretboardIdentifier onChordSelect={handleChordSelect} />
-        )}
+        </div>
       </main>
 
       <footer className="border-t border-gray-100 mt-16 py-4 text-center text-xs text-gray-300">
