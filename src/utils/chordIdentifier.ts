@@ -68,11 +68,19 @@ export function identifyChords(frets: number[]): IdentifiedChord[] {
       const allNotesInChord = uniqueNotes.every(n => expectedNotes.has(n));
       if (!allNotesInChord) continue;
 
+      // For extended chords (9, 11, 13), the characteristic extension note MUST be present
+      // Otherwise a simple 7th chord with 4 notes would match 9th, 11th, 13th simultaneously
+      const highestInterval = Math.max(...chordIntervals);
+      if (highestInterval > 7) {
+        // The highest interval is the "character" of the chord (9=14, 11=17, 13=21)
+        const charNote = (rootIdx + highestInterval) % 12;
+        if (!noteSet.has(charNote)) continue;
+      }
+
       // Check: all essential chord tones should be present
       // For triads, need all notes; for 7ths+, allow missing 5th
       const essentialIntervals = chordIntervals.filter(i => {
-        // The 5th (7 semitones) can be omitted in extended chords
-        if (chordIntervals.length > 3 && i === 7) return false;
+        if (chordIntervals.length > 3 && i === 7) return false; // 5th can be omitted
         return true;
       });
       const essentialNotes = essentialIntervals.map(i => (rootIdx + i) % 12);
@@ -80,7 +88,6 @@ export function identifyChords(frets: number[]): IdentifiedChord[] {
       const essentialTotal = essentialNotes.length;
 
       // Need at least all essential tones for a good match
-      // But also allow partial matches with lower confidence
       if (essentialPresent < Math.min(essentialTotal, uniqueNotes.length)) continue;
 
       // Calculate confidence score
@@ -104,10 +111,14 @@ export function identifyChords(frets: number[]): IdentifiedChord[] {
       if (uniqueNotes.length <= 3 && chordIntervals.length > 3) {
         confidence -= 15;
       }
+      // Heavier penalty for extended chords when many notes are missing
+      if (chordIntervals.length >= 5 && uniqueNotes.length < chordIntervals.length - 1) {
+        confidence -= 20;
+      }
 
       // Penalty: many expected notes missing
       const missing = expectedNotes.size - uniqueNotes.filter(n => expectedNotes.has(n)).length;
-      confidence -= missing * 8;
+      confidence -= missing * 10;
 
       const root = NOTES[rootIdx];
       const symbol = root + chordType.symbol;
