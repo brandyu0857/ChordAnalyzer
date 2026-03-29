@@ -23,7 +23,7 @@ export default function ChordDiagram({ fingering, chordName, size = 'medium', in
   const paddingTop = 50 * scale;
   const paddingLeft = 35 * scale;
   const paddingBottom = 30 * scale;
-  const paddingRight = 15 * scale;
+  const paddingRight = 35 * scale;
   const dotRadius = 9 * scale;
 
   const width = paddingLeft + (numStrings - 1) * stringSpacing + paddingRight;
