@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { PROGRESSION_TEMPLATES } from '../data/progressions';
 import type { ParsedChord } from '../utils/chordUtils';
-import { progressionDegreesToChords, getChordNotes, parseChordName, transposeChord, isNashvilleNotation, parseNashvilleToken } from '../utils/chordUtils';
+import { progressionDegreesToChords, getChordNotes, parseChordName, transposeChord, parseNashvilleToken } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
 import { getSubstitutions, CATEGORY_STYLES } from '../utils/substitutionUtils';
 import ChordDiagram from './ChordDiagram';
