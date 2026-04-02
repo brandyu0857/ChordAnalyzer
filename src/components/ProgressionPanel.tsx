@@ -11,6 +11,8 @@ import { playChordStrum, playChordBlock, playProgression, stopProgression } from
 import { NOTES } from '../data/notes';
 import { findSongExamples } from '../utils/progressionMatcher';
 import { useLocale } from '../i18n/context';
+import { CHORD_STYLES, applyStyleToProgression } from '../utils/chordStyleUtils';
+import type { ChordStyle } from '../utils/chordStyleUtils';
 
 interface Props {
   onChordSelect?: (chord: ParsedChord) => void;
@@ -38,6 +40,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [activeIdx, setActiveIdx] = useState<number | undefined>(undefined);
   const [isNashville, setIsNashville] = useState(false);
   const [fingeringIndices, setFingeringIndices] = useState<number[]>([]);
+  const [chordStyle, setChordStyle] = useState<ChordStyle>('default');
   const skipParse = useRef(false);
 
   const allLabel = isEn ? 'All' : '全部';
@@ -52,9 +55,15 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   }, [locale, allLabel]);
 
   const chords = useMemo(() => {
-    if (semitones === 0) return baseChords;
-    return baseChords.map(c => transposeChord(c, semitones));
-  }, [baseChords, semitones]);
+    let result = baseChords;
+    if (chordStyle !== 'default') {
+      result = applyStyleToProgression(result, templateKey, chordStyle);
+    }
+    if (semitones !== 0) {
+      result = result.map(c => transposeChord(c, semitones));
+    }
+    return result;
+  }, [baseChords, semitones, chordStyle, templateKey]);
 
   const handleTemplateSelect = (idx: number) => {
     const template = PROGRESSION_TEMPLATES[idx];
@@ -79,33 +88,21 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     const timer = setTimeout(() => {
       const tokens = input.split(/[\s\-,|]+/).filter(Boolean);
 
-      // Nashville Number System detection (e.g. "4 5 3 6 2 5 1")
-      if (isNashvilleNotation(tokens)) {
-        const nashville = tokens.map(t => parseNashvilleToken(t, templateKey));
-        if (nashville.every(c => c !== null)) {
-          const chords = nashville as ParsedChord[];
-          setBaseChords(chords);
-          setFingeringIndices(chords.map(() => 0));
-          setParseError('');
-          setIsNashville(true);
-          setSemitones(0);
-          setSelectedTemplateIdx(null);
-          setExpandedIdx(null);
-          setTemplatesOpen(false);
-          return;
-        }
-      }
-
-      // Normal chord name parsing
-      setIsNashville(false);
+      // Mixed parsing: try each token as Nashville first, then as chord name
+      const hasNashville = tokens.some(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t));
       const parsed: ParsedChord[] = [];
       const failed: string[] = [];
       for (const t of tokens) {
-        const c = parseChordName(t);
-        if (c) parsed.push(c);
+        // Try Nashville number first (e.g. "1maj7", "5", "6m")
+        const isNashvilleToken = /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t);
+        const nashvilleResult = isNashvilleToken ? parseNashvilleToken(t, templateKey) : null;
+        // Then try chord name (e.g. "Em7", "Cmaj7")
+        const chordResult = nashvilleResult || parseChordName(t);
+        if (chordResult) parsed.push(chordResult);
         else failed.push(t);
       }
       if (!parsed.length) return;
+      setIsNashville(hasNashville);
       setParseError(failed.length
         ? (isEn ? `Unrecognized: ${failed.join(', ')}` : `无法识别：${failed.join(', ')}`)
         : '');
@@ -293,6 +290,43 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                   {c.display}
                 </span>
               ))}
+            </div>
+          )}
+
+          {/* Chord Style Selector */}
+          {baseChords.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 shrink-0">
+                  {isEn ? 'Style' : '风格'}
+                </span>
+                <div className="flex gap-1.5 flex-wrap">
+                  {CHORD_STYLES.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => {
+                        setChordStyle(s.id);
+                        setFingeringIndices(prev => prev.map(() => 0));
+                        setExpandedIdx(null);
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs transition-colors cursor-pointer border
+                        ${chordStyle === s.id
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-white text-gray-500 hover:text-gray-700 border-gray-200 hover:border-gray-300'}`}
+                      title={isEn ? s.descriptionEn : s.description}
+                    >
+                      {isEn ? s.nameEn : s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {chordStyle !== 'default' && (
+                <p className="text-xs text-gray-400 pl-10">
+                  {isEn
+                    ? CHORD_STYLES.find(s => s.id === chordStyle)?.descriptionEn
+                    : CHORD_STYLES.find(s => s.id === chordStyle)?.description}
+                </p>
+              )}
             </div>
           )}
 
