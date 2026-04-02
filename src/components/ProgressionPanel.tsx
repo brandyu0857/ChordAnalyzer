@@ -88,33 +88,21 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     const timer = setTimeout(() => {
       const tokens = input.split(/[\s\-,|]+/).filter(Boolean);
 
-      // Nashville Number System detection (e.g. "4 5 3 6 2 5 1")
-      if (isNashvilleNotation(tokens)) {
-        const nashville = tokens.map(t => parseNashvilleToken(t, templateKey));
-        if (nashville.every(c => c !== null)) {
-          const chords = nashville as ParsedChord[];
-          setBaseChords(chords);
-          setFingeringIndices(chords.map(() => 0));
-          setParseError('');
-          setIsNashville(true);
-          setSemitones(0);
-          setSelectedTemplateIdx(null);
-          setExpandedIdx(null);
-          setTemplatesOpen(false);
-          return;
-        }
-      }
-
-      // Normal chord name parsing
-      setIsNashville(false);
+      // Mixed parsing: try each token as Nashville first, then as chord name
+      const hasNashville = tokens.some(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t));
       const parsed: ParsedChord[] = [];
       const failed: string[] = [];
       for (const t of tokens) {
-        const c = parseChordName(t);
-        if (c) parsed.push(c);
+        // Try Nashville number first (e.g. "1maj7", "5", "6m")
+        const isNashvilleToken = /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t);
+        const nashvilleResult = isNashvilleToken ? parseNashvilleToken(t, templateKey) : null;
+        // Then try chord name (e.g. "Em7", "Cmaj7")
+        const chordResult = nashvilleResult || parseChordName(t);
+        if (chordResult) parsed.push(chordResult);
         else failed.push(t);
       }
       if (!parsed.length) return;
+      setIsNashville(hasNashville);
       setParseError(failed.length
         ? (isEn ? `Unrecognized: ${failed.join(', ')}` : `无法识别：${failed.join(', ')}`)
         : '');
