@@ -3,10 +3,11 @@ import { identifyChords, getNoteAtFret } from '../utils/chordIdentifier';
 import type { IdentifiedChord } from '../utils/chordIdentifier';
 import type { ParsedChord } from '../utils/chordUtils';
 import { parseChordName } from '../utils/chordUtils';
+import type { GuitarFingering } from '../data/chords';
 import { useLocale } from '../i18n/context';
 
 interface FretboardIdentifierProps {
-  onChordSelect?: (chord: ParsedChord) => void;
+  onChordSelect?: (chord: ParsedChord, fingering?: GuitarFingering) => void;
 }
 
 const NUM_FRETS = 15;
@@ -117,6 +118,7 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
                 key={chord.symbol}
                 chord={chord}
                 rank={idx + 1}
+                frets={frets}
                 onSelect={onChordSelect}
               />
             ))}
@@ -277,10 +279,11 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
 interface ChordResultCardProps {
   chord: IdentifiedChord;
   rank: number;
-  onSelect?: (chord: ParsedChord) => void;
+  frets: number[];
+  onSelect?: (chord: ParsedChord, fingering?: GuitarFingering) => void;
 }
 
-function ChordResultCard({ chord, rank, onSelect }: ChordResultCardProps) {
+function ChordResultCard({ chord, rank, frets, onSelect }: ChordResultCardProps) {
   const { locale } = useLocale();
   const isEn = locale === 'en';
 
@@ -289,7 +292,12 @@ function ChordResultCard({ chord, rank, onSelect }: ChordResultCardProps) {
     // Parse the chord to get a full ParsedChord object
     const baseSymbol = chord.root + (chord.type === 'major' ? '' : chord.type);
     const parsed = parseChordName(baseSymbol);
-    if (parsed) onSelect(parsed);
+    if (parsed) {
+      // Pass the user's fretboard fingering so it shows in the detail view
+      // FretboardIdentifier uses visual order (high e first), but GuitarFingering uses low E first
+      const fingeringFrets = [...frets].reverse();
+      onSelect(parsed, { frets: fingeringFrets });
+    }
   };
 
   return (

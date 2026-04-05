@@ -8,6 +8,7 @@ import FretboardIdentifier from './components/FretboardIdentifier';
 import type { ParsedChord } from './utils/chordUtils';
 import { parseChordName, getChordNotes } from './utils/chordUtils';
 import { getGuitarFingerings } from './data/chords';
+import type { GuitarFingering } from './data/chords';
 import { playChordStrum, playChordBlock } from './utils/audioUtils';
 import { useLocale } from './i18n/context';
 
@@ -21,6 +22,7 @@ function App() {
   const [searchInput, setSearchInput] = useState('C');
   const [error, setError] = useState('');
   const [voicingIndex, setVoicingIndex] = useState(0);
+  const [customFingering, setCustomFingering] = useState<GuitarFingering | null>(null);
   const [chordToAppend, setChordToAppend] = useState<{ display: string; fingeringIndex: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -41,6 +43,7 @@ function App() {
     const parsed = parseChordName(name);
     if (parsed) {
       setCurrentChord(parsed);
+      setCustomFingering(null);
       setVoicingIndex(0);
       setError('');
     } else {
@@ -50,17 +53,24 @@ function App() {
     }
   }, [isEn]);
 
-  const handleChordSelect = useCallback((chord: ParsedChord) => {
+  const handleChordSelect = useCallback((chord: ParsedChord, fingering?: GuitarFingering) => {
     setCurrentChord(chord);
     setSearchInput(chord.display);
+    setCustomFingering(fingering ?? null);
     setVoicingIndex(0);
     setError('');
     setPage('chord');
   }, []);
 
   const fingerings = useMemo(() => {
-    return currentChord ? getGuitarFingerings(currentChord.root, currentChord.type, currentChord.bassNote) : [];
-  }, [currentChord]);
+    const base = currentChord ? getGuitarFingerings(currentChord.root, currentChord.type, currentChord.bassNote) : [];
+    if (customFingering) {
+      // Deduplicate: only prepend if not already in the list
+      const isDuplicate = base.some(f => f.frets.every((v, i) => v === customFingering.frets[i]));
+      return isDuplicate ? base : [customFingering, ...base];
+    }
+    return base;
+  }, [currentChord, customFingering]);
 
   const fingering = fingerings[voicingIndex] || null;
   const totalVoicings = fingerings.length;
