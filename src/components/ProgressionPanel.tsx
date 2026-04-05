@@ -46,6 +46,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [isRecognizing, setIsRecognizing] = useState(false);
   const [recognizeError, setRecognizeError] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [sheetText, setSheetText] = useState(''); // ChordPro format text
+  const [viewMode, setViewMode] = useState<'diagrams' | 'sheet'>('diagrams');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subPanelRef = useRef<HTMLDivElement>(null);
   const skipParse = useRef(false);
@@ -242,6 +244,10 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
         }
         skipParse.current = false;
         setInput(data.chords);
+        if (data.sheet) {
+          setSheetText(data.sheet);
+          setViewMode('sheet');
+        }
         setPreviewImage(null);
       } catch {
         setRecognizeError(isEn ? 'Network error, please try again' : '网络错误，请重试');
@@ -382,7 +388,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
           </span>
           {input.trim() && (
             <button
-              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); }}
+              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); setSheetText(''); setViewMode('diagrams'); }}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               {isEn ? 'Clear' : '清空'}
@@ -525,8 +531,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
 
           {chords.length > 0 && (
             <>
-              {/* Transpose bar */}
-              <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
+              {/* View mode toggle + Transpose bar */}
+              <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2 flex-wrap">
                 <span className="text-sm text-gray-500 flex-shrink-0">{isEn ? 'Transpose' : '转调'}</span>
                 <button onClick={() => setSemitones(s => s - 1)}
                   className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">-</button>
@@ -548,8 +554,101 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                 )}
               </div>
 
+              {/* View mode toggle — only show when sheet data is available */}
+              {sheetText && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setViewMode('sheet')}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${viewMode === 'sheet' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'}`}
+                  >
+                    {isEn ? 'Sheet' : '谱面'}
+                  </button>
+                  <button
+                    onClick={() => setViewMode('diagrams')}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${viewMode === 'diagrams' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'}`}
+                  >
+                    {isEn ? 'Diagrams' : '指法图'}
+                  </button>
+                </div>
+              )}
+
+              {/* Sheet view — ChordPro format with chords above lyrics */}
+              {viewMode === 'sheet' && sheetText && (
+                <div className="bg-white rounded-xl p-5 space-y-4 font-mono text-sm leading-relaxed">
+                  {sheetText.split('\n').map((line, li) => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return <div key={li} className="h-3" />;
+
+                    // Section header
+                    const sectionMatch = trimmed.match(/^\[(.+)\]$/);
+                    if (sectionMatch) {
+                      return (
+                        <div key={li} className="flex items-center gap-2 pt-2">
+                          <span className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full font-sans">
+                            {sectionMatch[1]}
+                          </span>
+                          <div className="flex-1 h-px bg-gray-200" />
+                        </div>
+                      );
+                    }
+
+                    // ChordPro line: extract chords and lyrics
+                    const parts: { chord: string; text: string }[] = [];
+                    const re = /\{([^}]+)\}/g;
+                    let lastIdx = 0;
+                    let m;
+                    while ((m = re.exec(trimmed)) !== null) {
+                      // Text before this chord (belongs to previous chord)
+                      if (m.index > lastIdx && parts.length > 0) {
+                        parts[parts.length - 1].text += trimmed.substring(lastIdx, m.index);
+                      } else if (m.index > lastIdx && parts.length === 0) {
+                        parts.push({ chord: '', text: trimmed.substring(lastIdx, m.index) });
+                      }
+                      parts.push({ chord: m[1], text: '' });
+                      lastIdx = m.index + m[0].length;
+                    }
+                    // Remaining text after last chord
+                    if (lastIdx < trimmed.length) {
+                      if (parts.length > 0) {
+                        parts[parts.length - 1].text += trimmed.substring(lastIdx);
+                      } else {
+                        parts.push({ chord: '', text: trimmed.substring(lastIdx) });
+                      }
+                    }
+
+                    if (!parts.length) return null;
+
+                    // Check if this is instrumental (no lyrics, only chords)
+                    const hasLyrics = parts.some(p => p.text.trim());
+
+                    if (!hasLyrics) {
+                      return (
+                        <div key={li} className="flex flex-wrap gap-4 py-1">
+                          {parts.filter(p => p.chord).map((p, pi) => (
+                            <span key={pi} className="text-blue-600 font-bold font-sans">{p.chord}</span>
+                          ))}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={li} className="flex flex-wrap">
+                        {parts.map((p, pi) => (
+                          <span key={pi} className="inline-flex flex-col">
+                            <span className={`text-blue-600 font-bold font-sans text-xs h-5 ${p.chord ? '' : 'invisible'}`}>
+                              {p.chord || '.'}
+                            </span>
+                            <span className="text-gray-800 whitespace-pre">{p.text || '\u00A0'}</span>
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Chord grid — grouped by sections */}
-              {(() => {
+              {viewMode === 'diagrams' && (() => {
                 // Build sections array from sectionBreaks
                 const hasSections = Object.keys(sectionBreaks).length > 0;
                 const sectionEntries = hasSections
