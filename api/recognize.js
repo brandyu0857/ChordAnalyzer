@@ -64,7 +64,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${GPT_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini',
+        model: 'gpt-4.1-mini',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           {
@@ -77,7 +77,8 @@ export default async function handler(req, res) {
             ],
           },
         ],
-        max_completion_tokens: 2048,
+        temperature: 0.1,
+        max_tokens: 2048,
       }),
     });
 
