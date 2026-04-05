@@ -2,7 +2,6 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { PROGRESSION_TEMPLATES } from '../data/progressions';
 import type { ParsedChord } from '../utils/chordUtils';
 import { progressionDegreesToChords, getChordNotes, parseChordName, transposeChord, parseNashvilleToken } from '../utils/chordUtils';
-import { parseChordPro } from '../utils/chordProParser';
 import { getGuitarFingerings } from '../data/chords';
 import { getSubstitutions, CATEGORY_STYLES } from '../utils/substitutionUtils';
 import ChordDiagram from './ChordDiagram';
@@ -47,8 +46,6 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [isRecognizing, setIsRecognizing] = useState(false);
   const [recognizeError, setRecognizeError] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [sheetText, setSheetText] = useState(''); // ChordPro format text
-  const [viewMode, setViewMode] = useState<'diagrams' | 'sheet'>('diagrams');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subPanelRef = useRef<HTMLDivElement>(null);
   const skipParse = useRef(false);
@@ -245,10 +242,6 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
         }
         skipParse.current = false;
         setInput(data.chords);
-        if (data.sheet) {
-          setSheetText(data.sheet);
-          setViewMode('sheet');
-        }
         setPreviewImage(null);
       } catch {
         setRecognizeError(isEn ? 'Network error, please try again' : '网络错误，请重试');
@@ -389,7 +382,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
           </span>
           {input.trim() && (
             <button
-              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); setSheetText(''); setViewMode('diagrams'); }}
+              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); }}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               {isEn ? 'Clear' : '清空'}
@@ -532,8 +525,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
 
           {chords.length > 0 && (
             <>
-              {/* View mode toggle + Transpose bar */}
-              <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2 flex-wrap">
+              {/* Transpose bar */}
+              <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
                 <span className="text-sm text-gray-500 flex-shrink-0">{isEn ? 'Transpose' : '转调'}</span>
                 <button onClick={() => setSemitones(s => s - 1)}
                   className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">-</button>
@@ -555,101 +548,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                 )}
               </div>
 
-              {/* View mode toggle — only show when sheet data is available */}
-              {sheetText && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setViewMode('sheet')}
-                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${viewMode === 'sheet' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'}`}
-                  >
-                    {isEn ? 'Sheet' : '谱面'}
-                  </button>
-                  <button
-                    onClick={() => setViewMode('diagrams')}
-                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${viewMode === 'diagrams' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'}`}
-                  >
-                    {isEn ? 'Diagrams' : '指法图'}
-                  </button>
-                </div>
-              )}
-
-              {/* Sheet view — ChordPro format with chords above lyrics */}
-              {viewMode === 'sheet' && sheetText && (() => {
-                // Transpose chords in sheet text if needed
-                const displaySheet = semitones === 0 ? sheetText : sheetText.replace(/\[([^\]]+)\]/g, (_, chord) => {
-                  const parsed = parseChordName(chord);
-                  if (!parsed) return `[${chord}]`;
-                  const transposed = transposeChord(parsed, semitones);
-                  return `[${transposed.display}]`;
-                });
-                const sheet = parseChordPro(displaySheet);
-                return (
-                  <div className="bg-white rounded-xl p-5 space-y-1 text-sm leading-relaxed">
-                    {sheet.lines.map((line, li) => {
-                      if (line.isBlank) return <div key={li} className="h-3" />;
-
-                      const seg = line.segments;
-
-                      // Section header line: [SectionName]
-                      if (seg.length === 1 && !seg[0].chord && seg[0].lyrics.match(/^\[(.+)\]$/)) {
-                        const label = seg[0].lyrics.match(/^\[(.+)\]$/)![1];
-                        return (
-                          <div key={li} className="flex items-center gap-2 pt-3 pb-1">
-                            <span className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full">
-                              {label}
-                            </span>
-                            <div className="flex-1 h-px bg-gray-200" />
-                          </div>
-                        );
-                      }
-
-                      // Check if line has any lyrics
-                      const hasLyrics = seg.some(s => s.lyrics.trim());
-                      // Check if line has any chords
-                      const hasChords = seg.some(s => s.chord);
-
-                      // Instrumental line (chords only, no lyrics)
-                      if (hasChords && !hasLyrics) {
-                        return (
-                          <div key={li} className="flex flex-wrap gap-4 py-1">
-                            {seg.filter(s => s.chord).map((s, si) => (
-                              <span key={si} className="text-blue-600 font-bold">{s.chord}</span>
-                            ))}
-                          </div>
-                        );
-                      }
-
-                      // Lyrics-only line (no chords)
-                      if (!hasChords) {
-                        return (
-                          <div key={li} className="text-gray-800">
-                            {seg.map(s => s.lyrics).join('')}
-                          </div>
-                        );
-                      }
-
-                      // ChordPro line: chords above lyrics
-                      return (
-                        <div key={li} className="flex flex-wrap">
-                          {seg.map((s, si) => (
-                            <span key={si} className="inline-flex flex-col">
-                              {s.chord ? (
-                                <span className="text-blue-600 font-bold text-xs h-5">{s.chord}</span>
-                              ) : (
-                                <span className="h-5" />
-                              )}
-                              <span className="text-gray-800 whitespace-pre">{s.lyrics || '\u00A0'}</span>
-                            </span>
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-
               {/* Chord grid — grouped by sections */}
-              {viewMode === 'diagrams' && (() => {
+              {(() => {
                 // Build sections array from sectionBreaks
                 const hasSections = Object.keys(sectionBreaks).length > 0;
                 const sectionEntries = hasSections

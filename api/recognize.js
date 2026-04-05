@@ -2,7 +2,7 @@ const GPT_API_KEY = process.env.GPT_API_KEY;
 
 const SYSTEM_PROMPT = `You are an expert music chord recognition assistant specializing in jazz and popular music notation.
 
-Analyze the uploaded image and extract ALL chord symbols AND lyrics in ChordPro format.
+Analyze the uploaded image and extract ALL chord symbols in order.
 
 CRITICAL - Reading accuracy rules:
 - Read the image TOP to BOTTOM, LEFT to RIGHT. Do NOT skip any line.
@@ -29,62 +29,18 @@ CRITICAL - Repeat sign rules:
 - Double % or slash marks = repeat previous 2 bars. Expand these too.
 - Do NOT skip or ignore repeat signs. Every bar must produce chord names.
 
-STRICT output format - ChordPro:
-- Use ChordPro format: chords in [square brackets] placed at the exact position in the lyrics where the chord changes.
-- Use {section: Name} directives on their own line for sections (e.g. {section: Intro}, {section: Verse}).
-- Each lyric line with its chords should be on ONE line.
-- For instrumental sections with no lyrics, put chords on one line: [Fmaj7] [Em7] [E] [Amaj7]
+STRICT output rules:
+- Output ONLY chord symbols and [Section] markers. NO other text, NO explanations, NO punctuation except within chord names.
 - Use standard chord notation: Cmaj7, Dm7, Am9, G9sus4, Bbmaj7, D7/F#
 - Convert ALL jazz shorthand: Δ→maj, -→m, °→dim, ø→m7b5
 - Expand ALL repeat signs (% marks) into actual chord names
-- Translate Chinese section labels to English.
+- Group chords by song sections using [Section] markers
+- Use section names: [Intro], [Verse], [Chorus], [Bridge], [Outro], [Interlude], [Solo], or [A], [B], [C] etc.
+- If sections are labeled in the image, use those labels (translate Chinese labels to English)
 - If no chords found, return only: NO_CHORDS_FOUND
-- NO other text, NO explanations.
 
-CORRECT output example:
-{section: Intro}
-[Fmaj7] [Em7] [E] [Amaj7]
-[Fmaj7] [Em7] [Am7] [Dmaj7] [F/G]
-{section: Verse}
-[G]已经为了变的[D/F#]更好去掉[Em]锋芒
-[C]一不小心成了[Cm7]你的倾诉[D7]对象
-{section: Chorus}
-[Fmaj7]Love Song 一直[G7]想写一首[Am7]Love Song[Em7]`;
-
-function normalizeChordText(text) {
-  // Strip parentheses
-  text = text.replace(/[()]/g, '');
-  // Convert caret (^) to maj
-  text = text.replace(/\^/g, 'maj');
-  // Normalize Unicode symbols to ASCII
-  text = text.replace(/♭/g, 'b').replace(/♯/g, '#').replace(/Δ/g, 'maj').replace(/°/g, 'dim').replace(/ø/g, 'm7b5');
-  return text;
-}
-
-// Extract chord-only format from ChordPro text (square bracket format)
-function chordProToChordList(sheet) {
-  const lines = sheet.split('\n');
-  const parts = [];
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    // Convert {section: Name} to [Name] for chord-only format
-    const sectionMatch = trimmed.match(/^\{section:\s*(.+?)\s*\}$/i);
-    if (sectionMatch) {
-      parts.push(`[${sectionMatch[1]}]`);
-      continue;
-    }
-    // Extract chords from [Chord] patterns
-    const chords = [];
-    const re = /\[([^\]]+)\]/g;
-    let m;
-    while ((m = re.exec(trimmed)) !== null) {
-      chords.push(m[1]);
-    }
-    if (chords.length) parts.push(...chords);
-  }
-  return parts.join(' ');
-}
+CORRECT output example (note: NO extra text, ONLY chords and markers):
+[Intro] Fmaj7 Em7 E Amaj7 Fmaj7 Em7 Am7 Dmaj7 F/G [Verse] Cmaj7 Am7 Dm7 G7 [Chorus] Fmaj7 G7 Am7 Em7`;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -122,7 +78,7 @@ export default async function handler(req, res) {
           },
         ],
         temperature: 0.1,
-        max_tokens: 4096,
+        max_tokens: 2048,
       }),
     });
 
@@ -135,37 +91,45 @@ export default async function handler(req, res) {
     let text = data?.choices?.[0]?.message?.content?.trim() || '';
 
     if (text === 'NO_CHORDS_FOUND' || !text) {
-      return res.json({ chords: '', sheet: '', message: 'No chords found in image' });
+      return res.json({ chords: '', message: 'No chords found in image' });
     }
 
     // Strip any preamble text before the first chord or section marker
+    // Find where actual chord data starts: first [Section] marker or first chord-like token
     const sectionStart = text.indexOf('[');
-    const chordStart = text.indexOf('{');
-    const firstRelevant = Math.min(
-      sectionStart >= 0 ? sectionStart : Infinity,
-      chordStart >= 0 ? chordStart : Infinity
-    );
-    if (firstRelevant > 0 && firstRelevant < Infinity) {
-      text = text.substring(firstRelevant);
+    if (sectionStart > 0) {
+      text = text.substring(sectionStart);
+    } else if (sectionStart === -1) {
+      // No section markers — find first chord-like token (starts with A-G)
+      const match = text.match(/(?:^|\s)([A-G][b#]?(?:maj|min|m|dim|aug|sus|add|[0-9])?)/);
+      if (match && match.index > 0) {
+        text = text.substring(match.index).trim();
+      }
     }
 
-    // Remove trailing explanation text
+    // Remove any trailing explanation text (after the last chord)
+    // Chords/sections end, then explanatory text might follow
     text = text.replace(/\n\n[\s\S]*$/, '').trim();
 
     // Remove NO_CHORDS_FOUND if mixed with other content
     text = text.replace(/\bNO_CHORDS_FOUND\b/g, '').trim();
 
-    // Normalize chord symbols
-    text = normalizeChordText(text);
+    // Strip parentheses around chords — GPT sometimes wraps uncertain chords
+    text = text.replace(/[()]/g, '');
 
+    // Convert caret (^) to maj — GPT sometimes uses ^ for triangle/Δ
+    // e.g. F#^7 → F#maj7, C^ → Cmaj
+    text = text.replace(/\^/g, 'maj');
+
+    // Normalize Unicode symbols to ASCII
+    text = text.replace(/♭/g, 'b').replace(/♯/g, '#').replace(/Δ/g, 'maj').replace(/°/g, 'dim').replace(/ø/g, 'm7b5');
+
+    // If everything was stripped, no chords
     if (!text) {
-      return res.json({ chords: '', sheet: '', message: 'No chords found in image' });
+      return res.json({ chords: '', message: 'No chords found in image' });
     }
 
-    // Extract chord-only list for diagram view
-    const chords = chordProToChordList(text);
-
-    return res.json({ chords, sheet: text });
+    return res.json({ chords: text });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return res.status(500).json({ error: message });
