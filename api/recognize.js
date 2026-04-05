@@ -1,5 +1,4 @@
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GPT_API_KEY = process.env.GPT_API_KEY;
 
 const SYSTEM_PROMPT = `You are a music chord recognition assistant. Analyze the uploaded image which contains a guitar chord sheet, tab, or chord progression.
 
@@ -20,8 +19,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!GEMINI_API_KEY) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+  if (!GPT_API_KEY) {
+    return res.status(500).json({ error: 'GPT_API_KEY not configured' });
   }
 
   try {
@@ -30,43 +29,38 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No image provided' });
     }
 
-    const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
-    if (!match) {
-      return res.status(400).json({ error: 'Invalid image format. Expected base64 data URL.' });
-    }
-
-    const mimeType = match[1];
-    const base64Data = match[2];
-
-    const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GPT_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: SYSTEM_PROMPT },
-            {
-              inlineData: {
-                mimeType,
-                data: base64Data,
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: { url: image },
               },
-            },
-          ],
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 512,
-        },
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 512,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      return res.status(response.status).json({ error: `Gemini API error: ${errorText}` });
+      return res.status(response.status).json({ error: `OpenAI API error: ${errorText}` });
     }
 
     const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    const text = data?.choices?.[0]?.message?.content?.trim() || '';
 
     if (text === 'NO_CHORDS_FOUND') {
       return res.json({ chords: '', message: 'No chords found in image' });
