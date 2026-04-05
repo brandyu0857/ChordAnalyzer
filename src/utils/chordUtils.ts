@@ -12,7 +12,10 @@ export interface ParsedChord {
 }
 
 export function parseChordName(name: string): ParsedChord | null {
-  let trimmed = name.trim();
+  let trimmed = name.trim()
+    .replace(/♭/g, 'b')
+    .replace(/♯/g, '#')
+    .replace(/𝄫/g, 'bb');
   if (!trimmed) return null;
 
   // Normalize prefix-style accidentals: #X → X#, bX → Xb (where X is a note letter A-G)
