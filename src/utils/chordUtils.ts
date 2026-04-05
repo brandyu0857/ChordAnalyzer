@@ -138,6 +138,18 @@ export function parseChordName(name: string): ParsedChord | null {
   } else if (suffixLower === 'maj11') {
     type = 'maj11';
   } else {
+    // Not in known list — try dynamic formula parsing
+    const dynamicType = buildChordTypeFromSuffix(suffix);
+    if (dynamicType) {
+      const dynKey = '_dyn_' + suffix;
+      return {
+        root,
+        type: dynKey,
+        chordType: dynamicType,
+        display: bassNote ? `${root}${dynamicType.symbol}/${bassNote}` : root + dynamicType.symbol,
+        bassNote,
+      };
+    }
     return null;
   }
 
@@ -154,7 +166,7 @@ export function parseChordName(name: string): ParsedChord | null {
 }
 
 export function getChordNotes(root: string, type: string): string[] {
-  const chordType = CHORD_TYPES[type];
+  const chordType = CHORD_TYPES[type] ?? (type.startsWith('_dyn_') ? buildChordTypeFromSuffix(type.slice(5)) : null);
   if (!chordType) return [];
   return chordType.intervals.map(interval => getNoteAtInterval(root, interval % 12));
 }
@@ -222,6 +234,210 @@ export function findChordDegree(chordRoot: string, key: string): { degree: strin
   }
 
   return null;
+}
+
+// ─── Dynamic Chord Formula Parser ───────────────────────────────────────────
+
+/**
+ * Build a ChordType dynamically from any chord suffix string (e.g. "7#11", "m9b5", "maj13#11").
+ * Uses music theory rules to compute intervals from the symbol.
+ * Returns null only if the suffix is completely unparseable.
+ */
+function buildChordTypeFromSuffix(suffix: string): ChordType | null {
+  if (!suffix) return null;
+
+  let s = suffix;
+  let third: number | null = 4;   // default major 3rd
+  let fifth = 7;                  // default perfect 5th
+  let seventh: number | null = null;
+  let hasSixth = false;
+  const extras: number[] = [];
+  let isSus: 2 | 4 | null = null;
+  let consumed = false;
+
+  // --- Helper: consume a regex from the front of `s` ---
+  function eat(re: RegExp): RegExpMatchArray | null {
+    const m = s.match(re);
+    if (m && s.indexOf(m[0]) === 0) {
+      s = s.substring(m[0].length);
+      consumed = true;
+      return m;
+    }
+    return null;
+  }
+
+  // --- 1. Quality prefix ---
+  if (eat(/^m(?!aj)/i)) {
+    third = 3; // minor
+    // mmaj7, m(maj7)
+    if (eat(/^\(?maj\)?/i)) {
+      seventh = 11; // major 7th
+    }
+  } else if (eat(/^dim/i) || eat(/^°/)) {
+    third = 3; fifth = 6;
+  } else if (eat(/^aug/i) || eat(/^\+(?![0-9])/)) {
+    third = 4; fifth = 8;
+  }
+  // else: major (default), or prefix is part of extension (maj7, etc.)
+
+  // --- 2. Extension / 7th ---
+  if (eat(/^maj/i) || eat(/^M(?=[0-9])/)) {
+    // maj7, maj9, maj11, maj13
+    const numMatch = eat(/^[0-9]+/);
+    if (numMatch) {
+      const ext = parseInt(numMatch[0]);
+      seventh = 11; // major 7th
+      if (ext >= 9)  extras.push(14);
+      if (ext >= 11) extras.push(17);
+      if (ext >= 13) extras.push(21);
+    } else {
+      seventh = 11; // just "maj" after quality = major 7th
+    }
+  } else {
+    const numMatch = eat(/^[0-9]+/);
+    if (numMatch) {
+      const ext = parseInt(numMatch[0]);
+      if (ext === 5) {
+        third = null; // power chord
+      } else if (ext === 69) {
+        hasSixth = true;
+        extras.push(14); // 9
+      } else if (ext === 6) {
+        hasSixth = true;
+      } else if (ext === 7) {
+        seventh = seventh ?? 10;
+      } else if (ext === 9) {
+        seventh = seventh ?? 10;
+        extras.push(14);
+      } else if (ext === 11) {
+        seventh = seventh ?? 10;
+        extras.push(14);
+        extras.push(17);
+      } else if (ext === 13) {
+        seventh = seventh ?? 10;
+        extras.push(14);
+        extras.push(17);
+        extras.push(21);
+      }
+    }
+  }
+
+  // --- 3. Remaining modifiers (alterations, sus, add) ---
+  let guard = 20; // prevent infinite loop on malformed input
+  while (s.length > 0 && guard-- > 0) {
+    // Skip parentheses, slashes used as separators
+    if (eat(/^[()]/)) continue;
+
+    // 6/9
+    if (eat(/^6\/9/i)) {
+      hasSixth = true;
+      extras.push(14);
+      continue;
+    }
+
+    // sus2, sus4
+    {
+      const susMatch = s.match(/^sus([24])?/i);
+      if (susMatch) {
+        s = s.substring(susMatch[0].length);
+        consumed = true;
+        isSus = susMatch[1] === '2' ? 2 : 4;
+        continue;
+      }
+    }
+
+    // add + optional accidental + number: add9, add#11, addb13, add2, add4
+    const addMatch = eat(/^add([b#]?)([0-9]+)/i);
+    if (addMatch) {
+      const acc = addMatch[1];
+      const n = parseInt(addMatch[2]);
+      const semi = degreeToSemitone(n, acc);
+      if (semi !== null) extras.push(semi);
+      continue;
+    }
+
+    // Alteration: b5, #5, b9, #9, #11, b13, etc.
+    const altMatch = eat(/^([b#♭♯])([0-9]+)/);
+    if (altMatch) {
+      const acc = altMatch[1];
+      const n = parseInt(altMatch[2]);
+      const isSharp = acc === '#' || acc === '♯';
+      const semi = degreeToSemitone(n, isSharp ? '#' : 'b');
+      if (semi !== null) {
+        if (n === 5) { fifth = semi; }
+        else if (n === 9) {
+          // Remove natural 9 if present, add altered
+          const idx = extras.indexOf(14);
+          if (idx >= 0) extras[idx] = semi;
+          else extras.push(semi);
+        } else if (n === 11) {
+          const idx = extras.indexOf(17);
+          if (idx >= 0) extras[idx] = semi;
+          else extras.push(semi);
+        } else if (n === 13) {
+          const idx = extras.indexOf(21);
+          if (idx >= 0) extras[idx] = semi;
+          else extras.push(semi);
+        } else {
+          extras.push(semi);
+        }
+      }
+      continue;
+    }
+
+    // no9, no3, no5 — omit a degree
+    const noMatch = eat(/^no([0-9]+)/i);
+    if (noMatch) {
+      const n = parseInt(noMatch[1]);
+      if (n === 3) third = null;
+      else if (n === 5) fifth = -1;
+      continue;
+    }
+
+    // Unknown character — skip to avoid infinite loop
+    s = s.substring(1);
+  }
+
+  // If nothing was consumed at all, suffix is garbage
+  if (!consumed && suffix.length > 0) return null;
+
+  // --- 4. Assemble intervals ---
+  const intervals: number[] = [0];
+  if (isSus === 2) intervals.push(2);
+  else if (isSus === 4) intervals.push(5);
+  else if (third !== null) intervals.push(third);
+
+  if (fifth >= 0) intervals.push(fifth);
+  if (hasSixth) intervals.push(9);
+  if (seventh !== null) intervals.push(seventh);
+  for (const e of extras) {
+    if (!intervals.includes(e)) intervals.push(e);
+  }
+
+  intervals.sort((a, b) => a - b);
+
+  return {
+    name: suffix,
+    nameEn: suffix,
+    symbol: suffix,
+    intervals,
+    description: '动态识别',
+    descriptionEn: 'Dynamically parsed',
+  };
+}
+
+/** Map a scale degree number + accidental to semitones from root */
+function degreeToSemitone(degree: number, accidental: string): number | null {
+  // Natural degree → semitone mapping
+  const natural: Record<number, number> = {
+    1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11,
+    9: 14, 10: 16, 11: 17, 12: 18, 13: 21,
+  };
+  const base = natural[degree];
+  if (base === undefined) return null;
+  if (accidental === 'b' || accidental === '♭') return base - 1;
+  if (accidental === '#' || accidental === '♯') return base + 1;
+  return base;
 }
 
 // ─── Nashville Number System ────────────────────────────────────────────────
