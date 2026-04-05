@@ -100,6 +100,24 @@ export default async function handler(req, res) {
     // Chords/sections end, then explanatory text might follow
     text = text.replace(/\n\n[\s\S]*$/, '').trim();
 
+    // Remove NO_CHORDS_FOUND if mixed with other content
+    text = text.replace(/\bNO_CHORDS_FOUND\b/g, '').trim();
+
+    // Strip parentheses around chords — GPT sometimes wraps uncertain chords
+    text = text.replace(/[()]/g, '');
+
+    // Convert caret (^) to maj — GPT sometimes uses ^ for triangle/Δ
+    // e.g. F#^7 → F#maj7, C^ → Cmaj
+    text = text.replace(/\^/g, 'maj');
+
+    // Normalize Unicode symbols to ASCII
+    text = text.replace(/♭/g, 'b').replace(/♯/g, '#').replace(/Δ/g, 'maj').replace(/°/g, 'dim').replace(/ø/g, 'm7b5');
+
+    // If everything was stripped, no chords
+    if (!text) {
+      return res.json({ chords: '', message: 'No chords found in image' });
+    }
+
     return res.json({ chords: text });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

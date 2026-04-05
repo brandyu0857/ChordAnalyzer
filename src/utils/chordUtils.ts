@@ -15,7 +15,12 @@ export function parseChordName(name: string): ParsedChord | null {
   let trimmed = name.trim()
     .replace(/♭/g, 'b')
     .replace(/♯/g, '#')
-    .replace(/𝄫/g, 'bb');
+    .replace(/𝄫/g, 'bb')
+    .replace(/[()]/g, '')       // Strip parentheses
+    .replace(/\^/g, 'maj')     // Caret = major (triangle shorthand)
+    .replace(/Δ/g, 'maj')
+    .replace(/°/g, 'dim')
+    .replace(/ø/g, 'm7b5');
   if (!trimmed) return null;
 
   // Normalize prefix-style accidentals: #X → X#, bX → Xb (where X is a note letter A-G)

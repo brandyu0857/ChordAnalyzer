@@ -94,7 +94,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     const timer = setTimeout(() => {
       const tokens = input.split(/[\s\-,|]+/).filter(Boolean);
 
-      // Extract section markers like [Intro], [Verse], etc.
+      // Extract section markers like [Intro], [Verse], etc. and filter noise
       const sections: Record<number, string> = {};
       let chordIndex = 0;
       const cleanTokens: string[] = [];
@@ -102,6 +102,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
         const sectionMatch = t.match(/^\[(.+)\]$/);
         if (sectionMatch) {
           sections[chordIndex] = sectionMatch[1];
+        } else if (t === 'NO_CHORDS_FOUND') {
+          // Skip GPT noise token
         } else {
           cleanTokens.push(t);
           chordIndex++;
