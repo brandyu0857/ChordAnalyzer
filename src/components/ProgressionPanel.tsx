@@ -172,10 +172,10 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   };
 
   const handleImageUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) return;
     setRecognizeError('');
     setIsRecognizing(true);
 
-    // Read file as base64
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = reader.result as string;
@@ -196,10 +196,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
           setRecognizeError(isEn ? 'No chords found in image' : '未在图片中找到和弦');
           return;
         }
-        // Fill recognized chords into input
-        const chordsText = data.chords;
         skipParse.current = false;
-        setInput(chordsText);
+        setInput(data.chords);
         setPreviewImage(null);
       } catch {
         setRecognizeError(isEn ? 'Network error, please try again' : '网络错误，请重试');
@@ -209,6 +207,48 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     };
     reader.readAsDataURL(file);
   }, [isEn]);
+
+  // Paste image from clipboard (Ctrl+V / Cmd+V)
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) handleImageUpload(file);
+        return;
+      }
+    }
+  }, [handleImageUpload]);
+
+  // Drag and drop
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    dragCounter.current = 0;
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) handleImageUpload(file);
+  }, [handleImageUpload]);
 
   return (
     <div className="space-y-4">
@@ -306,13 +346,33 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
           )}
         </div>
         {/* Unified editor container */}
-        <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <div
+          className={`bg-gray-50 rounded-xl p-4 space-y-4 relative transition-colors ${isDragging ? 'ring-2 ring-gray-900 bg-gray-100' : ''}`}
+          onPaste={handlePaste}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          {/* Drag overlay */}
+          {isDragging && (
+            <div className="absolute inset-0 bg-gray-900/10 rounded-xl flex items-center justify-center z-10 pointer-events-none">
+              <div className="bg-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm font-medium text-gray-700">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                {isEn ? 'Drop image to recognize chords' : '松开以识别和弦谱'}
+              </div>
+            </div>
+          )}
           {/* Input row */}
           <div className="flex gap-2">
             <input
               value={input}
               onChange={e => { setInput(e.target.value); setParseError(''); }}
-              placeholder={isEn ? 'Enter chords: C Em F G, or degrees: 1 6m 4 5' : '输入和弦：C Em F G，或级数：1 6m 4 5'}
+              placeholder={isEn ? 'Enter chords, or paste/drop an image' : '输入和弦，或粘贴/拖入图片识谱'}
               className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
             />
             {/* Image upload button */}
