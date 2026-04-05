@@ -72,6 +72,8 @@ export default function ChordSheetEditor() {
     return placements.filter(p => p.line === lineIdx);
   }, [placements]);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const handleCharClick = useCallback((e: React.MouseEvent, line: number, charIndex: number) => {
     // If there's already a chord here, remove it
     const existing = placements.find(p => p.line === line && p.charIndex === charIndex);
@@ -79,9 +81,12 @@ export default function ChordSheetEditor() {
       removeChord(line, charIndex);
       return;
     }
-    // Open popover at click position
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    setPopover({ line, charIndex, x: rect.left, y: rect.top });
+    // Open popover positioned above the clicked character
+    const charRect = (e.target as HTMLElement).getBoundingClientRect();
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    const x = containerRect ? charRect.left - containerRect.left : 0;
+    const y = containerRect ? charRect.top - containerRect.top : 0;
+    setPopover({ line, charIndex, x, y });
     setPopoverInput('');
   }, [placements, removeChord]);
 
@@ -139,7 +144,7 @@ export default function ChordSheetEditor() {
           </div>
 
           {/* Lyrics with chord placement */}
-          <div className="bg-white rounded-xl p-5 space-y-0 select-none relative">
+          <div ref={containerRef} className="bg-white rounded-xl p-5 space-y-0 select-none relative">
             {lines.map((line, li) => {
               if (!line.trim()) return <div key={li} className="h-4" />;
 
@@ -208,8 +213,8 @@ export default function ChordSheetEditor() {
             {popover && (
               <div
                 ref={popoverRef}
-                className="fixed z-50 bg-white rounded-xl shadow-lg border border-gray-200 p-3 space-y-2"
-                style={{ left: Math.min(popover.x, window.innerWidth - 260), top: popover.y - 80 }}
+                className="absolute z-50 bg-white rounded-xl shadow-lg border border-gray-200 p-3 space-y-2"
+                style={{ left: popover.x, top: popover.y - 8, transform: 'translateY(-100%)' }}
               >
                 <div className="flex items-center gap-2">
                   <input
