@@ -608,6 +608,26 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                                     </div>
                                   )}
                                   <span className="text-sm font-semibold text-gray-900 mt-1">{chord.display}</span>
+                                  {/* Voicing switcher */}
+                                  {allFingerings.length > 1 && (
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                      <button
+                                        onClick={e => { e.stopPropagation(); setFingeringIndices(prev => prev.map((v, idx) => idx === i ? (v - 1 + allFingerings.length) % allFingerings.length : v)); }}
+                                        className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                                        title={isEn ? 'Previous voicing' : '上一个指法'}
+                                      >
+                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="15 18 9 12 15 6" /></svg>
+                                      </button>
+                                      <span className="text-[10px] text-gray-400 tabular-nums">{fi + 1}/{allFingerings.length}</span>
+                                      <button
+                                        onClick={e => { e.stopPropagation(); setFingeringIndices(prev => prev.map((v, idx) => idx === i ? (v + 1) % allFingerings.length : v)); }}
+                                        className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                                        title={isEn ? 'Next voicing' : '下一个指法'}
+                                      >
+                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6" /></svg>
+                                      </button>
+                                    </div>
+                                  )}
                                   <div className="flex items-center gap-1.5 mt-1">
                                     <button
                                       onClick={e => { e.stopPropagation(); handlePlay(chord.root, chord.type); }}
