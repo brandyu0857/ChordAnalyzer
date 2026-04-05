@@ -28,6 +28,7 @@ export default function ChordSheetEditor() {
   const [popoverInput, setPopoverInput] = useState('');
   const popoverInputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const lines = lyrics.split('\n');
 
@@ -71,8 +72,6 @@ export default function ChordSheetEditor() {
   const getChordsForLine = useCallback((lineIdx: number) => {
     return placements.filter(p => p.line === lineIdx);
   }, [placements]);
-
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleCharClick = useCallback((e: React.MouseEvent, line: number, charIndex: number) => {
     // If there's already a chord here, remove it

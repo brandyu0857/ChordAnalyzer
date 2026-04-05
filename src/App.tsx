@@ -65,7 +65,6 @@ function App() {
   const fingerings = useMemo(() => {
     const base = currentChord ? getGuitarFingerings(currentChord.root, currentChord.type, currentChord.bassNote) : [];
     if (customFingering) {
-      // Deduplicate: only prepend if not already in the list
       const isDuplicate = base.some(f => f.frets.every((v, i) => v === customFingering.frets[i]));
       return isDuplicate ? base : [customFingering, ...base];
     }

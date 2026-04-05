@@ -118,8 +118,16 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
                 key={chord.symbol}
                 chord={chord}
                 rank={idx + 1}
-                frets={frets}
-                onSelect={onChordSelect}
+                onSelect={(parsed) => {
+                  if (!onChordSelect) return;
+                  // Convert visual order (high e first) to GuitarFingering order (low E first)
+                  const fingeringFrets = [...frets].reverse();
+                  const pressed = fingeringFrets.filter(f => f > 0);
+                  const maxFret = pressed.length ? Math.max(...pressed) : 0;
+                  const minFret = pressed.length ? Math.min(...pressed) : 0;
+                  const startFret = maxFret <= 5 ? 0 : Math.max(1, minFret - 1);
+                  onChordSelect(parsed, { frets: fingeringFrets, startFret: startFret || undefined });
+                }}
               />
             ))}
           </div>
@@ -279,31 +287,18 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
 interface ChordResultCardProps {
   chord: IdentifiedChord;
   rank: number;
-  frets: number[];
-  onSelect?: (chord: ParsedChord, fingering?: GuitarFingering) => void;
+  onSelect?: (chord: ParsedChord) => void;
 }
 
-function ChordResultCard({ chord, rank, frets, onSelect }: ChordResultCardProps) {
+function ChordResultCard({ chord, rank, onSelect }: ChordResultCardProps) {
   const { locale } = useLocale();
   const isEn = locale === 'en';
 
   const handleClick = () => {
     if (!onSelect) return;
-    // Parse the chord to get a full ParsedChord object
     const baseSymbol = chord.root + (chord.type === 'major' ? '' : chord.type);
     const parsed = parseChordName(baseSymbol);
-    if (parsed) {
-      // Pass the user's fretboard fingering so it shows in the detail view
-      // FretboardIdentifier uses visual order (high e first), but GuitarFingering uses low E first
-      const fingeringFrets = [...frets].reverse();
-      // Compute startFret for correct diagram rendering
-      const pressedFrets = fingeringFrets.filter(f => f > 0);
-      const minFret = pressedFrets.length ? Math.min(...pressedFrets) : 0;
-      const maxFret = pressedFrets.length ? Math.max(...pressedFrets) : 0;
-      // If all frets fit within 5 frets from fret 1, use open position
-      const startFret = maxFret <= 5 ? 0 : Math.max(1, minFret - 1);
-      onSelect(parsed, { frets: fingeringFrets, startFret: startFret || undefined });
-    }
+    if (parsed) onSelect(parsed);
   };
 
   return (
