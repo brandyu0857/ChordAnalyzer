@@ -1,5 +1,3 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
@@ -17,7 +15,7 @@ Rules:
 
 Example output: C Am F G7 C/E Dm7 G7 C`;
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -32,7 +30,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'No image provided' });
     }
 
-    // image is expected as a base64 data URL: "data:image/png;base64,..."
     const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
     if (!match) {
       return res.status(400).json({ error: 'Invalid image format. Expected base64 data URL.' });
@@ -76,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.json({ chords: text });
-  } catch (err: unknown) {
+  } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return res.status(500).json({ error: message });
   }
