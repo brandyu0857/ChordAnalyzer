@@ -53,7 +53,6 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   // Track grid column count for inline sub panel placement
   const [gridCols, setGridCols] = useState(() => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1280;
-    if (w >= 1280) return 6;
     if (w >= 1024) return 5;
     if (w >= 768) return 4;
     if (w >= 640) return 3;
@@ -62,7 +61,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   useEffect(() => {
     const handler = () => {
       const w = window.innerWidth;
-      setGridCols(w >= 1280 ? 6 : w >= 1024 ? 5 : w >= 768 ? 4 : w >= 640 ? 3 : 2);
+      setGridCols(w >= 1024 ? 5 : w >= 768 ? 4 : w >= 640 ? 3 : 2);
     };
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
@@ -579,7 +578,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                         const expandedRow = expandedJ >= 0 ? Math.floor(expandedJ / gridCols) : -1;
 
                         return (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                             {sectionChords.map((chord, j) => {
                               const i = section.startIdx + j;
                               const allFingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
