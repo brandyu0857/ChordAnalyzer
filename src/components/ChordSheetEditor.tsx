@@ -133,52 +133,49 @@ export default function ChordSheetEditor() {
               if (!line.trim()) return <div key={li} className="h-4" />;
 
               const lineChords = getChordsForLine(li);
-              const hasChords = lineChords.length > 0;
 
               return (
                 <div key={li} className="relative">
-                  {/* Chord row — built as text to avoid overlap */}
-                  {(hasChords || hoveredPos?.line === li) && (() => {
-                    // Build chord display string: place chords at their positions, push right if overlap
-                    const sorted = [...lineChords].sort((a, b) => a.charIndex - b.charIndex);
-                    // Add ghost chord if hovering
-                    const allChords = hoveredPos?.line === li && chordInput.trim() && isValidChord
-                      ? [...sorted, { line: li, charIndex: hoveredPos.charIndex, chord: chordInput.trim(), isGhost: true as const }]
-                        .sort((a, b) => a.charIndex - b.charIndex)
-                      : sorted.map(c => ({ ...c, isGhost: false as const }));
+                  {/* Chord row — always reserve space to prevent layout jump on hover */}
+                  <div className="h-5 text-xs font-bold whitespace-pre" style={{ fontFamily: 'monospace', fontSize: '14px' }}>
+                    {(() => {
+                      const sorted = [...lineChords].sort((a, b) => a.charIndex - b.charIndex);
+                      const showGhost = hoveredPos?.line === li && chordInput.trim() && isValidChord;
+                      const allChords = showGhost
+                        ? [...sorted, { line: li, charIndex: hoveredPos!.charIndex, chord: chordInput.trim(), isGhost: true as const }]
+                          .sort((a, b) => a.charIndex - b.charIndex)
+                        : sorted.map(c => ({ ...c, isGhost: false as const }));
 
-                    // Build segments with adjusted positions to prevent overlap
-                    const segments: { pos: number; chord: string; isGhost: boolean; key: number }[] = [];
-                    let cursor = 0;
-                    for (let ci = 0; ci < allChords.length; ci++) {
-                      const c = allChords[ci];
-                      const pos = Math.max(c.charIndex, cursor);
-                      segments.push({ pos, chord: c.chord, isGhost: 'isGhost' in c && c.isGhost, key: ci });
-                      cursor = pos + c.chord.length + 1; // +1 for minimum gap
-                    }
+                      if (!allChords.length) return null;
 
-                    return (
-                      <div className="h-6 text-xs font-bold whitespace-pre" style={{ fontFamily: 'monospace', fontSize: '14px' }}>
-                        {segments.map((seg, si) => {
-                          const padding = si === 0 ? seg.pos : seg.pos - (segments[si - 1].pos + segments[si - 1].chord.length);
-                          return (
-                            <span key={seg.key}>
-                              {padding > 0 && <span>{' '.repeat(padding)}</span>}
-                              <span
-                                className={seg.isGhost
-                                  ? 'text-blue-300 pointer-events-none'
-                                  : 'text-blue-600 cursor-pointer hover:text-red-500 transition-colors'}
-                                onClick={seg.isGhost ? undefined : () => removeChord(li, lineChords[si]?.charIndex ?? seg.pos)}
-                                title={seg.isGhost ? undefined : (isEn ? 'Click to remove' : '点击删除')}
-                              >
-                                {seg.chord}
-                              </span>
+                      const segments: { pos: number; chord: string; isGhost: boolean; origIdx: number }[] = [];
+                      let cursor = 0;
+                      for (let ci = 0; ci < allChords.length; ci++) {
+                        const c = allChords[ci];
+                        const pos = Math.max(c.charIndex, cursor);
+                        segments.push({ pos, chord: c.chord, isGhost: 'isGhost' in c && c.isGhost, origIdx: ci });
+                        cursor = pos + c.chord.length + 1;
+                      }
+
+                      return segments.map((seg, si) => {
+                        const padding = si === 0 ? seg.pos : seg.pos - (segments[si - 1].pos + segments[si - 1].chord.length);
+                        return (
+                          <span key={seg.origIdx}>
+                            {padding > 0 && <span>{' '.repeat(padding)}</span>}
+                            <span
+                              className={seg.isGhost
+                                ? 'text-blue-300 pointer-events-none'
+                                : 'text-blue-600 cursor-pointer hover:text-red-500 transition-colors'}
+                              onClick={seg.isGhost ? undefined : () => removeChord(li, lineChords.sort((a, b) => a.charIndex - b.charIndex)[si]?.charIndex ?? seg.pos)}
+                              title={seg.isGhost ? undefined : (isEn ? 'Click to remove' : '点击删除')}
+                            >
+                              {seg.chord}
                             </span>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
+                          </span>
+                        );
+                      });
+                    })()}
+                  </div>
                   {/* Lyrics row */}
                   <div
                     className="whitespace-pre cursor-crosshair text-gray-800 leading-relaxed"
