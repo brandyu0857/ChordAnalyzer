@@ -33,6 +33,7 @@ export function parseChordName(name: string): ParsedChord | null {
   // Extract bass note from slash chords like C/E, Am/G, D/F#, bE/bB
   // But not 6/9 chords
   let bassNote: string | undefined;
+  let displayBass: string | undefined;
   if (trimmed.includes('/') && !trimmed.match(/6\/9$/i)) {
     const slashIdx = trimmed.indexOf('/');
     const bassStr = normalizePrefixAccidental(trimmed.substring(slashIdx + 1).trim());
@@ -48,6 +49,7 @@ export function parseChordName(name: string): ParsedChord | null {
     const normalizedBass = normalizeNote(rawBass);
     if (rawBass && getNoteIndex(normalizedBass) !== -1) {
       bassNote = normalizedBass;
+      displayBass = rawBass; // preserve original flat/sharp for display
     }
   }
 
@@ -55,6 +57,7 @@ export function parseChordName(name: string): ParsedChord | null {
 
   // Try to extract root note (1 or 2 chars)
   let root = '';
+  let displayRoot = '';
   let suffix = '';
 
   if (trimmed.length >= 2 && (trimmed[1] === '#' || trimmed[1] === 'b')) {
@@ -65,6 +68,7 @@ export function parseChordName(name: string): ParsedChord | null {
     suffix = trimmed.substring(1);
   }
 
+  displayRoot = root; // preserve original (e.g. "Ab") before normalizing
   root = normalizeNote(root);
   if (getNoteIndex(root) === -1) return null;
 
@@ -149,7 +153,7 @@ export function parseChordName(name: string): ParsedChord | null {
         root,
         type: dynKey,
         chordType: dynamicType,
-        display: bassNote ? `${root}${dynamicType.symbol}/${bassNote}` : root + dynamicType.symbol,
+        display: displayBass ? `${displayRoot}${dynamicType.symbol}/${displayBass}` : displayRoot + dynamicType.symbol,
         bassNote,
       };
     }
@@ -163,7 +167,7 @@ export function parseChordName(name: string): ParsedChord | null {
     root,
     type,
     chordType,
-    display: bassNote ? `${root}${chordType.symbol}/${bassNote}` : root + chordType.symbol,
+    display: displayBass ? `${displayRoot}${chordType.symbol}/${displayBass}` : displayRoot + chordType.symbol,
     bassNote,
   };
 }
