@@ -30,10 +30,10 @@ CRITICAL - Repeat sign rules:
 - Do NOT skip or ignore repeat signs. Every bar must produce chord names.
 
 STRICT output format - ChordPro:
-- Use ChordPro format: chords in curly braces {Chord} placed at the exact position in the lyrics where the chord changes.
-- Use [Section] markers on their own line for sections.
+- Use ChordPro format: chords in [square brackets] placed at the exact position in the lyrics where the chord changes.
+- Use {section: Name} directives on their own line for sections (e.g. {section: Intro}, {section: Verse}).
 - Each lyric line with its chords should be on ONE line.
-- For instrumental sections with no lyrics, put chords separated by spaces on one line: {Fmaj7} {Em7} {E} {Amaj7}
+- For instrumental sections with no lyrics, put chords on one line: [Fmaj7] [Em7] [E] [Amaj7]
 - Use standard chord notation: Cmaj7, Dm7, Am9, G9sus4, Bbmaj7, D7/F#
 - Convert ALL jazz shorthand: Δ→maj, -→m, °→dim, ø→m7b5
 - Expand ALL repeat signs (% marks) into actual chord names
@@ -42,14 +42,14 @@ STRICT output format - ChordPro:
 - NO other text, NO explanations.
 
 CORRECT output example:
-[Intro]
-{Fmaj7} {Em7} {E} {Amaj7}
-{Fmaj7} {Em7} {Am7} {Dmaj7} {F/G}
-[Verse]
-{G}已经为了变的{D/F#}更好去掉{Em}锋芒
-{C}一不小心成了{Cm7}你的倾诉{D7}对象
-[Chorus]
-{Fmaj7}Love Song 一直{G7}想写一首{Am7}Love Song{Em7}`;
+{section: Intro}
+[Fmaj7] [Em7] [E] [Amaj7]
+[Fmaj7] [Em7] [Am7] [Dmaj7] [F/G]
+{section: Verse}
+[G]已经为了变的[D/F#]更好去掉[Em]锋芒
+[C]一不小心成了[Cm7]你的倾诉[D7]对象
+{section: Chorus}
+[Fmaj7]Love Song 一直[G7]想写一首[Am7]Love Song[Em7]`;
 
 function normalizeChordText(text) {
   // Strip parentheses
@@ -61,21 +61,22 @@ function normalizeChordText(text) {
   return text;
 }
 
-// Extract chord-only format from ChordPro text
+// Extract chord-only format from ChordPro text (square bracket format)
 function chordProToChordList(sheet) {
   const lines = sheet.split('\n');
   const parts = [];
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    // Pass through section markers
-    if (/^\[.+\]$/.test(trimmed)) {
-      parts.push(trimmed);
+    // Convert {section: Name} to [Name] for chord-only format
+    const sectionMatch = trimmed.match(/^\{section:\s*(.+?)\s*\}$/i);
+    if (sectionMatch) {
+      parts.push(`[${sectionMatch[1]}]`);
       continue;
     }
-    // Extract chords from {Chord} patterns
+    // Extract chords from [Chord] patterns
     const chords = [];
-    const re = /\{([^}]+)\}/g;
+    const re = /\[([^\]]+)\]/g;
     let m;
     while ((m = re.exec(trimmed)) !== null) {
       chords.push(m[1]);

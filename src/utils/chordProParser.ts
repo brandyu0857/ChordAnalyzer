@@ -70,10 +70,20 @@ export function parseChordPro(text: string): ChordSheet {
   const hasChordProBrackets = /\[[A-Ga-g]/.test(text);
 
   for (const line of lines) {
-    // Check for title directive: {title: Name} or just first line as title
+    // Check for title directive: {title: Name}
     const titleMatch = line.match(/^\{title:\s*(.+?)\s*\}$/i);
     if (titleMatch) {
       title = titleMatch[1];
+      continue;
+    }
+
+    // Check for section directive: {section: Verse}
+    const sectionMatch = line.match(/^\{section:\s*(.+?)\s*\}$/i);
+    if (sectionMatch) {
+      parsedLines.push({
+        segments: [{ chord: undefined, lyrics: `[${sectionMatch[1]}]` }],
+        isBlank: false,
+      });
       continue;
     }
 

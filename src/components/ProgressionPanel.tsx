@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { PROGRESSION_TEMPLATES } from '../data/progressions';
 import type { ParsedChord } from '../utils/chordUtils';
 import { progressionDegreesToChords, getChordNotes, parseChordName, transposeChord, parseNashvilleToken } from '../utils/chordUtils';
+import { parseChordPro } from '../utils/chordProParser';
 import { getGuitarFingerings } from '../data/chords';
 import { getSubstitutions, CATEGORY_STYLES } from '../utils/substitutionUtils';
 import ChordDiagram from './ChordDiagram';
@@ -573,79 +574,79 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
               )}
 
               {/* Sheet view — ChordPro format with chords above lyrics */}
-              {viewMode === 'sheet' && sheetText && (
-                <div className="bg-white rounded-xl p-5 space-y-4 font-mono text-sm leading-relaxed">
-                  {sheetText.split('\n').map((line, li) => {
-                    const trimmed = line.trim();
-                    if (!trimmed) return <div key={li} className="h-3" />;
+              {viewMode === 'sheet' && sheetText && (() => {
+                // Transpose chords in sheet text if needed
+                const displaySheet = semitones === 0 ? sheetText : sheetText.replace(/\[([^\]]+)\]/g, (_, chord) => {
+                  const parsed = parseChordName(chord);
+                  if (!parsed) return `[${chord}]`;
+                  const transposed = transposeChord(parsed, semitones);
+                  return `[${transposed.display}]`;
+                });
+                const sheet = parseChordPro(displaySheet);
+                return (
+                  <div className="bg-white rounded-xl p-5 space-y-1 text-sm leading-relaxed">
+                    {sheet.lines.map((line, li) => {
+                      if (line.isBlank) return <div key={li} className="h-3" />;
 
-                    // Section header
-                    const sectionMatch = trimmed.match(/^\[(.+)\]$/);
-                    if (sectionMatch) {
-                      return (
-                        <div key={li} className="flex items-center gap-2 pt-2">
-                          <span className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full font-sans">
-                            {sectionMatch[1]}
-                          </span>
-                          <div className="flex-1 h-px bg-gray-200" />
-                        </div>
-                      );
-                    }
+                      const seg = line.segments;
 
-                    // ChordPro line: extract chords and lyrics
-                    const parts: { chord: string; text: string }[] = [];
-                    const re = /\{([^}]+)\}/g;
-                    let lastIdx = 0;
-                    let m;
-                    while ((m = re.exec(trimmed)) !== null) {
-                      // Text before this chord (belongs to previous chord)
-                      if (m.index > lastIdx && parts.length > 0) {
-                        parts[parts.length - 1].text += trimmed.substring(lastIdx, m.index);
-                      } else if (m.index > lastIdx && parts.length === 0) {
-                        parts.push({ chord: '', text: trimmed.substring(lastIdx, m.index) });
+                      // Section header line: [SectionName]
+                      if (seg.length === 1 && !seg[0].chord && seg[0].lyrics.match(/^\[(.+)\]$/)) {
+                        const label = seg[0].lyrics.match(/^\[(.+)\]$/)![1];
+                        return (
+                          <div key={li} className="flex items-center gap-2 pt-3 pb-1">
+                            <span className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full">
+                              {label}
+                            </span>
+                            <div className="flex-1 h-px bg-gray-200" />
+                          </div>
+                        );
                       }
-                      parts.push({ chord: m[1], text: '' });
-                      lastIdx = m.index + m[0].length;
-                    }
-                    // Remaining text after last chord
-                    if (lastIdx < trimmed.length) {
-                      if (parts.length > 0) {
-                        parts[parts.length - 1].text += trimmed.substring(lastIdx);
-                      } else {
-                        parts.push({ chord: '', text: trimmed.substring(lastIdx) });
+
+                      // Check if line has any lyrics
+                      const hasLyrics = seg.some(s => s.lyrics.trim());
+                      // Check if line has any chords
+                      const hasChords = seg.some(s => s.chord);
+
+                      // Instrumental line (chords only, no lyrics)
+                      if (hasChords && !hasLyrics) {
+                        return (
+                          <div key={li} className="flex flex-wrap gap-4 py-1">
+                            {seg.filter(s => s.chord).map((s, si) => (
+                              <span key={si} className="text-blue-600 font-bold">{s.chord}</span>
+                            ))}
+                          </div>
+                        );
                       }
-                    }
 
-                    if (!parts.length) return null;
+                      // Lyrics-only line (no chords)
+                      if (!hasChords) {
+                        return (
+                          <div key={li} className="text-gray-800">
+                            {seg.map(s => s.lyrics).join('')}
+                          </div>
+                        );
+                      }
 
-                    // Check if this is instrumental (no lyrics, only chords)
-                    const hasLyrics = parts.some(p => p.text.trim());
-
-                    if (!hasLyrics) {
+                      // ChordPro line: chords above lyrics
                       return (
-                        <div key={li} className="flex flex-wrap gap-4 py-1">
-                          {parts.filter(p => p.chord).map((p, pi) => (
-                            <span key={pi} className="text-blue-600 font-bold font-sans">{p.chord}</span>
+                        <div key={li} className="flex flex-wrap">
+                          {seg.map((s, si) => (
+                            <span key={si} className="inline-flex flex-col">
+                              {s.chord ? (
+                                <span className="text-blue-600 font-bold text-xs h-5">{s.chord}</span>
+                              ) : (
+                                <span className="h-5" />
+                              )}
+                              <span className="text-gray-800 whitespace-pre">{s.lyrics || '\u00A0'}</span>
+                            </span>
                           ))}
                         </div>
                       );
-                    }
-
-                    return (
-                      <div key={li} className="flex flex-wrap">
-                        {parts.map((p, pi) => (
-                          <span key={pi} className="inline-flex flex-col">
-                            <span className={`text-blue-600 font-bold font-sans text-xs h-5 ${p.chord ? '' : 'invisible'}`}>
-                              {p.chord || '.'}
-                            </span>
-                            <span className="text-gray-800 whitespace-pre">{p.text || '\u00A0'}</span>
-                          </span>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Chord grid — grouped by sections */}
               {viewMode === 'diagrams' && (() => {
