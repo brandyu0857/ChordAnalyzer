@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { parseChordName } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
 import ChordDiagram from './ChordDiagram';
@@ -10,31 +10,59 @@ interface ChordPlacement {
   chord: string;
 }
 
+interface PopoverState {
+  line: number;
+  charIndex: number;
+  x: number;
+  y: number;
+}
+
 export default function ChordSheetEditor() {
   const { locale } = useLocale();
   const isEn = locale === 'en';
 
   const [lyrics, setLyrics] = useState('');
   const [placements, setPlacements] = useState<ChordPlacement[]>([]);
-  const [chordInput, setChordInput] = useState('');
-  const [isEditing, setIsEditing] = useState(true); // true = editing lyrics, false = placing chords
-  const [hoveredPos, setHoveredPos] = useState<{ line: number; charIndex: number } | null>(null);
-  const chordInputRef = useRef<HTMLInputElement>(null);
+  const [isEditing, setIsEditing] = useState(true);
+  const [popover, setPopover] = useState<PopoverState | null>(null);
+  const [popoverInput, setPopoverInput] = useState('');
+  const popoverInputRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const lines = lyrics.split('\n');
 
-  const addChord = useCallback((line: number, charIndex: number) => {
-    const chord = chordInput.trim();
-    if (!chord) {
-      chordInputRef.current?.focus();
-      return;
+  // Focus input when popover opens
+  useEffect(() => {
+    if (popover) {
+      setTimeout(() => popoverInputRef.current?.focus(), 10);
     }
-    // Remove existing chord at this exact position
+  }, [popover]);
+
+  // Close popover on click outside
+  useEffect(() => {
+    if (!popover) return;
+    const handler = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setPopover(null);
+        setPopoverInput('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [popover]);
+
+  const confirmChord = useCallback(() => {
+    if (!popover) return;
+    const chord = popoverInput.trim();
+    if (!chord || !parseChordName(chord)) return;
     setPlacements(prev => {
-      const filtered = prev.filter(p => !(p.line === line && p.charIndex === charIndex));
-      return [...filtered, { line, charIndex, chord }].sort((a, b) => a.line - b.line || a.charIndex - b.charIndex);
+      const filtered = prev.filter(p => !(p.line === popover.line && p.charIndex === popover.charIndex));
+      return [...filtered, { line: popover.line, charIndex: popover.charIndex, chord }]
+        .sort((a, b) => a.line - b.line || a.charIndex - b.charIndex);
     });
-  }, [chordInput]);
+    setPopover(null);
+    setPopoverInput('');
+  }, [popover, popoverInput]);
 
   const removeChord = useCallback((line: number, charIndex: number) => {
     setPlacements(prev => prev.filter(p => !(p.line === line && p.charIndex === charIndex)));
@@ -44,8 +72,20 @@ export default function ChordSheetEditor() {
     return placements.filter(p => p.line === lineIdx);
   }, [placements]);
 
-  // Validate current chord input
-  const isValidChord = chordInput.trim() ? parseChordName(chordInput.trim()) !== null : false;
+  const handleCharClick = useCallback((e: React.MouseEvent, line: number, charIndex: number) => {
+    // If there's already a chord here, remove it
+    const existing = placements.find(p => p.line === line && p.charIndex === charIndex);
+    if (existing) {
+      removeChord(line, charIndex);
+      return;
+    }
+    // Open popover at click position
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    setPopover({ line, charIndex, x: rect.left, y: rect.top });
+    setPopoverInput('');
+  }, [placements, removeChord]);
+
+  const isValidChord = popoverInput.trim() ? parseChordName(popoverInput.trim()) !== null : false;
 
   return (
     <div className="space-y-3">
@@ -55,7 +95,7 @@ export default function ChordSheetEditor() {
         </span>
         {placements.length > 0 && (
           <button
-            onClick={() => { setPlacements([]); }}
+            onClick={() => setPlacements([])}
             className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
             {isEn ? 'Clear chords' : '清除和弦'}
@@ -64,7 +104,6 @@ export default function ChordSheetEditor() {
       </div>
 
       {isEditing ? (
-        /* Step 1: Paste lyrics */
         <div className="space-y-2">
           <textarea
             value={lyrics}
@@ -85,89 +124,52 @@ export default function ChordSheetEditor() {
           )}
         </div>
       ) : (
-        /* Step 2: Place chords on lyrics */
         <div className="space-y-3">
           {/* Toolbar */}
-          <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setIsEditing(true)}
               className="text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors"
             >
               ← {isEn ? 'Edit lyrics' : '编辑歌词'}
             </button>
-            <div className="flex-1" />
-            <span className="text-xs text-gray-500">{isEn ? 'Chord:' : '和弦：'}</span>
-            <input
-              ref={chordInputRef}
-              value={chordInput}
-              onChange={e => setChordInput(e.target.value)}
-              placeholder="C, Am7, G/B..."
-              className={`w-28 px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                chordInput.trim()
-                  ? isValidChord
-                    ? 'border-green-300 focus:border-green-400 focus:ring-green-200 text-green-700 bg-green-50'
-                    : 'border-red-300 focus:border-red-400 focus:ring-red-200 text-red-700 bg-red-50'
-                  : 'border-gray-200 focus:border-gray-400 focus:ring-gray-200 text-gray-900'
-              }`}
-            />
-            {chordInput.trim() && isValidChord && (() => {
-              const parsed = parseChordName(chordInput.trim())!;
-              const f = getGuitarFingerings(parsed.root, parsed.type)[0];
-              return f ? (
-                <div className="w-12">
-                  <ChordDiagram fingering={f} chordName="" size="small" interactive={false} />
-                </div>
-              ) : null;
-            })()}
+            <span className="text-xs text-gray-400">
+              {isEn ? 'Click lyrics to place chord, click chord to remove' : '点击歌词放置和弦，点击和弦删除'}
+            </span>
           </div>
 
-          <p className="text-xs text-gray-400">
-            {isEn
-              ? 'Click on lyrics to place the chord. Click a placed chord to remove it.'
-              : '点击歌词位置放置和弦，点击已放置的和弦可删除。'}
-          </p>
-
           {/* Lyrics with chord placement */}
-          <div className="bg-white rounded-xl p-5 space-y-1 select-none">
+          <div className="bg-white rounded-xl p-5 space-y-0 select-none relative">
             {lines.map((line, li) => {
               if (!line.trim()) return <div key={li} className="h-4" />;
 
               const lineChords = getChordsForLine(li);
 
               return (
-                <div key={li} className="relative">
-                  {/* Chord row — always reserve space to prevent layout jump on hover */}
+                <div key={li}>
+                  {/* Chord row */}
                   <div className="h-5 text-xs font-bold whitespace-pre" style={{ fontFamily: 'monospace', fontSize: '14px' }}>
                     {(() => {
                       const sorted = [...lineChords].sort((a, b) => a.charIndex - b.charIndex);
-                      const showGhost = hoveredPos?.line === li && chordInput.trim() && isValidChord;
-                      const allChords = showGhost
-                        ? [...sorted, { line: li, charIndex: hoveredPos!.charIndex, chord: chordInput.trim(), isGhost: true as const }]
-                          .sort((a, b) => a.charIndex - b.charIndex)
-                        : sorted.map(c => ({ ...c, isGhost: false as const }));
+                      if (!sorted.length) return null;
 
-                      if (!allChords.length) return null;
-
-                      const segments: { pos: number; chord: string; isGhost: boolean; origIdx: number }[] = [];
+                      const segments: { pos: number; chord: string; charIdx: number }[] = [];
                       let cursor = 0;
-                      for (let ci = 0; ci < allChords.length; ci++) {
-                        const c = allChords[ci];
+                      for (const c of sorted) {
                         const pos = Math.max(c.charIndex, cursor);
-                        segments.push({ pos, chord: c.chord, isGhost: 'isGhost' in c && c.isGhost, origIdx: ci });
+                        segments.push({ pos, chord: c.chord, charIdx: c.charIndex });
                         cursor = pos + c.chord.length + 1;
                       }
 
                       return segments.map((seg, si) => {
                         const padding = si === 0 ? seg.pos : seg.pos - (segments[si - 1].pos + segments[si - 1].chord.length);
                         return (
-                          <span key={seg.origIdx}>
+                          <span key={si}>
                             {padding > 0 && <span>{' '.repeat(padding)}</span>}
                             <span
-                              className={seg.isGhost
-                                ? 'text-blue-300 pointer-events-none'
-                                : 'text-blue-600 cursor-pointer hover:text-red-500 transition-colors'}
-                              onClick={seg.isGhost ? undefined : () => removeChord(li, lineChords.sort((a, b) => a.charIndex - b.charIndex)[si]?.charIndex ?? seg.pos)}
-                              title={seg.isGhost ? undefined : (isEn ? 'Click to remove' : '点击删除')}
+                              className="text-blue-600 cursor-pointer hover:text-red-500 transition-colors"
+                              onClick={() => removeChord(li, seg.charIdx)}
+                              title={isEn ? 'Click to remove' : '点击删除'}
                             >
                               {seg.chord}
                             </span>
@@ -178,29 +180,82 @@ export default function ChordSheetEditor() {
                   </div>
                   {/* Lyrics row */}
                   <div
-                    className="whitespace-pre cursor-crosshair text-gray-800 leading-relaxed"
+                    className="whitespace-pre text-gray-800 leading-relaxed mb-1"
                     style={{ fontFamily: 'monospace', fontSize: '14px' }}
                   >
-                    {[...line].map((char, ci) => (
-                      <span
-                        key={ci}
-                        className={`hover:bg-blue-100 transition-colors rounded-sm ${
-                          lineChords.some(p => p.charIndex === ci) ? 'bg-blue-50 text-blue-800 font-medium' : ''
-                        }`}
-                        onClick={() => addChord(li, ci)}
-                        onMouseEnter={() => setHoveredPos({ line: li, charIndex: ci })}
-                        onMouseLeave={() => setHoveredPos(null)}
-                      >
-                        {char}
-                      </span>
-                    ))}
+                    {[...line].map((char, ci) => {
+                      const hasChord = lineChords.some(p => p.charIndex === ci);
+                      return (
+                        <span
+                          key={ci}
+                          className={`cursor-pointer transition-colors rounded-sm ${
+                            hasChord
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'hover:bg-gray-100'
+                          }`}
+                          onClick={e => handleCharClick(e, li, ci)}
+                        >
+                          {char}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               );
             })}
+
+            {/* Chord input popover */}
+            {popover && (
+              <div
+                ref={popoverRef}
+                className="fixed z-50 bg-white rounded-xl shadow-lg border border-gray-200 p-3 space-y-2"
+                style={{ left: Math.min(popover.x, window.innerWidth - 260), top: popover.y - 80 }}
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={popoverInputRef}
+                    value={popoverInput}
+                    onChange={e => setPopoverInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') confirmChord();
+                      if (e.key === 'Escape') { setPopover(null); setPopoverInput(''); }
+                    }}
+                    placeholder={isEn ? 'Chord name...' : '和弦名...'}
+                    className={`w-32 px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
+                      popoverInput.trim()
+                        ? isValidChord
+                          ? 'border-green-300 focus:border-green-400 focus:ring-green-200 text-green-700 bg-green-50'
+                          : 'border-red-300 focus:border-red-400 focus:ring-red-200 text-red-700 bg-red-50'
+                        : 'border-gray-200 focus:border-gray-400 focus:ring-gray-200 text-gray-900'
+                    }`}
+                  />
+                  <button
+                    onClick={confirmChord}
+                    disabled={!isValidChord}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  >
+                    ✓
+                  </button>
+                </div>
+                {/* Mini chord preview */}
+                {popoverInput.trim() && isValidChord && (() => {
+                  const parsed = parseChordName(popoverInput.trim())!;
+                  const f = getGuitarFingerings(parsed.root, parsed.type)[0];
+                  return f ? (
+                    <div className="flex justify-center">
+                      <div className="w-20">
+                        <ChordDiagram fingering={f} chordName={parsed.root + (parsed.chordType?.symbol || '')} size="small" interactive={false} />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-center text-gray-500 font-medium">{popoverInput.trim()}</p>
+                  );
+                })()}
+              </div>
+            )}
           </div>
 
-          {/* Chord legend — unique chords used */}
+          {/* Chord legend */}
           {placements.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
