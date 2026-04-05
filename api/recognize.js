@@ -19,14 +19,19 @@ CRITICAL - Repeat sign rules:
 - Do NOT skip or ignore repeat signs. Every bar must produce chord names.
 
 Output rules:
-1. Return ONLY chord symbols separated by spaces using standard notation (e.g. Cmaj7, Dm7, Am9, G9sus4, Bbmaj7, D7/F#)
+1. Use standard chord notation (e.g. Cmaj7, Dm7, Am9, G9sus4, Bbmaj7, D7/F#)
 2. Convert ALL jazz shorthand to standard: Δ→maj, -→m, °→dim, ø→m7b5
 3. Expand ALL repeat signs (% marks) into the actual repeated chords
 4. Include every chord for every bar, including repeated bars
-5. Ignore lyrics, section markers (A, B, C, D), bar lines, and fret diagrams
-6. If no chords found, return "NO_CHORDS_FOUND"
+5. Group chords by song sections using [Section] markers
+6. Identify sections from context: [Intro], [Verse], [Pre-Chorus], [Chorus], [Bridge], [Outro], [Interlude], [Solo] etc.
+7. If sections are labeled in the image (A, B, C, D, Intro, Verse, etc.), use those labels
+8. If sections are not labeled, infer them from the structure (intro is usually short, verse repeats, chorus has different chords, etc.)
+9. If you truly cannot determine sections, use [A], [B], [C] etc.
+10. If no chords found, return "NO_CHORDS_FOUND"
 
-Example: If you see "FΔ7 | D-7 | % |" → output: Fmaj7 Dm7 Dm7`;
+Output format example:
+[Intro] Fmaj7 Em7 Dm7 Dm7/G [Verse] Cmaj7 Am7 Dm7 G7 [Chorus] Fmaj7 G7 Am7 Em7`;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

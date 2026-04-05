@@ -41,6 +41,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [isNashville, setIsNashville] = useState(false);
   const [fingeringIndices, setFingeringIndices] = useState<number[]>([]);
   const [chordStyle, setChordStyle] = useState<ChordStyle>('default');
+  // Section labels: maps chord index to section name (e.g. {0: "Intro", 4: "Verse"})
+  const [sectionBreaks, setSectionBreaks] = useState<Record<number, string>>({});
   const [isRecognizing, setIsRecognizing] = useState(false);
   const [recognizeError, setRecognizeError] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -88,15 +90,29 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
 
   useEffect(() => {
     if (skipParse.current) { skipParse.current = false; return; }
-    if (!input.trim()) { setBaseChords([]); setParseError(''); setIsNashville(false); return; }
+    if (!input.trim()) { setBaseChords([]); setParseError(''); setIsNashville(false); setSectionBreaks({}); return; }
     const timer = setTimeout(() => {
       const tokens = input.split(/[\s\-,|]+/).filter(Boolean);
 
+      // Extract section markers like [Intro], [Verse], etc.
+      const sections: Record<number, string> = {};
+      let chordIndex = 0;
+      const cleanTokens: string[] = [];
+      for (const t of tokens) {
+        const sectionMatch = t.match(/^\[(.+)\]$/);
+        if (sectionMatch) {
+          sections[chordIndex] = sectionMatch[1];
+        } else {
+          cleanTokens.push(t);
+          chordIndex++;
+        }
+      }
+
       // Mixed parsing: try each token as Nashville first, then as chord name
-      const hasNashville = tokens.some(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t));
+      const hasNashville = cleanTokens.some(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t));
       const parsed: ParsedChord[] = [];
       const failed: string[] = [];
-      for (const t of tokens) {
+      for (const t of cleanTokens) {
         // Try Nashville number first (e.g. "1maj7", "5", "6m")
         const isNashvilleToken = /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t);
         const nashvilleResult = isNashvilleToken ? parseNashvilleToken(t, templateKey) : null;
@@ -107,6 +123,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
       }
       if (!parsed.length) return;
       setIsNashville(hasNashville);
+      setSectionBreaks(sections);
       setParseError(failed.length
         ? (isEn ? `Unrecognized: ${failed.join(', ')}` : `无法识别：${failed.join(', ')}`)
         : '');
@@ -338,7 +355,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
           </span>
           {input.trim() && (
             <button
-              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); }}
+              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); }}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               {isEn ? 'Clear' : '清空'}
@@ -504,49 +521,76 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                 )}
               </div>
 
-              {/* Chord grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {chords.map((chord, i) => {
-                const allFingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
-                const fi = Math.min(fingeringIndices[i] ?? 0, allFingerings.length - 1);
-                const fingering = allFingerings[fi];
-                const isExpanded = expandedIdx === i;
-                const isActive = activeIdx === i;
+              {/* Chord grid — grouped by sections */}
+              {(() => {
+                // Build sections array from sectionBreaks
+                const hasSections = Object.keys(sectionBreaks).length > 0;
+                const sectionEntries = hasSections
+                  ? Object.entries(sectionBreaks).map(([idx, label]) => ({ startIdx: parseInt(idx), label })).sort((a, b) => a.startIdx - b.startIdx)
+                  : [{ startIdx: 0, label: '' }];
 
-                return (
-                  <div key={i}
-                    className={`rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
-                      ${isActive
-                        ? 'bg-white ring-1 ring-gray-900 scale-105'
-                        : isExpanded
-                          ? 'bg-white ring-1 ring-gray-900'
-                          : 'bg-white hover:bg-gray-50'}`}
-                    onClick={() => setExpandedIdx(isExpanded ? null : i)}
-                  >
-                    {fingering ? (
-                      <ChordDiagram fingering={fingering} chordName="" size="small" interactive={false} />
-                    ) : (
-                      <div className="w-16 h-24 flex items-center justify-center text-lg font-bold text-gray-900">
-                        {chord.display}
+                return sectionEntries.map((section, si) => {
+                  const nextStart = si < sectionEntries.length - 1 ? sectionEntries[si + 1].startIdx : chords.length;
+                  const sectionChords = chords.slice(section.startIdx, nextStart);
+                  if (!sectionChords.length) return null;
+
+                  return (
+                    <div key={si} className={hasSections ? 'space-y-2' : ''}>
+                      {hasSections && section.label && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full">
+                            {section.label}
+                          </span>
+                          <div className="flex-1 h-px bg-gray-200" />
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                        {sectionChords.map((chord, j) => {
+                          const i = section.startIdx + j; // global index
+                          const allFingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
+                          const fi = Math.min(fingeringIndices[i] ?? 0, allFingerings.length - 1);
+                          const fingering = allFingerings[fi];
+                          const isExpanded = expandedIdx === i;
+                          const isActive = activeIdx === i;
+
+                          return (
+                            <div key={i}
+                              className={`rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
+                                ${isActive
+                                  ? 'bg-white ring-1 ring-gray-900 scale-105'
+                                  : isExpanded
+                                    ? 'bg-white ring-1 ring-gray-900'
+                                    : 'bg-white hover:bg-gray-50'}`}
+                              onClick={() => setExpandedIdx(isExpanded ? null : i)}
+                            >
+                              {fingering ? (
+                                <ChordDiagram fingering={fingering} chordName="" size="small" interactive={false} />
+                              ) : (
+                                <div className="w-16 h-24 flex items-center justify-center text-lg font-bold text-gray-900">
+                                  {chord.display}
+                                </div>
+                              )}
+                              <span className="text-sm font-semibold text-gray-900 mt-1">{chord.display}</span>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <button
+                                  onClick={e => { e.stopPropagation(); handlePlay(chord.root, chord.type); }}
+                                  className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                                  title={isEn ? 'Preview' : '试听'}
+                                >
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                                </button>
+                                <span className={`text-[10px] ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>
+                                  {isEn ? 'Sub' : '替代'}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
-                    <span className="text-sm font-semibold text-gray-900 mt-1">{chord.display}</span>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <button
-                        onClick={e => { e.stopPropagation(); handlePlay(chord.root, chord.type); }}
-                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                        title={isEn ? 'Preview' : '试听'}
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                      </button>
-                      <span className={`text-[10px] ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>
-                        {isEn ? 'Sub' : '替代'}
-                      </span>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                });
+              })()}
 
             {/* Substitution panel */}
             {expandedIdx !== null && chords[expandedIdx] && (() => {
