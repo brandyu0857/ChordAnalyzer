@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { PROGRESSION_TEMPLATES } from '../data/progressions';
 import type { ParsedChord } from '../utils/chordUtils';
-import { progressionDegreesToChords, getChordNotes, parseChordName, transposeChord, isNashvilleNotation, parseNashvilleToken } from '../utils/chordUtils';
+import { progressionDegreesToChords, getChordNotes, parseChordName, transposeChord, parseNashvilleToken } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
 import { getSubstitutions, CATEGORY_STYLES } from '../utils/substitutionUtils';
 import ChordDiagram from './ChordDiagram';
@@ -41,6 +41,12 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [isNashville, setIsNashville] = useState(false);
   const [fingeringIndices, setFingeringIndices] = useState<number[]>([]);
   const [chordStyle, setChordStyle] = useState<ChordStyle>('default');
+  // Section labels: maps chord index to section name (e.g. {0: "Intro", 4: "Verse"})
+  const [sectionBreaks, setSectionBreaks] = useState<Record<number, string>>({});
+  const [isRecognizing, setIsRecognizing] = useState(false);
+  const [recognizeError, setRecognizeError] = useState('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const skipParse = useRef(false);
 
   const allLabel = isEn ? 'All' : '全部';
@@ -84,15 +90,29 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
 
   useEffect(() => {
     if (skipParse.current) { skipParse.current = false; return; }
-    if (!input.trim()) { setBaseChords([]); setParseError(''); setIsNashville(false); return; }
+    if (!input.trim()) { setBaseChords([]); setParseError(''); setIsNashville(false); setSectionBreaks({}); return; }
     const timer = setTimeout(() => {
       const tokens = input.split(/[\s\-,|]+/).filter(Boolean);
 
+      // Extract section markers like [Intro], [Verse], etc.
+      const sections: Record<number, string> = {};
+      let chordIndex = 0;
+      const cleanTokens: string[] = [];
+      for (const t of tokens) {
+        const sectionMatch = t.match(/^\[(.+)\]$/);
+        if (sectionMatch) {
+          sections[chordIndex] = sectionMatch[1];
+        } else {
+          cleanTokens.push(t);
+          chordIndex++;
+        }
+      }
+
       // Mixed parsing: try each token as Nashville first, then as chord name
-      const hasNashville = tokens.some(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t));
+      const hasNashville = cleanTokens.some(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t));
       const parsed: ParsedChord[] = [];
       const failed: string[] = [];
-      for (const t of tokens) {
+      for (const t of cleanTokens) {
         // Try Nashville number first (e.g. "1maj7", "5", "6m")
         const isNashvilleToken = /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t);
         const nashvilleResult = isNashvilleToken ? parseNashvilleToken(t, templateKey) : null;
@@ -103,6 +123,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
       }
       if (!parsed.length) return;
       setIsNashville(hasNashville);
+      setSectionBreaks(sections);
       setParseError(failed.length
         ? (isEn ? `Unrecognized: ${failed.join(', ')}` : `无法识别：${failed.join(', ')}`)
         : '');
@@ -166,6 +187,85 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
       setTimeout(() => setActiveIdx(undefined), 500);
     }
   };
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    setRecognizeError('');
+    setIsRecognizing(true);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setPreviewImage(dataUrl);
+
+      try {
+        const resp = await fetch('/api/recognize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: dataUrl }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          setRecognizeError(data.error || (isEn ? 'Recognition failed' : '识别失败'));
+          return;
+        }
+        if (data.message) {
+          setRecognizeError(isEn ? 'No chords found in image' : '未在图片中找到和弦');
+          return;
+        }
+        skipParse.current = false;
+        setInput(data.chords);
+        setPreviewImage(null);
+      } catch {
+        setRecognizeError(isEn ? 'Network error, please try again' : '网络错误，请重试');
+      } finally {
+        setIsRecognizing(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  }, [isEn]);
+
+  // Paste image from clipboard (Ctrl+V / Cmd+V)
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) handleImageUpload(file);
+        return;
+      }
+    }
+  }, [handleImageUpload]);
+
+  // Drag and drop
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    dragCounter.current = 0;
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) handleImageUpload(file);
+  }, [handleImageUpload]);
 
   return (
     <div className="space-y-4">
@@ -255,7 +355,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
           </span>
           {input.trim() && (
             <button
-              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); }}
+              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); }}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               {isEn ? 'Clear' : '清空'}
@@ -263,15 +363,66 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
           )}
         </div>
         {/* Unified editor container */}
-        <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <div
+          className={`bg-gray-50 rounded-xl p-4 space-y-4 relative transition-colors ${isDragging ? 'ring-2 ring-gray-900 bg-gray-100' : ''}`}
+          onPaste={handlePaste}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          {/* Drag overlay */}
+          {isDragging && (
+            <div className="absolute inset-0 bg-gray-900/10 rounded-xl flex items-center justify-center z-10 pointer-events-none">
+              <div className="bg-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm font-medium text-gray-700">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                {isEn ? 'Drop image to recognize chords' : '松开以识别和弦谱'}
+              </div>
+            </div>
+          )}
           {/* Input row */}
           <div className="flex gap-2">
             <input
               value={input}
               onChange={e => { setInput(e.target.value); setParseError(''); }}
-              placeholder={isEn ? 'Enter chords: C Em F G, or degrees: 1 6m 4 5' : '输入和弦：C Em F G，或级数：1 6m 4 5'}
+              placeholder={isEn ? 'Enter chords, or paste/drop an image' : '输入和弦，或粘贴/拖入图片识谱'}
               className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
             />
+            {/* Image upload button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file);
+                e.target.value = '';
+              }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isRecognizing}
+              className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              title={isEn ? 'Upload chord sheet image' : '上传和弦谱图片'}
+            >
+              {isRecognizing ? (
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">{isRecognizing ? (isEn ? 'Recognizing...' : '识别中...') : (isEn ? 'Scan' : '识谱')}</span>
+            </button>
             {chords.length > 0 && (
               isPlaying
                 ? <button onClick={() => { stopProgression(); setIsPlaying(false); setActiveIdx(undefined); }}
@@ -282,6 +433,21 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
             )}
           </div>
           {parseError && <p className="text-xs text-red-400">{parseError}</p>}
+          {recognizeError && <p className="text-xs text-red-400">{recognizeError}</p>}
+          {/* Image preview during recognition */}
+          {previewImage && isRecognizing && (
+            <div className="relative">
+              <img src={previewImage} alt="Chord sheet" className="w-full max-h-48 object-contain rounded-lg border border-gray-200" />
+              <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                  {isEn ? 'Analyzing chord sheet...' : '正在分析和弦谱...'}
+                </div>
+              </div>
+            </div>
+          )}
           {isNashville && baseChords.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-gray-400 shrink-0">{templateKey} {isEn ? 'Major' : '大调'} →</span>
@@ -355,49 +521,76 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                 )}
               </div>
 
-              {/* Chord grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {chords.map((chord, i) => {
-                const allFingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
-                const fi = Math.min(fingeringIndices[i] ?? 0, allFingerings.length - 1);
-                const fingering = allFingerings[fi];
-                const isExpanded = expandedIdx === i;
-                const isActive = activeIdx === i;
+              {/* Chord grid — grouped by sections */}
+              {(() => {
+                // Build sections array from sectionBreaks
+                const hasSections = Object.keys(sectionBreaks).length > 0;
+                const sectionEntries = hasSections
+                  ? Object.entries(sectionBreaks).map(([idx, label]) => ({ startIdx: parseInt(idx), label })).sort((a, b) => a.startIdx - b.startIdx)
+                  : [{ startIdx: 0, label: '' }];
 
-                return (
-                  <div key={i}
-                    className={`rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
-                      ${isActive
-                        ? 'bg-white ring-1 ring-gray-900 scale-105'
-                        : isExpanded
-                          ? 'bg-white ring-1 ring-gray-900'
-                          : 'bg-white hover:bg-gray-50'}`}
-                    onClick={() => setExpandedIdx(isExpanded ? null : i)}
-                  >
-                    {fingering ? (
-                      <ChordDiagram fingering={fingering} chordName="" size="small" interactive={false} />
-                    ) : (
-                      <div className="w-16 h-24 flex items-center justify-center text-lg font-bold text-gray-900">
-                        {chord.display}
+                return sectionEntries.map((section, si) => {
+                  const nextStart = si < sectionEntries.length - 1 ? sectionEntries[si + 1].startIdx : chords.length;
+                  const sectionChords = chords.slice(section.startIdx, nextStart);
+                  if (!sectionChords.length) return null;
+
+                  return (
+                    <div key={si} className={hasSections ? 'space-y-2' : ''}>
+                      {hasSections && section.label && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full">
+                            {section.label}
+                          </span>
+                          <div className="flex-1 h-px bg-gray-200" />
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                        {sectionChords.map((chord, j) => {
+                          const i = section.startIdx + j; // global index
+                          const allFingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
+                          const fi = Math.min(fingeringIndices[i] ?? 0, allFingerings.length - 1);
+                          const fingering = allFingerings[fi];
+                          const isExpanded = expandedIdx === i;
+                          const isActive = activeIdx === i;
+
+                          return (
+                            <div key={i}
+                              className={`rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
+                                ${isActive
+                                  ? 'bg-white ring-1 ring-gray-900 scale-105'
+                                  : isExpanded
+                                    ? 'bg-white ring-1 ring-gray-900'
+                                    : 'bg-white hover:bg-gray-50'}`}
+                              onClick={() => setExpandedIdx(isExpanded ? null : i)}
+                            >
+                              {fingering ? (
+                                <ChordDiagram fingering={fingering} chordName="" size="small" interactive={false} />
+                              ) : (
+                                <div className="w-16 h-24 flex items-center justify-center text-lg font-bold text-gray-900">
+                                  {chord.display}
+                                </div>
+                              )}
+                              <span className="text-sm font-semibold text-gray-900 mt-1">{chord.display}</span>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <button
+                                  onClick={e => { e.stopPropagation(); handlePlay(chord.root, chord.type); }}
+                                  className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                                  title={isEn ? 'Preview' : '试听'}
+                                >
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                                </button>
+                                <span className={`text-[10px] ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>
+                                  {isEn ? 'Sub' : '替代'}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
-                    <span className="text-sm font-semibold text-gray-900 mt-1">{chord.display}</span>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <button
-                        onClick={e => { e.stopPropagation(); handlePlay(chord.root, chord.type); }}
-                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                        title={isEn ? 'Preview' : '试听'}
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                      </button>
-                      <span className={`text-[10px] ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>
-                        {isEn ? 'Sub' : '替代'}
-                      </span>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                });
+              })()}
 
             {/* Substitution panel */}
             {expandedIdx !== null && chords[expandedIdx] && (() => {
