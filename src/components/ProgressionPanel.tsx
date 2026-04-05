@@ -600,35 +600,39 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                                         : 'bg-white hover:bg-gray-50'}`}
                                   onClick={() => setExpandedIdx(isExpanded ? null : i)}
                                 >
-                                  {/* Chord diagram with hover arrows for voicing switch */}
-                                  <div className="relative">
-                                    {fingering ? (
-                                      <ChordDiagram fingering={fingering} chordName="" size="small" interactive={false} />
-                                    ) : (
-                                      <div className="w-16 h-24 flex items-center justify-center text-lg font-bold text-gray-900">
-                                        {chord.display}
-                                      </div>
+                                  {/* Chord diagram with hover circle-arrows for voicing switch */}
+                                  <div className="relative flex items-center justify-center">
+                                    {allFingerings.length > 1 && (
+                                      <button
+                                        onClick={e => { e.stopPropagation(); setFingeringIndices(prev => prev.map((v, idx) => idx === i ? (v - 1 + allFingerings.length) % allFingerings.length : v)); }}
+                                        className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white shadow border border-gray-200 opacity-0 group-hover/card:opacity-100 transition-opacity cursor-pointer hover:bg-gray-100"
+                                        title={isEn ? 'Previous voicing' : '上一个指法'}
+                                      >
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-500"><polyline points="15 18 9 12 15 6" /></svg>
+                                      </button>
+                                    )}
+                                    <div className="px-2">
+                                      {fingering ? (
+                                        <ChordDiagram fingering={fingering} chordName="" size="small" interactive={false} />
+                                      ) : (
+                                        <div className="w-16 h-24 flex items-center justify-center text-lg font-bold text-gray-900">
+                                          {chord.display}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {allFingerings.length > 1 && (
+                                      <button
+                                        onClick={e => { e.stopPropagation(); setFingeringIndices(prev => prev.map((v, idx) => idx === i ? (v + 1) % allFingerings.length : v)); }}
+                                        className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white shadow border border-gray-200 opacity-0 group-hover/card:opacity-100 transition-opacity cursor-pointer hover:bg-gray-100"
+                                        title={isEn ? 'Next voicing' : '下一个指法'}
+                                      >
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-500"><polyline points="9 18 15 12 9 6" /></svg>
+                                      </button>
                                     )}
                                     {allFingerings.length > 1 && (
-                                      <>
-                                        <button
-                                          onClick={e => { e.stopPropagation(); setFingeringIndices(prev => prev.map((v, idx) => idx === i ? (v - 1 + allFingerings.length) % allFingerings.length : v)); }}
-                                          className="absolute left-0 top-0 bottom-0 w-7 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity cursor-pointer bg-gradient-to-r from-white/80 to-transparent rounded-l-lg"
-                                          title={isEn ? 'Previous voicing' : '上一个指法'}
-                                        >
-                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-600"><polyline points="15 18 9 12 15 6" /></svg>
-                                        </button>
-                                        <button
-                                          onClick={e => { e.stopPropagation(); setFingeringIndices(prev => prev.map((v, idx) => idx === i ? (v + 1) % allFingerings.length : v)); }}
-                                          className="absolute right-0 top-0 bottom-0 w-7 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity cursor-pointer bg-gradient-to-l from-white/80 to-transparent rounded-r-lg"
-                                          title={isEn ? 'Next voicing' : '下一个指法'}
-                                        >
-                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-600"><polyline points="9 18 15 12 9 6" /></svg>
-                                        </button>
-                                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] text-gray-400 tabular-nums opacity-0 group-hover/card:opacity-100 transition-opacity bg-white/80 px-1 rounded">
-                                          {fi + 1}/{allFingerings.length}
-                                        </span>
-                                      </>
+                                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-gray-400 tabular-nums opacity-0 group-hover/card:opacity-100 transition-opacity">
+                                        {fi + 1}/{allFingerings.length}
+                                      </span>
                                     )}
                                   </div>
                                   <span className="text-sm font-semibold text-gray-900 mt-1">{chord.display}</span>
