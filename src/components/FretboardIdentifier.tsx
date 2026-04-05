@@ -296,7 +296,13 @@ function ChordResultCard({ chord, rank, frets, onSelect }: ChordResultCardProps)
       // Pass the user's fretboard fingering so it shows in the detail view
       // FretboardIdentifier uses visual order (high e first), but GuitarFingering uses low E first
       const fingeringFrets = [...frets].reverse();
-      onSelect(parsed, { frets: fingeringFrets });
+      // Compute startFret for correct diagram rendering
+      const pressedFrets = fingeringFrets.filter(f => f > 0);
+      const minFret = pressedFrets.length ? Math.min(...pressedFrets) : 0;
+      const maxFret = pressedFrets.length ? Math.max(...pressedFrets) : 0;
+      // If all frets fit within 5 frets from fret 1, use open position
+      const startFret = maxFret <= 5 ? 0 : Math.max(1, minFret - 1);
+      onSelect(parsed, { frets: fingeringFrets, startFret: startFret || undefined });
     }
   };
 
