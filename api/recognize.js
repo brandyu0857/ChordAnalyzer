@@ -18,19 +18,17 @@ CRITICAL - Repeat sign rules:
 - Double % or slash marks = repeat previous 2 bars. Expand these too.
 - Do NOT skip or ignore repeat signs. Every bar must produce chord names.
 
-Output rules:
-1. Use standard chord notation (e.g. Cmaj7, Dm7, Am9, G9sus4, Bbmaj7, D7/F#)
-2. Convert ALL jazz shorthand to standard: Δ→maj, -→m, °→dim, ø→m7b5
-3. Expand ALL repeat signs (% marks) into the actual repeated chords
-4. Include every chord for every bar, including repeated bars
-5. Group chords by song sections using [Section] markers
-6. Identify sections from context: [Intro], [Verse], [Pre-Chorus], [Chorus], [Bridge], [Outro], [Interlude], [Solo] etc.
-7. If sections are labeled in the image (A, B, C, D, Intro, Verse, etc.), use those labels
-8. If sections are not labeled, infer them from the structure (intro is usually short, verse repeats, chorus has different chords, etc.)
-9. If you truly cannot determine sections, use [A], [B], [C] etc.
-10. If no chords found, return "NO_CHORDS_FOUND"
+STRICT output rules:
+- Output ONLY chord symbols and [Section] markers. NO other text, NO explanations, NO punctuation except within chord names.
+- Use standard chord notation: Cmaj7, Dm7, Am9, G9sus4, Bbmaj7, D7/F#
+- Convert ALL jazz shorthand: Δ→maj, -→m, °→dim, ø→m7b5
+- Expand ALL repeat signs (% marks) into actual chord names
+- Group chords by song sections using [Section] markers
+- Use section names: [Intro], [Verse], [Chorus], [Bridge], [Outro], [Interlude], [Solo], or [A], [B], [C] etc.
+- If sections are labeled in the image, use those labels
+- If no chords found, return only: NO_CHORDS_FOUND
 
-Output format example:
+CORRECT output example (note: NO extra text, ONLY chords and markers):
 [Intro] Fmaj7 Em7 Dm7 Dm7/G [Verse] Cmaj7 Am7 Dm7 G7 [Chorus] Fmaj7 G7 Am7 Em7`;
 
 export default async function handler(req, res) {
@@ -79,11 +77,28 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    const text = data?.choices?.[0]?.message?.content?.trim() || '';
+    let text = data?.choices?.[0]?.message?.content?.trim() || '';
 
-    if (text === 'NO_CHORDS_FOUND') {
+    if (text === 'NO_CHORDS_FOUND' || !text) {
       return res.json({ chords: '', message: 'No chords found in image' });
     }
+
+    // Strip any preamble text before the first chord or section marker
+    // Find where actual chord data starts: first [Section] marker or first chord-like token
+    const sectionStart = text.indexOf('[');
+    if (sectionStart > 0) {
+      text = text.substring(sectionStart);
+    } else if (sectionStart === -1) {
+      // No section markers — find first chord-like token (starts with A-G)
+      const match = text.match(/(?:^|\s)([A-G][b#]?(?:maj|min|m|dim|aug|sus|add|[0-9])?)/);
+      if (match && match.index > 0) {
+        text = text.substring(match.index).trim();
+      }
+    }
+
+    // Remove any trailing explanation text (after the last chord)
+    // Chords/sections end, then explanatory text might follow
+    text = text.replace(/\n\n[\s\S]*$/, '').trim();
 
     return res.json({ chords: text });
   } catch (err) {
