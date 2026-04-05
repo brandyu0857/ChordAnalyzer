@@ -4,14 +4,25 @@ const SYSTEM_PROMPT = `You are an expert music chord recognition assistant speci
 
 Analyze the uploaded image and extract ALL chord symbols in order.
 
+CRITICAL - Reading accuracy rules:
+- Read the image TOP to BOTTOM, LEFT to RIGHT. Do NOT skip any line.
+- Chords are typically written ABOVE the lyrics. Read EVERY line of chords carefully.
+- An intro/前奏 section may have MULTIPLE lines of chords. Read ALL of them.
+- If a section label (like [前奏], [Intro], [Verse]) appears, ALL chord lines following it until the next section belong to that section.
+- Bar lines (|) separate measures. A dash (-) between chords means the previous chord sustains. Do NOT skip dashes — include the preceding chord again.
+- Chinese section labels: 前奏=Intro, 主歌=Verse, 副歌/合唱=Chorus, 間奏=Interlude, 尾奏=Outro, 橋段=Bridge
+- Navigation marks like (回▲), (1), (2), (3), ★, ☆ are NOT chords — skip them.
+- Annotations like "等4拍", "各1拍" are performance notes — skip them.
+
 CRITICAL - Jazz/Real Book notation rules you MUST follow:
 - Triangle (Δ) = major 7th. Example: CΔ7 or CΔ = Cmaj7
-- Minus sign (-) = minor. Example: C-7 = Cm7, C-9 = Cm9, C- = Cm
+- Minus sign (-) between chords = sustain/repeat. Minus AFTER note name = minor: C-7 = Cm7
 - Plus sign (+) = augmented. Example: C+7 = Caug7
 - Circle (°) = diminished. Example: C°7 = Cdim7
 - Half-diminished (ø) = m7b5. Example: Cø7 = Cm7b5
 - "sus" = suspended. Example: G9sus = G9sus4
 - Slash chords: D7/F# means D7 with F# bass
+- Superscript b or # after a note = flat/sharp: B♭maj7 = Bbmaj7, F♯ = F#
 
 CRITICAL - Repeat sign rules:
 - % (single bar repeat) = repeat the PREVIOUS bar's chord(s). You MUST expand these into actual chord names.
@@ -25,11 +36,11 @@ STRICT output rules:
 - Expand ALL repeat signs (% marks) into actual chord names
 - Group chords by song sections using [Section] markers
 - Use section names: [Intro], [Verse], [Chorus], [Bridge], [Outro], [Interlude], [Solo], or [A], [B], [C] etc.
-- If sections are labeled in the image, use those labels
+- If sections are labeled in the image, use those labels (translate Chinese labels to English)
 - If no chords found, return only: NO_CHORDS_FOUND
 
 CORRECT output example (note: NO extra text, ONLY chords and markers):
-[Intro] Fmaj7 Em7 Dm7 Dm7/G [Verse] Cmaj7 Am7 Dm7 G7 [Chorus] Fmaj7 G7 Am7 Em7`;
+[Intro] Fmaj7 Em7 E Amaj7 Fmaj7 Em7 Am7 Dmaj7 F/G [Verse] Cmaj7 Am7 Dm7 G7 [Chorus] Fmaj7 G7 Am7 Em7`;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -67,7 +78,7 @@ export default async function handler(req, res) {
           },
         ],
         temperature: 0.1,
-        max_tokens: 1024,
+        max_tokens: 2048,
       }),
     });
 
