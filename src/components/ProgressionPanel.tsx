@@ -41,6 +41,10 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [isNashville, setIsNashville] = useState(false);
   const [fingeringIndices, setFingeringIndices] = useState<number[]>([]);
   const [chordStyle, setChordStyle] = useState<ChordStyle>('default');
+  const [isRecognizing, setIsRecognizing] = useState(false);
+  const [recognizeError, setRecognizeError] = useState('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const skipParse = useRef(false);
 
   const allLabel = isEn ? 'All' : '全部';
@@ -167,6 +171,45 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     }
   };
 
+  const handleImageUpload = useCallback(async (file: File) => {
+    setRecognizeError('');
+    setIsRecognizing(true);
+
+    // Read file as base64
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setPreviewImage(dataUrl);
+
+      try {
+        const resp = await fetch('/api/recognize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: dataUrl }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          setRecognizeError(data.error || (isEn ? 'Recognition failed' : '识别失败'));
+          return;
+        }
+        if (data.message) {
+          setRecognizeError(isEn ? 'No chords found in image' : '未在图片中找到和弦');
+          return;
+        }
+        // Fill recognized chords into input
+        const chordsText = data.chords;
+        skipParse.current = false;
+        setInput(chordsText);
+        setPreviewImage(null);
+      } catch {
+        setRecognizeError(isEn ? 'Network error, please try again' : '网络错误，请重试');
+      } finally {
+        setIsRecognizing(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  }, [isEn]);
+
   return (
     <div className="space-y-4">
       {/* Template section (collapsible) */}
@@ -272,6 +315,37 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
               placeholder={isEn ? 'Enter chords: C Em F G, or degrees: 1 6m 4 5' : '输入和弦：C Em F G，或级数：1 6m 4 5'}
               className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
             />
+            {/* Image upload button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file);
+                e.target.value = '';
+              }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isRecognizing}
+              className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              title={isEn ? 'Upload chord sheet image' : '上传和弦谱图片'}
+            >
+              {isRecognizing ? (
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">{isRecognizing ? (isEn ? 'Recognizing...' : '识别中...') : (isEn ? 'Scan' : '识谱')}</span>
+            </button>
             {chords.length > 0 && (
               isPlaying
                 ? <button onClick={() => { stopProgression(); setIsPlaying(false); setActiveIdx(undefined); }}
@@ -282,6 +356,21 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
             )}
           </div>
           {parseError && <p className="text-xs text-red-400">{parseError}</p>}
+          {recognizeError && <p className="text-xs text-red-400">{recognizeError}</p>}
+          {/* Image preview during recognition */}
+          {previewImage && isRecognizing && (
+            <div className="relative">
+              <img src={previewImage} alt="Chord sheet" className="w-full max-h-48 object-contain rounded-lg border border-gray-200" />
+              <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                  {isEn ? 'Analyzing chord sheet...' : '正在分析和弦谱...'}
+                </div>
+              </div>
+            </div>
+          )}
           {isNashville && baseChords.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-gray-400 shrink-0">{templateKey} {isEn ? 'Major' : '大调'} →</span>
