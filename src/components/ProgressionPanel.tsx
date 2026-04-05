@@ -50,6 +50,24 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const subPanelRef = useRef<HTMLDivElement>(null);
   const skipParse = useRef(false);
 
+  // Track grid column count for inline sub panel placement
+  const [gridCols, setGridCols] = useState(() => {
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1280;
+    if (w >= 1280) return 6;
+    if (w >= 1024) return 5;
+    if (w >= 768) return 4;
+    if (w >= 640) return 3;
+    return 2;
+  });
+  useEffect(() => {
+    const handler = () => {
+      const w = window.innerWidth;
+      setGridCols(w >= 1280 ? 6 : w >= 1024 ? 5 : w >= 768 ? 4 : w >= 640 ? 3 : 2);
+    };
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
   // Auto-scroll to substitution panel when expanded
   useEffect(() => {
     if (expandedIdx !== null && subPanelRef.current) {
@@ -554,105 +572,116 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                           <div className="flex-1 h-px bg-gray-200" />
                         </div>
                       )}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                        {sectionChords.map((chord, j) => {
-                          const i = section.startIdx + j; // global index
-                          const allFingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
-                          const fi = Math.min(fingeringIndices[i] ?? 0, allFingerings.length - 1);
-                          const fingering = allFingerings[fi];
-                          const isExpanded = expandedIdx === i;
-                          const isActive = activeIdx === i;
+                      {(() => {
+                        // Calculate which row the expanded chord is in (within this section)
+                        const expandedJ = (expandedIdx !== null && expandedIdx >= section.startIdx && expandedIdx < nextStart)
+                          ? expandedIdx - section.startIdx : -1;
+                        const expandedRow = expandedJ >= 0 ? Math.floor(expandedJ / gridCols) : -1;
 
-                          return (
-                            <div key={i}
-                              className={`rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
-                                ${isActive
-                                  ? 'bg-white ring-1 ring-gray-900 scale-105'
-                                  : isExpanded
-                                    ? 'bg-white ring-1 ring-gray-900'
-                                    : 'bg-white hover:bg-gray-50'}`}
-                              onClick={() => setExpandedIdx(isExpanded ? null : i)}
-                            >
-                              {fingering ? (
-                                <ChordDiagram fingering={fingering} chordName="" size="small" interactive={false} />
-                              ) : (
-                                <div className="w-16 h-24 flex items-center justify-center text-lg font-bold text-gray-900">
-                                  {chord.display}
-                                </div>
-                              )}
-                              <span className="text-sm font-semibold text-gray-900 mt-1">{chord.display}</span>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <button
-                                  onClick={e => { e.stopPropagation(); handlePlay(chord.root, chord.type); }}
-                                  className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                                  title={isEn ? 'Preview' : '试听'}
-                                >
-                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                                </button>
-                                <span className={`text-[10px] ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>
-                                  {isEn ? 'Sub' : '替代'}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {/* Substitution panel — shown after this section's grid, auto-scrolls into view */}
-                      {expandedIdx !== null && expandedIdx >= section.startIdx && expandedIdx < nextStart && chords[expandedIdx] && (() => {
-                        const chord = chords[expandedIdx];
-                        const subs = getSubstitutions(chord.root, chord.type, locale);
                         return (
-                          <div ref={subPanelRef} className="bg-white rounded-xl p-4 shadow-sm">
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-6 h-6 bg-gray-900 text-white rounded-md flex items-center justify-center text-xs font-bold">
-                                {expandedIdx + 1}
-                              </div>
-                              <span className="text-sm font-semibold text-gray-900">{chord.display}</span>
-                              <span className="text-xs text-gray-400">
-                                {isEn ? 'substitutions' : '的替代和弦'}
-                              </span>
-                              <button onClick={() => setExpandedIdx(null)}
-                                className="ml-auto text-xs text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded hover:bg-gray-50 transition-colors">
-                                {isEn ? 'Collapse' : '收起'}
-                              </button>
-                            </div>
-                            <div className="overflow-x-auto pb-2 -mx-1 px-1">
-                              <div className="flex gap-4 items-start" style={{ minWidth: 'max-content' }}>
-                                {subs.map((sub, si) => {
-                                  const sf = getGuitarFingerings(sub.root, sub.type)[0];
-                                  return (
-                                    <div key={si} className="group flex-shrink-0 flex flex-col items-center gap-1 w-32">
-                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full leading-4 ${CATEGORY_STYLES[sub.category]}`}>
-                                        {sub.categoryLabel}
-                                      </span>
-                                      <div
-                                        className="bg-gray-50 dark:bg-gray-100 rounded-xl p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-200 transition-colors w-full flex flex-col items-center"
-                                        onClick={() => handleReplace(sub.display)}
-                                      >
-                                        {sf ? (
-                                          <ChordDiagram fingering={sf} chordName={sub.display} size="small" interactive={false} />
-                                        ) : (
-                                          <div className="w-14 h-20 flex items-center justify-center text-sm font-bold text-gray-900">{sub.display}</div>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-1 w-full">
-                                        <span className="text-sm font-semibold text-gray-700 flex-1 text-center">{sub.display}</span>
-                                        <button onClick={() => handlePlay(sub.root, sub.type)}
-                                          className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 cursor-pointer flex-shrink-0">
-                                          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                                        </button>
-                                      </div>
-                                      <p className="text-xs text-gray-400 leading-relaxed text-center line-clamp-2 group-hover:line-clamp-none transition-all">{sub.explanation}</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                            {sectionChords.map((chord, j) => {
+                              const i = section.startIdx + j;
+                              const allFingerings = getGuitarFingerings(chord.root, chord.type, chord.bassNote);
+                              const fi = Math.min(fingeringIndices[i] ?? 0, allFingerings.length - 1);
+                              const fingering = allFingerings[fi];
+                              const isExpanded = expandedIdx === i;
+                              const isActive = activeIdx === i;
+                              const row = Math.floor(j / gridCols);
+
+                              return (
+                                <div key={i}
+                                  style={{ order: row * 2 }}
+                                  className={`rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
+                                    ${isActive
+                                      ? 'bg-white ring-1 ring-gray-900 scale-105'
+                                      : isExpanded
+                                        ? 'bg-white ring-1 ring-gray-900'
+                                        : 'bg-white hover:bg-gray-50'}`}
+                                  onClick={() => setExpandedIdx(isExpanded ? null : i)}
+                                >
+                                  {fingering ? (
+                                    <ChordDiagram fingering={fingering} chordName="" size="small" interactive={false} />
+                                  ) : (
+                                    <div className="w-16 h-24 flex items-center justify-center text-lg font-bold text-gray-900">
+                                      {chord.display}
                                     </div>
-                                  );
-                                })}
-                                {subs.length === 0 && (
-                                  <span className="text-sm text-gray-300 py-4">
-                                    {isEn ? 'No substitution suggestions' : '暂无替代建议'}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                                  )}
+                                  <span className="text-sm font-semibold text-gray-900 mt-1">{chord.display}</span>
+                                  <div className="flex items-center gap-1.5 mt-1">
+                                    <button
+                                      onClick={e => { e.stopPropagation(); handlePlay(chord.root, chord.type); }}
+                                      className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                                      title={isEn ? 'Preview' : '试听'}
+                                    >
+                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                                    </button>
+                                    <span className={`text-[10px] ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>
+                                      {isEn ? 'Sub' : '替代'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {/* Substitution panel — inserted in grid with order to appear after the correct row */}
+                            {expandedRow >= 0 && chords[expandedIdx!] && (() => {
+                              const chord = chords[expandedIdx!];
+                              const subs = getSubstitutions(chord.root, chord.type, locale);
+                              return (
+                                <div ref={subPanelRef} style={{ order: expandedRow * 2 + 1 }} className="col-span-full bg-white rounded-xl p-4 shadow-sm">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-6 h-6 bg-gray-900 text-white rounded-md flex items-center justify-center text-xs font-bold">
+                                      {expandedIdx! + 1}
+                                    </div>
+                                    <span className="text-sm font-semibold text-gray-900">{chord.display}</span>
+                                    <span className="text-xs text-gray-400">
+                                      {isEn ? 'substitutions' : '的替代和弦'}
+                                    </span>
+                                    <button onClick={() => setExpandedIdx(null)}
+                                      className="ml-auto text-xs text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded hover:bg-gray-50 transition-colors">
+                                      {isEn ? 'Collapse' : '收起'}
+                                    </button>
+                                  </div>
+                                  <div className="overflow-x-auto pb-2 -mx-1 px-1">
+                                    <div className="flex gap-4 items-start" style={{ minWidth: 'max-content' }}>
+                                      {subs.map((sub, si) => {
+                                        const sf = getGuitarFingerings(sub.root, sub.type)[0];
+                                        return (
+                                          <div key={si} className="group flex-shrink-0 flex flex-col items-center gap-1 w-32">
+                                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full leading-4 ${CATEGORY_STYLES[sub.category]}`}>
+                                              {sub.categoryLabel}
+                                            </span>
+                                            <div
+                                              className="bg-gray-50 dark:bg-gray-100 rounded-xl p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-200 transition-colors w-full flex flex-col items-center"
+                                              onClick={() => handleReplace(sub.display)}
+                                            >
+                                              {sf ? (
+                                                <ChordDiagram fingering={sf} chordName={sub.display} size="small" interactive={false} />
+                                              ) : (
+                                                <div className="w-14 h-20 flex items-center justify-center text-sm font-bold text-gray-900">{sub.display}</div>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-1 w-full">
+                                              <span className="text-sm font-semibold text-gray-700 flex-1 text-center">{sub.display}</span>
+                                              <button onClick={() => handlePlay(sub.root, sub.type)}
+                                                className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 cursor-pointer flex-shrink-0">
+                                                <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                                              </button>
+                                            </div>
+                                            <p className="text-xs text-gray-400 leading-relaxed text-center line-clamp-2 group-hover:line-clamp-none transition-all">{sub.explanation}</p>
+                                          </div>
+                                        );
+                                      })}
+                                      {subs.length === 0 && (
+                                        <span className="text-sm text-gray-300 py-4">
+                                          {isEn ? 'No substitution suggestions' : '暂无替代建议'}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         );
                       })()}
