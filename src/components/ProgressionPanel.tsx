@@ -12,6 +12,7 @@ import { NOTES } from '../data/notes';
 import { findSongExamples } from '../utils/progressionMatcher';
 import { useLocale } from '../i18n/context';
 import { CHORD_STYLES, applyStyleToProgression } from '../utils/chordStyleUtils';
+import ChordSheetEditor from './ChordSheetEditor';
 import type { ChordStyle } from '../utils/chordStyleUtils';
 
 interface Props {
@@ -784,6 +785,11 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Chord Sheet Editor */}
+      <div className="bg-gray-50 rounded-xl p-4">
+        <ChordSheetEditor />
       </div>
     </div>
   );
