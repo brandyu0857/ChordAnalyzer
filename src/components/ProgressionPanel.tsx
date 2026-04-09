@@ -8,7 +8,7 @@ import ChordDiagram from './ChordDiagram';
 import PlayButton from './PlayButton';
 import ProgressionAnalysisView from './ProgressionAnalysis';
 import { playChordStrum, playChordBlock, playProgression, stopProgression } from '../utils/audioUtils';
-import { NOTES } from '../data/notes';
+import { NOTES, getNoteAtInterval } from '../data/notes';
 import { findSongExamples } from '../utils/progressionMatcher';
 import { useLocale } from '../i18n/context';
 import { CHORD_STYLES, applyStyleToProgression } from '../utils/chordStyleUtils';
@@ -30,7 +30,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [styleFilter, setStyleFilter] = useState(isEn ? 'All' : '全部');
   const [selectedTemplateIdx, setSelectedTemplateIdx] = useState<number | null>(null);
   const [templateKey, setTemplateKey] = useState('C');
-  const [analysisKey, setAnalysisKey] = useState('C');
+  const analysisKey = getNoteAtInterval(templateKey, semitones);
 
   // Progression editor
   const [input, setInput] = useState('');
@@ -112,7 +112,6 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     setTemplatesOpen(false);
     setParseError('');
     setExpandedIdx(null);
-    setAnalysisKey(templateKey);
   };
 
   useEffect(() => {
@@ -730,16 +729,9 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                   <h3 className="text-sm font-semibold text-gray-500">
                     {isEn ? 'Progression Analysis' : '和弦进行分析'}
                   </h3>
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <span className="text-xs text-gray-400">{isEn ? 'Key' : '调式'}</span>
-                    <select
-                      value={analysisKey}
-                      onChange={e => setAnalysisKey(e.target.value)}
-                      className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none cursor-pointer"
-                    >
-                      {NOTES.map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </div>
+                  <span className="ml-auto text-xs text-gray-400">
+                    {analysisKey} {isEn ? 'Major' : '大调'}
+                  </span>
                 </div>
                 <ProgressionAnalysisView
                   chords={chords}
