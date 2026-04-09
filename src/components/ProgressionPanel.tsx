@@ -50,6 +50,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subPanelRef = useRef<HTMLDivElement>(null);
   const skipParse = useRef(false);
+  const keepTranspose = useRef(false);
 
   // Track grid column count for inline sub panel placement
   const [gridCols, setGridCols] = useState(() => {
@@ -157,7 +158,11 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
         : '');
       setBaseChords(parsed);
       setFingeringIndices(parsed.map(() => 0));
-      setSemitones(0);
+      if (keepTranspose.current) {
+        keepTranspose.current = false;
+      } else {
+        setSemitones(0);
+      }
       setSelectedTemplateIdx(null);
       setExpandedIdx(null);
       setTemplatesOpen(false);
@@ -174,6 +179,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     // Reverse-transpose so baseChords stays in the original key
     const inBase = semitones !== 0 ? transposeChord(parsed, -semitones) : parsed;
     skipParse.current = true;
+    keepTranspose.current = true;
     setInput(prev => (prev.trim() ? prev.trim() + ' ' + inBase.display : inBase.display));
     setBaseChords(prev => [...prev, inBase]);
     setFingeringIndices(prev => [...prev, fingeringIndex]);
@@ -190,6 +196,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     const inBase = semitones !== 0 ? transposeChord(parsed, -semitones) : parsed;
     const newBase = baseChords.map((c, i) => i === expandedIdx ? inBase : c);
     skipParse.current = true;
+    keepTranspose.current = true;
     setBaseChords(newBase);
     setFingeringIndices(prev => prev.map((fi, i) => i === expandedIdx ? 0 : fi));
     setInput(newBase.map(c => c.display).join(' '));
