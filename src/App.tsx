@@ -5,6 +5,7 @@ import ChordInfo from './components/ChordInfo';
 import PlayButton from './components/PlayButton';
 import ProgressionPanel from './components/ProgressionPanel';
 import FretboardIdentifier from './components/FretboardIdentifier';
+import ChordSheetEditor from './components/ChordSheetEditor';
 import type { ParsedChord } from './utils/chordUtils';
 import { parseChordName, getChordNotes } from './utils/chordUtils';
 import { getGuitarFingerings } from './data/chords';
@@ -12,7 +13,7 @@ import type { GuitarFingering } from './data/chords';
 import { playChordStrum, playChordBlock } from './utils/audioUtils';
 import { useLocale } from './i18n/context';
 
-type Page = 'chord' | 'progression' | 'identify';
+type Page = 'chord' | 'progression' | 'identify' | 'sheet';
 
 function App() {
   const { locale, setLocale, theme, setTheme } = useLocale();
@@ -172,6 +173,14 @@ function App() {
               {isEn ? 'Identify' : '反查和弦'}
               {page === 'identify' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
             </button>
+            <button
+              onClick={() => setPage('sheet')}
+              className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
+                ${page === 'sheet' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              {isEn ? 'Chord Sheet' : '和弦谱'}
+              {page === 'sheet' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />}
+            </button>
           </nav>
         </div>
       </header>
@@ -257,6 +266,12 @@ function App() {
         <div className={page !== 'identify' ? 'hidden' : ''}>
           <FretboardIdentifier onChordSelect={handleChordSelect} />
         </div>
+
+        {page === 'sheet' && (
+          <div className="bg-gray-50 rounded-xl p-4">
+            <ChordSheetEditor />
+          </div>
+        )}
       </main>
 
       <footer className="border-t border-gray-100 mt-16 py-4 text-center text-xs text-gray-300">

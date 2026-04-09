@@ -12,7 +12,6 @@ import { NOTES, getNoteAtInterval } from '../data/notes';
 import { findSongExamples } from '../utils/progressionMatcher';
 import { useLocale } from '../i18n/context';
 import { CHORD_STYLES, applyStyleToProgression } from '../utils/chordStyleUtils';
-import ChordSheetEditor from './ChordSheetEditor';
 import type { ChordStyle } from '../utils/chordStyleUtils';
 import { loadProgressions, saveProgression, deleteProgression, type SavedProgression } from '../utils/storage';
 
@@ -27,7 +26,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const isEn = locale === 'en';
 
   // Template section
-  const [templatesOpen, setTemplatesOpen] = useState(true);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [styleFilter, setStyleFilter] = useState(isEn ? 'All' : '全部');
   const [selectedTemplateIdx, setSelectedTemplateIdx] = useState<number | null>(null);
   const [templateKey, setTemplateKey] = useState('C');
@@ -351,37 +350,14 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   return (
     <div className="space-y-4">
       {/* Template section (collapsible) */}
-      <div className="bg-gray-50 rounded-xl overflow-hidden">
-        <button
-          onClick={() => setTemplatesOpen(v => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-100 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-900">
-              {isEn ? 'Common Templates' : '常用模板'}
-            </span>
-            {selectedTemplateIdx !== null && !templatesOpen && (
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                {isEn ? PROGRESSION_TEMPLATES[selectedTemplateIdx].nameEn : PROGRESSION_TEMPLATES[selectedTemplateIdx].name}
-              </span>
-            )}
-          </div>
-          <svg
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-gray-400" strokeWidth="2"
-            style={{ transform: templatesOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-
-        <div
-          className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-          style={{ gridTemplateRows: templatesOpen ? '1fr' : '0fr' }}
-        >
-          <div className="overflow-hidden">
-            <div className="px-4 pb-4 space-y-3">
-              {/* Key selector */}
-              <div className="flex items-center gap-2 pt-3">
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{ gridTemplateRows: templatesOpen ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="bg-gray-50 rounded-xl px-4 pb-4 space-y-3">
+            {/* Key selector */}
+            <div className="flex items-center gap-2 pt-3">
                 <span className="text-xs text-gray-500">{isEn ? 'Load template in' : '以'}</span>
                 <select
                   value={templateKey}
@@ -426,14 +402,31 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
             </div>
           </div>
         </div>
-      </div>
 
       {/* Progression editor */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-900">
-            {isEn ? 'Custom Chord Progression' : '自定义和弦进行'}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-900">
+              {isEn ? 'Custom Chord Progression' : '自定义和弦进行'}
+            </span>
+            <button
+              onClick={() => setTemplatesOpen(v => !v)}
+              className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer flex items-center gap-1 ${
+                templatesOpen
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              {isEn ? 'Templates' : '模板'}
+              <svg
+                width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                style={{ transform: templatesOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             {baseChords.length > 0 && (
               <button
@@ -888,10 +881,6 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
         </div>
       )}
 
-      {/* Chord Sheet Editor */}
-      <div className="bg-gray-50 rounded-xl p-4">
-        <ChordSheetEditor />
-      </div>
     </div>
   );
 }
