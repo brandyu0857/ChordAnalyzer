@@ -3,6 +3,7 @@ import { parseChordName } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
 import ChordDiagram from './ChordDiagram';
 import { useLocale } from '../i18n/context';
+import { loadChordSheets, saveChordSheet, deleteChordSheet, type SavedChordSheet } from '../utils/storage';
 
 interface ChordPlacement {
   line: number;
@@ -26,6 +27,8 @@ export default function ChordSheetEditor() {
   const [isEditing, setIsEditing] = useState(true);
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const [popoverInput, setPopoverInput] = useState('');
+  const [savedSheets, setSavedSheets] = useState<SavedChordSheet[]>(() => loadChordSheets());
+  const [currentSheetId, setCurrentSheetId] = useState<string | null>(null);
   const popoverInputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,20 +94,56 @@ export default function ChordSheetEditor() {
 
   const isValidChord = popoverInput.trim() ? parseChordName(popoverInput.trim()) !== null : false;
 
+  const handleSaveSheet = useCallback(() => {
+    if (!lyrics.trim() || !placements.length) return;
+    const firstLine = lyrics.split('\n').find(l => l.trim()) || '';
+    const name = firstLine.slice(0, 30) + (firstLine.length > 30 ? '...' : '');
+    const entry = saveChordSheet({ name, lyrics, placements });
+    setCurrentSheetId(entry.id);
+    setSavedSheets(loadChordSheets());
+  }, [lyrics, placements]);
+
+  const handleLoadSheet = useCallback((sheet: SavedChordSheet) => {
+    setLyrics(sheet.lyrics);
+    setPlacements(sheet.placements);
+    setIsEditing(false);
+    setCurrentSheetId(sheet.id);
+    setPopover(null);
+  }, []);
+
+  const handleDeleteSheet = useCallback((id: string) => {
+    deleteChordSheet(id);
+    setSavedSheets(loadChordSheets());
+    if (currentSheetId === id) setCurrentSheetId(null);
+  }, [currentSheetId]);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-gray-900">
           {isEn ? 'Chord Sheet Editor' : '和弦谱编辑器'}
         </span>
-        {placements.length > 0 && (
-          <button
-            onClick={() => setPlacements([])}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-          >
-            {isEn ? 'Clear chords' : '清除和弦'}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {placements.length > 0 && (
+            <button
+              onClick={handleSaveSheet}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center gap-1"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+              </svg>
+              {isEn ? 'Save' : '保存'}
+            </button>
+          )}
+          {placements.length > 0 && (
+            <button
+              onClick={() => setPlacements([])}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            >
+              {isEn ? 'Clear chords' : '清除和弦'}
+            </button>
+          )}
+        </div>
       </div>
 
       {isEditing ? (
@@ -285,6 +324,43 @@ export default function ChordSheetEditor() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Saved sheets */}
+      {savedSheets.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-gray-200">
+          <span className="text-xs text-gray-400">{isEn ? 'Saved sheets' : '已保存的谱'} ({savedSheets.length})</span>
+          <div className="flex flex-col gap-1.5">
+            {savedSheets.map(sheet => (
+              <div
+                key={sheet.id}
+                className={`group flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                  currentSheetId === sheet.id
+                    ? 'bg-white border border-gray-900'
+                    : 'bg-white border border-gray-200 hover:bg-gray-50'
+                }`}
+                onClick={() => handleLoadSheet(sheet)}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium text-gray-700 truncate">{sheet.name}</div>
+                  <div className="text-[10px] text-gray-400">
+                    {sheet.placements.length} {isEn ? 'chords' : '个和弦'}
+                    {' · '}
+                    {new Date(sheet.updatedAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); handleDeleteSheet(sheet.id); }}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all cursor-pointer"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

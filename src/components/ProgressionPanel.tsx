@@ -14,6 +14,7 @@ import { useLocale } from '../i18n/context';
 import { CHORD_STYLES, applyStyleToProgression } from '../utils/chordStyleUtils';
 import ChordSheetEditor from './ChordSheetEditor';
 import type { ChordStyle } from '../utils/chordStyleUtils';
+import { loadProgressions, saveProgression, deleteProgression, type SavedProgression } from '../utils/storage';
 
 interface Props {
   onChordSelect?: (chord: ParsedChord) => void;
@@ -47,6 +48,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [isRecognizing, setIsRecognizing] = useState(false);
   const [recognizeError, setRecognizeError] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [savedList, setSavedList] = useState<SavedProgression[]>(() => loadProgressions());
+  const [currentSaveId, setCurrentSaveId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subPanelRef = useRef<HTMLDivElement>(null);
   const skipParse = useRef(false);
@@ -201,6 +204,50 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     setInput(newBase.map(c => c.display).join(' '));
     setExpandedIdx(null);
   }, [expandedIdx, semitones, baseChords]);
+
+  const handleSave = useCallback(() => {
+    if (!input.trim()) return;
+    const name = chords.map(c => c.display).join(' - ');
+    const entry = saveProgression({
+      name,
+      input,
+      templateKey,
+      semitones,
+      fingeringIndices,
+      chordStyle,
+      sectionBreaks,
+    });
+    setCurrentSaveId(entry.id);
+    setSavedList(loadProgressions());
+  }, [input, chords, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks]);
+
+  const handleLoadSaved = useCallback((saved: SavedProgression) => {
+    skipParse.current = true;
+    keepTranspose.current = true;
+    setInput(saved.input);
+    setTemplateKey(saved.templateKey);
+    setSemitones(saved.semitones);
+    setFingeringIndices(saved.fingeringIndices);
+    setChordStyle(saved.chordStyle as ChordStyle);
+    setSectionBreaks(saved.sectionBreaks);
+    setCurrentSaveId(saved.id);
+    setSelectedTemplateIdx(null);
+    setExpandedIdx(null);
+    // Re-parse the input to rebuild baseChords
+    const tokens = saved.input.split(/[\s\-,|]+/).filter(Boolean);
+    const parsed: ParsedChord[] = [];
+    for (const t of tokens) {
+      const match = /^\[(.+)\]$/.test(t) ? null : parseChordName(t);
+      if (match) parsed.push(match);
+    }
+    setBaseChords(parsed);
+  }, []);
+
+  const handleDeleteSaved = useCallback((id: string) => {
+    deleteProgression(id);
+    setSavedList(loadProgressions());
+    if (currentSaveId === id) setCurrentSaveId(null);
+  }, [currentSaveId]);
 
   const handlePlay = async (root: string, type: string) => {
     const f = getGuitarFingerings(root, type)[0];
@@ -387,14 +434,27 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
           <span className="text-sm font-medium text-gray-900">
             {isEn ? 'Custom Chord Progression' : '自定义和弦进行'}
           </span>
-          {input.trim() && (
-            <button
-              onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); }}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-            >
-              {isEn ? 'Clear' : '清空'}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {baseChords.length > 0 && (
+              <button
+                onClick={handleSave}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                </svg>
+                {isEn ? 'Save' : '保存'}
+              </button>
+            )}
+            {input.trim() && (
+              <button
+                onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); setCurrentSaveId(null); }}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              >
+                {isEn ? 'Clear' : '清空'}
+              </button>
+            )}
+          </div>
         </div>
         {/* Unified editor container */}
         <div
@@ -785,6 +845,48 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
           </div>
         )}
       </div>
+
+      {/* Saved progressions */}
+      {savedList.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-900">
+              {isEn ? 'Saved Progressions' : '已保存的进行'}
+            </span>
+            <span className="text-xs text-gray-300">{savedList.length}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {savedList.map(saved => (
+              <div
+                key={saved.id}
+                className={`group flex items-center gap-2 p-3 rounded-lg border transition-colors cursor-pointer ${
+                  currentSaveId === saved.id
+                    ? 'border-gray-900 bg-gray-50'
+                    : 'border-gray-200 bg-white hover:bg-gray-50'
+                }`}
+                onClick={() => handleLoadSaved(saved)}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-gray-900 truncate">{saved.name}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {saved.templateKey}{saved.semitones !== 0 ? ` (${saved.semitones > 0 ? '+' : ''}${saved.semitones})` : ''}
+                    {' · '}
+                    {new Date(saved.updatedAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); handleDeleteSaved(saved.id); }}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all cursor-pointer"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Chord Sheet Editor */}
       <div className="bg-gray-50 rounded-xl p-4">
