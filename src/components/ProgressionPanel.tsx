@@ -169,19 +169,19 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   useEffect(() => {
     if (!appendChord) return;
     const { display, fingeringIndex } = appendChord;
+    const parsed = parseChordName(display);
+    if (!parsed) { onAppendDone?.(); return; }
+    // Reverse-transpose so baseChords stays in the original key
+    const inBase = semitones !== 0 ? transposeChord(parsed, -semitones) : parsed;
     skipParse.current = true;
-    setInput(prev => (prev.trim() ? prev.trim() + ' ' + display : display));
-    setBaseChords(prev => {
-      const c = parseChordName(display);
-      return c ? [...prev, c] : prev;
-    });
+    setInput(prev => (prev.trim() ? prev.trim() + ' ' + inBase.display : inBase.display));
+    setBaseChords(prev => [...prev, inBase]);
     setFingeringIndices(prev => [...prev, fingeringIndex]);
     setSelectedTemplateIdx(null);
-    setSemitones(0);
     setExpandedIdx(null);
     setTemplatesOpen(false);
     onAppendDone?.();
-  }, [appendChord, onAppendDone]);
+  }, [appendChord, onAppendDone, semitones]);
 
   const handleReplace = useCallback((subDisplay: string) => {
     if (expandedIdx === null) return;
