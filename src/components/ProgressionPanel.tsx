@@ -30,12 +30,12 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [styleFilter, setStyleFilter] = useState(isEn ? 'All' : '全部');
   const [selectedTemplateIdx, setSelectedTemplateIdx] = useState<number | null>(null);
   const [templateKey, setTemplateKey] = useState('C');
-  const analysisKey = getNoteAtInterval(templateKey, semitones);
 
   // Progression editor
   const [input, setInput] = useState('');
   const [baseChords, setBaseChords] = useState<ParsedChord[]>([]);
   const [semitones, setSemitones] = useState(0);
+  const analysisKey = getNoteAtInterval(templateKey, semitones);
   const [parseError, setParseError] = useState('');
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [activeIdx, setActiveIdx] = useState<number | undefined>(undefined);
