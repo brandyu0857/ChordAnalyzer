@@ -13,7 +13,7 @@ import { findSongExamples } from '../utils/progressionMatcher';
 import { useLocale } from '../i18n/context';
 import { CHORD_STYLES, applyStyleToProgression } from '../utils/chordStyleUtils';
 import type { ChordStyle } from '../utils/chordStyleUtils';
-import { loadProgressions, saveProgression, deleteProgression, type SavedProgression } from '../utils/storage';
+import { loadProgressions, saveProgression, updateProgression, deleteProgression, type SavedProgression } from '../utils/storage';
 
 interface Props {
   onChordSelect?: (chord: ParsedChord) => void;
@@ -248,6 +248,17 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     setSavedList(loadProgressions());
     if (currentSaveId === id) setCurrentSaveId(null);
   }, [currentSaveId]);
+
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState('');
+
+  const handleRename = useCallback((id: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) { setEditingNameId(null); return; }
+    updateProgression(id, { name: trimmed });
+    setSavedList(loadProgressions());
+    setEditingNameId(null);
+  }, []);
 
   const handlePlay = async (root: string, type: string) => {
     const f = getGuitarFingerings(root, type)[0];
@@ -861,7 +872,32 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                 onClick={() => handleLoadSaved(saved)}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">{saved.name}</div>
+                  {editingNameId === saved.id ? (
+                    <input
+                      autoFocus
+                      value={editingNameValue}
+                      onChange={e => setEditingNameValue(e.target.value)}
+                      onBlur={() => handleRename(saved.id, editingNameValue)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRename(saved.id, editingNameValue);
+                        if (e.key === 'Escape') setEditingNameId(null);
+                      }}
+                      onClick={e => e.stopPropagation()}
+                      className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-gray-500"
+                    />
+                  ) : (
+                    <div
+                      className="text-sm font-medium text-gray-900 truncate hover:underline decoration-gray-300"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setEditingNameId(saved.id);
+                        setEditingNameValue(saved.name);
+                      }}
+                      title={isEn ? 'Click to rename' : '点击重命名'}
+                    >
+                      {saved.name}
+                    </div>
+                  )}
                   <div className="text-xs text-gray-400 mt-0.5">
                     {saved.templateKey}{saved.semitones !== 0 ? ` (${saved.semitones > 0 ? '+' : ''}${saved.semitones})` : ''}
                     {' · '}
