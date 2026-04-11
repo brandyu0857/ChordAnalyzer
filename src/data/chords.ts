@@ -629,45 +629,93 @@ export const GUITAR_CHORD_SHAPES: Record<string, GuitarFingering> = {
 // Fret array: [6th(E), 5th(A), 4th(D), 3rd(G), 2nd(B), 1st(E)]
 // ============================================================
 export const SLASH_CHORD_SHAPES: Record<string, GuitarFingering> = {
-  // C inversions
+  // C inversions & pedal bass
   'C/E':    { frets: [0, 3, 2, 0, 1, 0],    fingers: [0, 3, 2, 0, 1, 0] },          // E-C-E-G-C-E
   'C/G':    { frets: [3, 3, 2, 0, 1, 0],    fingers: [3, 3, 2, 0, 1, 0] },          // G-C-E-G-C-E
+  'C/B':    { frets: [-1, 2, 2, 0, 1, 0],   fingers: [0, 2, 3, 0, 1, 0] },          // x-B-E-G-C-E
+  'C/Bb':   { frets: [-1, 1, 2, 0, 1, 0],   fingers: [0, 1, 3, 0, 2, 0] },          // x-Bb-E-G-C-E
+  'C/D':    { frets: [-1, -1, 0, 0, 1, 0],  fingers: [0, 0, 0, 0, 1, 0] },          // x-x-D-G-C-E
 
-  // G inversions & passing bass
-  'G/B':    { frets: [-1, 2, 0, 0, 0, 3],   fingers: [0, 1, 0, 0, 0, 3] },          // x-B-D-G-B-G
-  'G/F#':   { frets: [2, 2, 0, 0, 0, 3],    fingers: [2, 1, 0, 0, 0, 4] },          // F#-B-D-G-B-G
-
-  // Am inversions
-  'Am/C':   { frets: [-1, 3, 2, 2, 1, 0],   fingers: [0, 3, 2, 3, 1, 0] },          // x-C-E-A-C-E
-  'Am/E':   { frets: [0, 0, 2, 2, 1, 0],    fingers: [0, 0, 2, 3, 1, 0] },          // E-A-E-A-C-E
-  'Am/G':   { frets: [3, 0, 2, 2, 1, 0],    fingers: [3, 0, 2, 3, 1, 0] },          // G-A-E-A-C-E (Am7 voicing)
-
-  // D inversions
+  // D inversions & pedal bass
   'D/F#':   { frets: [2, 0, 0, 2, 3, 2],    fingers: [2, 0, 0, 1, 3, 2] },          // F#-A-D-A-D-F#
+  'D/A':    { frets: [-1, 0, 0, 2, 3, 2],   fingers: [0, 0, 0, 1, 3, 2] },          // x-A-D-A-D-F#
+  'D/C':    { frets: [-1, 3, 0, 2, 3, 2],   fingers: [0, 3, 0, 1, 4, 2] },          // x-C-D-A-D-F#
+  'D/B':    { frets: [-1, 2, 0, 2, 3, 2],   fingers: [0, 2, 0, 1, 4, 3] },          // x-B-D-A-D-F#
+  'D/E':    { frets: [0, 0, 0, 2, 3, 2],    fingers: [0, 0, 0, 1, 3, 2] },          // E-A-D-A-D-F#
 
-  // F inversions
+  // E inversions & pedal bass
+  'E/G#':   { frets: [4, -1, 2, 1, 0, 0],   fingers: [4, 0, 2, 1, 0, 0], startFret: 1 }, // G#-x-E-G#-B-E
+  'E/B':    { frets: [-1, 2, 2, 1, 0, 0],   fingers: [0, 2, 3, 1, 0, 0] },          // x-B-E-G#-B-E
+  'E/D':    { frets: [-1, -1, 0, 1, 0, 0],  fingers: [0, 0, 0, 1, 0, 0] },          // x-x-D-G#-B-E
+
+  // F inversions & pedal bass
   'F/A':    { frets: [-1, 0, 3, 2, 1, 1],   fingers: [0, 0, 4, 3, 2, 1] },          // x-A-F-A-C-F
   'F/C':    { frets: [-1, 3, 3, 2, 1, 1],   fingers: [0, 3, 4, 2, 1, 1] },          // x-C-F-A-C-F
   'F/G':    { frets: [3, -1, 3, 2, 1, 1],   fingers: [3, 0, 4, 2, 1, 1] },          // G-x-F-A-C-F
+  'F/E':    { frets: [0, -1, 3, 2, 1, 1],   fingers: [0, 0, 4, 3, 2, 1] },          // E-x-F-A-C-F
+  'F/D':    { frets: [-1, -1, 0, 2, 1, 1],  fingers: [0, 0, 0, 3, 2, 1] },          // x-x-D-A-C-F
 
-  // Em inversions
-  'Em/B':   { frets: [-1, 2, 2, 0, 0, 0],   fingers: [0, 1, 2, 0, 0, 0] },          // x-B-E-G-B-E
+  // G inversions & pedal bass
+  'G/B':    { frets: [-1, 2, 0, 0, 0, 3],   fingers: [0, 1, 0, 0, 0, 3] },          // x-B-D-G-B-G
+  'G/D':    { frets: [-1, -1, 0, 0, 0, 3],  fingers: [0, 0, 0, 0, 0, 3] },          // x-x-D-G-B-G
+  'G/F#':   { frets: [2, 2, 0, 0, 0, 3],    fingers: [2, 1, 0, 0, 0, 4] },          // F#-B-D-G-B-G
+  'G/F':    { frets: [1, -1, 0, 0, 0, 3],   fingers: [1, 0, 0, 0, 0, 3] },          // F-x-D-G-B-G
+  'G/A':    { frets: [-1, 0, 0, 0, 0, 3],   fingers: [0, 0, 0, 0, 0, 3] },          // x-A-D-G-B-G
+  'G/E':    { frets: [0, 2, 0, 0, 0, 3],    fingers: [0, 1, 0, 0, 0, 3] },          // E-B-D-G-B-G
 
-  // Dm inversions
-  'Dm/F':   { frets: [1, 0, 0, 2, 3, 1],    fingers: [1, 0, 0, 2, 3, 1] },          // F-A-D-A-D-F
-  'Dm/A':   { frets: [-1, 0, 0, 2, 3, 1],   fingers: [0, 0, 0, 2, 3, 1] },          // x-A-D-A-D-F
-
-  // E inversions
-  'E/G#':   { frets: [4, -1, 2, 1, 0, 0],   fingers: [4, 0, 2, 1, 0, 0], startFret: 1 }, // G#-x-E-G#-B-E
-
-  // Other common passing/pedal bass chords
-  'D/A':    { frets: [-1, 0, 0, 2, 3, 2],   fingers: [0, 0, 0, 1, 3, 2] },          // x-A-D-A-D-F# (D over open A)
+  // A inversions & pedal bass
   'A/C#':   { frets: [-1, 4, 2, 2, 2, 0],   fingers: [0, 4, 1, 1, 1, 0], startFret: 2 }, // x-C#-A-E-A-E
   'A/E':    { frets: [0, 0, 2, 2, 2, 0],    fingers: [0, 0, 1, 2, 3, 0] },          // E-A-E-A-C#-E
-  'E/B':    { frets: [-1, 2, 2, 1, 0, 0],   fingers: [0, 2, 3, 1, 0, 0] },          // x-B-E-G#-B-E
+  'A/G':    { frets: [3, 0, 2, 2, 2, 0],    fingers: [4, 0, 1, 2, 3, 0] },          // G-A-E-A-C#-E
+  'A/G#':   { frets: [4, 0, 2, 2, 2, 0],    fingers: [4, 0, 1, 2, 3, 0], startFret: 2 }, // G#-A-E-A-C#-E
+  'A/B':    { frets: [-1, 2, 2, 2, 2, 0],   fingers: [0, 1, 1, 1, 1, 0], barreAt: 2, startFret: 2 }, // x-B-E-A-C#-E
+
+  // B inversions
+  'B/D#':   { frets: [-1, -1, 1, 4, 4, 4],  fingers: [0, 0, 1, 3, 3, 3], barreAt: 4, startFret: 1 }, // x-x-D#-B-D#-F#
+  'B/F#':   { frets: [2, 2, 4, 4, 4, 2],    fingers: [1, 1, 2, 3, 4, 1], barreAt: 2, startFret: 2 }, // F#-B-F#-B-D#-F#
+
+  // Am inversions & pedal bass
+  'Am/C':   { frets: [-1, 3, 2, 2, 1, 0],   fingers: [0, 3, 2, 3, 1, 0] },          // x-C-E-A-C-E
+  'Am/E':   { frets: [0, 0, 2, 2, 1, 0],    fingers: [0, 0, 2, 3, 1, 0] },          // E-A-E-A-C-E
+  'Am/G':   { frets: [3, 0, 2, 2, 1, 0],    fingers: [3, 0, 2, 3, 1, 0] },          // G-A-E-A-C-E
+  'Am/F':   { frets: [1, 0, 2, 2, 1, 0],    fingers: [1, 0, 3, 4, 2, 0] },          // F-A-E-A-C-E
+  'Am/F#':  { frets: [2, 0, 2, 2, 1, 0],    fingers: [2, 0, 3, 4, 1, 0] },          // F#-A-E-A-C-E
+
+  // Bm inversions
   'Bm/D':   { frets: [-1, -1, 0, 4, 3, 2],  fingers: [0, 0, 0, 4, 3, 2], startFret: 2 }, // x-x-D-F#-A-F#
-  'G/D':    { frets: [-1, -1, 0, 0, 0, 3],  fingers: [0, 0, 0, 0, 0, 3] },          // x-x-D-G-B-G
-  'C/B':    { frets: [-1, 2, 2, 0, 1, 0],   fingers: [0, 2, 3, 0, 1, 0] },          // x-B-E-G-C-E (Cmaj7-ish)
+  'Bm/F#':  { frets: [2, 2, 4, 4, 3, 2],    fingers: [1, 1, 3, 4, 2, 1], barreAt: 2, startFret: 2 }, // F#-B-F#-B-D-F#
+
+  // Dm inversions & pedal bass
+  'Dm/F':   { frets: [1, 0, 0, 2, 3, 1],    fingers: [1, 0, 0, 2, 3, 1] },          // F-A-D-A-D-F
+  'Dm/A':   { frets: [-1, 0, 0, 2, 3, 1],   fingers: [0, 0, 0, 2, 3, 1] },          // x-A-D-A-D-F
+  'Dm/C':   { frets: [-1, 3, 0, 2, 3, 1],   fingers: [0, 3, 0, 2, 4, 1] },          // x-C-D-A-D-F
+  'Dm/B':   { frets: [-1, 2, 0, 2, 3, 1],   fingers: [0, 2, 0, 3, 4, 1] },          // x-B-D-A-D-F
+  'Dm/Bb':  { frets: [-1, 1, 0, 2, 3, 1],   fingers: [0, 1, 0, 2, 4, 3] },          // x-Bb-D-A-D-F
+
+  // Em inversions & pedal bass
+  'Em/B':   { frets: [-1, 2, 2, 0, 0, 0],   fingers: [0, 1, 2, 0, 0, 0] },          // x-B-E-G-B-E
+  'Em/D':   { frets: [-1, -1, 0, 0, 0, 0],  fingers: [0, 0, 0, 0, 0, 0] },          // x-x-D-G-B-E
+  'Em/C':   { frets: [-1, 3, 2, 0, 0, 0],   fingers: [0, 3, 2, 0, 0, 0] },          // x-C-E-G-B-E
+  'Em/D#':  { frets: [-1, -1, 1, 0, 0, 0],  fingers: [0, 0, 1, 0, 0, 0] },          // x-x-D#-G-B-E
+
+  // Seventh chord slash voicings
+  'G7/B':   { frets: [-1, 2, 0, 0, 0, 1],   fingers: [0, 2, 0, 0, 0, 1] },          // x-B-D-G-B-F
+  'G7/D':   { frets: [-1, -1, 0, 0, 0, 1],  fingers: [0, 0, 0, 0, 0, 1] },          // x-x-D-G-B-F
+  'G7/F':   { frets: [1, -1, 0, 0, 0, 1],   fingers: [1, 0, 0, 0, 0, 2] },          // F-x-D-G-B-F
+  'C7/E':   { frets: [0, 3, 2, 3, 1, 0],    fingers: [0, 2, 1, 3, 1, 0] },          // E-C-E-Bb-C-E
+  'C7/Bb':  { frets: [-1, 1, 2, 3, 1, 0],   fingers: [0, 1, 2, 4, 1, 0] },          // x-Bb-E-Bb-C-E
+  'D7/F#':  { frets: [2, 0, 0, 2, 1, 2],    fingers: [2, 0, 0, 3, 1, 4] },          // F#-A-D-A-C-F#
+  'D7/A':   { frets: [-1, 0, 0, 2, 1, 2],   fingers: [0, 0, 0, 2, 1, 3] },          // x-A-D-A-C-F#
+  'E7/G#':  { frets: [0, 2, 0, 1, 0, 0],    fingers: [0, 2, 0, 1, 0, 0] },          // E-B-D-G#-B-E
+  'A7/E':   { frets: [0, 0, 2, 0, 2, 0],    fingers: [0, 0, 2, 0, 3, 0] },          // E-A-E-G-C#-E
+  'A7/C#':  { frets: [-1, 4, 2, 0, 2, 0],   fingers: [0, 4, 2, 0, 3, 0], startFret: 2 }, // x-C#-A-G-C#-E
+  'B7/D#':  { frets: [-1, -1, 1, 2, 0, 2],  fingers: [0, 0, 1, 2, 0, 3] },          // x-x-D#-A-B-F#
+  'B7/F#':  { frets: [2, 2, 1, 2, 0, 2],    fingers: [2, 3, 1, 4, 0, 0], startFret: 1 }, // F#-B-D#-A-B-F#
+
+  // Major 7 slash voicings
+  'Cmaj7/E': { frets: [0, 3, 2, 0, 0, 0],   fingers: [0, 3, 2, 0, 0, 0] },          // E-C-E-G-B-E
+  'Fmaj7/A': { frets: [-1, 0, 3, 2, 1, 0],  fingers: [0, 0, 3, 2, 1, 0] },          // x-A-F-A-C-E
+  'Gmaj7/B': { frets: [-1, 2, 0, 0, 0, 2],  fingers: [0, 1, 0, 0, 0, 2] },          // x-B-D-G-B-F#
 };
 
 // ============================================================
