@@ -252,10 +252,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState('');
 
-  const handleRename = useCallback((id: string, newName: string) => {
-    const trimmed = newName.trim();
-    if (!trimmed) { setEditingNameId(null); return; }
-    updateProgression(id, { name: trimmed });
+  const handleRenameTitle = useCallback((id: string, newTitle: string) => {
+    updateProgression(id, { title: newTitle.trim() || undefined });
     setSavedList(loadProgressions());
     setEditingNameId(null);
   }, []);
@@ -877,28 +875,30 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
                       autoFocus
                       value={editingNameValue}
                       onChange={e => setEditingNameValue(e.target.value)}
-                      onBlur={() => handleRename(saved.id, editingNameValue)}
+                      onBlur={() => handleRenameTitle(saved.id, editingNameValue)}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') handleRename(saved.id, editingNameValue);
+                        if (e.key === 'Enter') handleRenameTitle(saved.id, editingNameValue);
                         if (e.key === 'Escape') setEditingNameId(null);
                       }}
                       onClick={e => e.stopPropagation()}
+                      placeholder={isEn ? 'Title (e.g. song name)' : '标题（如歌名）'}
                       className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-gray-500"
                     />
                   ) : (
                     <div
-                      className="text-sm font-medium text-gray-900 truncate hover:underline decoration-gray-300"
+                      className="text-sm font-medium text-gray-900 truncate hover:underline decoration-gray-300 cursor-text"
                       onClick={e => {
                         e.stopPropagation();
                         setEditingNameId(saved.id);
-                        setEditingNameValue(saved.name);
+                        setEditingNameValue(saved.title || '');
                       }}
-                      title={isEn ? 'Click to rename' : '点击重命名'}
+                      title={isEn ? 'Click to edit title' : '点击编辑标题'}
                     >
-                      {saved.name}
+                      {saved.title || <span className="text-gray-300 italic">{isEn ? 'Untitled' : '未命名'}</span>}
                     </div>
                   )}
-                  <div className="text-xs text-gray-400 mt-0.5">
+                  <div className="text-xs text-gray-500 mt-0.5 truncate">{saved.name}</div>
+                  <div className="text-[10px] text-gray-400 mt-0.5">
                     {saved.templateKey}{saved.semitones !== 0 ? ` (${saved.semitones > 0 ? '+' : ''}${saved.semitones})` : ''}
                     {' · '}
                     {new Date(saved.updatedAt).toLocaleDateString()}

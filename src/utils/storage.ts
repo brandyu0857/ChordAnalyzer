@@ -1,6 +1,7 @@
 export interface SavedProgression {
   id: string;
   name: string;
+  title?: string;
   input: string;
   templateKey: string;
   semitones: number;
