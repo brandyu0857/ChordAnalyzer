@@ -222,7 +222,6 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
   }, [input, chords, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks]);
 
   const handleLoadSaved = useCallback((saved: SavedProgression) => {
-    skipParse.current = true;
     keepTranspose.current = true;
     setInput(saved.input);
     setTemplateKey(saved.templateKey);
@@ -233,14 +232,6 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     setCurrentSaveId(saved.id);
     setSelectedTemplateIdx(null);
     setExpandedIdx(null);
-    // Re-parse the input to rebuild baseChords
-    const tokens = saved.input.split(/[\s\-,|]+/).filter(Boolean);
-    const parsed: ParsedChord[] = [];
-    for (const t of tokens) {
-      const match = /^\[(.+)\]$/.test(t) ? null : parseChordName(t);
-      if (match) parsed.push(match);
-    }
-    setBaseChords(parsed);
   }, []);
 
   const handleDeleteSaved = useCallback((id: string) => {
