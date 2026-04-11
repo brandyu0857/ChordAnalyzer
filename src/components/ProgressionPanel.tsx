@@ -139,12 +139,13 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
       }
 
       // Mixed parsing: try each token as Nashville first, then as chord name
-      const hasNashville = cleanTokens.some(t => /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t));
+      const nashvilleRe = /^[b#]?[1-7][a-z0-9#b]*(\/[b#]?[1-7])?$/i;
+      const hasNashville = cleanTokens.some(t => nashvilleRe.test(t) && !/^[A-Ga-g]/.test(t));
       const parsed: ParsedChord[] = [];
       const failed: string[] = [];
       for (const t of cleanTokens) {
-        // Try Nashville number first (e.g. "1maj7", "5", "6m")
-        const isNashvilleToken = /^[b#]?[1-7][a-z0-9#b]*$/i.test(t) && !/^[A-Ga-g]/.test(t);
+        // Try Nashville number first (e.g. "1maj7", "5", "6m", "4/5")
+        const isNashvilleToken = nashvilleRe.test(t) && !/^[A-Ga-g]/.test(t);
         const nashvilleResult = isNashvilleToken ? parseNashvilleToken(t, templateKey) : null;
         // Then try chord name (e.g. "Em7", "Cmaj7")
         const chordResult = nashvilleResult || parseChordName(t);

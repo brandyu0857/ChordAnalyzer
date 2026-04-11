@@ -471,6 +471,31 @@ export function isNashvilleNotation(tokens: string[]): boolean {
  * against the given key (e.g. "C").
  */
 export function parseNashvilleToken(token: string, key: string): ParsedChord | null {
+  // Handle slash notation like 4/5 (degree/bass degree)
+  if (token.includes('/')) {
+    const [chordPart, bassPart] = token.split('/');
+    const chordMatch = chordPart.match(/^([b#]?)([1-7])(.*)$/i);
+    const bassMatch = bassPart.match(/^([b#]?)([1-7])$/i);
+    if (chordMatch && bassMatch) {
+      const keyIndex = getNoteIndex(key);
+      if (keyIndex === -1) return null;
+      // Resolve chord root
+      const [, acc1, deg1, suffix] = chordMatch;
+      let interval1 = MAJOR_SCALE_INTERVALS[parseInt(deg1) - 1];
+      if (acc1 === 'b') interval1 = (interval1 - 1 + 12) % 12;
+      if (acc1 === '#') interval1 = (interval1 + 1) % 12;
+      const root = NOTES[(keyIndex + interval1) % 12];
+      // Resolve bass note
+      const [, acc2, deg2] = bassMatch;
+      let interval2 = MAJOR_SCALE_INTERVALS[parseInt(deg2) - 1];
+      if (acc2 === 'b') interval2 = (interval2 - 1 + 12) % 12;
+      if (acc2 === '#') interval2 = (interval2 + 1) % 12;
+      const bass = NOTES[(keyIndex + interval2) % 12];
+      const chordName = root + (suffix || NASHVILLE_DEFAULT_SYMBOLS[parseInt(deg1) - 1]) + '/' + bass;
+      return parseChordName(chordName);
+    }
+  }
+
   const match = token.match(/^([b#]?)([1-7])(.*)$/i);
   if (!match) return null;
 

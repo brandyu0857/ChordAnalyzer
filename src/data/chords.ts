@@ -648,6 +648,7 @@ export const SLASH_CHORD_SHAPES: Record<string, GuitarFingering> = {
   // F inversions
   'F/A':    { frets: [-1, 0, 3, 2, 1, 1],   fingers: [0, 0, 4, 3, 2, 1] },          // x-A-F-A-C-F
   'F/C':    { frets: [-1, 3, 3, 2, 1, 1],   fingers: [0, 3, 4, 2, 1, 1] },          // x-C-F-A-C-F
+  'F/G':    { frets: [3, -1, 3, 2, 1, 1],   fingers: [3, 0, 4, 2, 1, 1] },          // G-x-F-A-C-F
 
   // Em inversions
   'Em/B':   { frets: [-1, 2, 2, 0, 0, 0],   fingers: [0, 1, 2, 0, 0, 0] },          // x-B-E-G-B-E
