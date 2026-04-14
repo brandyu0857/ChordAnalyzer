@@ -6,17 +6,20 @@ import PlayButton from './components/PlayButton';
 import ProgressionPanel from './components/ProgressionPanel';
 import FretboardIdentifier from './components/FretboardIdentifier';
 import ChordSheetEditor from './components/ChordSheetEditor';
+import AuthModal from './components/AuthModal';
 import type { ParsedChord } from './utils/chordUtils';
 import { parseChordName, getChordNotes } from './utils/chordUtils';
 import { getGuitarFingerings } from './data/chords';
 import type { GuitarFingering } from './data/chords';
 import { playChordStrum, playChordBlock } from './utils/audioUtils';
 import { useLocale } from './i18n/context';
+import { useAuth } from './contexts/AuthContext';
 
 type Page = 'chord' | 'progression' | 'identify' | 'sheet';
 
 function App() {
   const { locale, setLocale, theme, setTheme } = useLocale();
+  const { user, loading: authLoading, signOut } = useAuth();
   const isEn = locale === 'en';
   const [page, setPage] = useState<Page>('chord');
   const [currentChord, setCurrentChord] = useState<ParsedChord | null>(() => parseChordName('C'));
@@ -27,6 +30,8 @@ function App() {
   const [chordToAppend, setChordToAppend] = useState<{ display: string; fingeringIndex: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const showToast = useCallback((msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -99,6 +104,46 @@ function App() {
             </div>
             <h1 className="text-base font-semibold text-gray-900">ChordAnalyzer</h1>
             <div className="ml-auto flex items-center gap-3">
+              {/* User auth */}
+              {!authLoading && (
+                user ? (
+                  <div className="relative">
+                    <button
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 cursor-pointer hover:ring-2 hover:ring-gray-300 transition-all overflow-hidden"
+                    >
+                      {user.user_metadata?.avatar_url ? (
+                        <img src={user.user_metadata.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        (user.email?.[0] ?? '?').toUpperCase()
+                      )}
+                    </button>
+                    {userMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-30" onClick={() => setUserMenuOpen(false)} />
+                        <div className="absolute right-0 top-9 z-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg py-1 min-w-[180px]">
+                          <div className="px-3 py-2 text-xs text-gray-400 truncate border-b border-gray-100 dark:border-gray-700">
+                            {user.email}
+                          </div>
+                          <button
+                            onClick={() => { signOut(); setUserMenuOpen(false); }}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                          >
+                            {isEn ? 'Sign Out' : '退出登录'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAuthModalOpen(true)}
+                    className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
+                    {isEn ? 'Sign In' : '登录'}
+                  </button>
+                )
+              )}
               {/* Theme toggle */}
               <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
                 <button
@@ -277,6 +322,9 @@ function App() {
       <footer className="border-t border-gray-100 mt-16 py-4 text-center text-xs text-gray-300">
         ChordAnalyzer
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
       {/* Toast */}
       <div
