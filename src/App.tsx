@@ -19,7 +19,7 @@ type Page = 'chord' | 'progression' | 'identify' | 'sheet';
 
 function App() {
   const { locale, setLocale, theme, setTheme } = useLocale();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut, configured: authConfigured } = useAuth();
   const isEn = locale === 'en';
   const [page, setPage] = useState<Page>('chord');
   const [currentChord, setCurrentChord] = useState<ParsedChord | null>(() => parseChordName('C'));
@@ -105,7 +105,7 @@ function App() {
             <h1 className="text-base font-semibold text-gray-900">ChordAnalyzer</h1>
             <div className="ml-auto flex items-center gap-3">
               {/* User auth */}
-              {!authLoading && (
+              {authConfigured && !authLoading && (
                 user ? (
                   <div className="relative">
                     <button
