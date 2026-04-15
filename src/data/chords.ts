@@ -1088,7 +1088,7 @@ export function getGuitarFingering(root: string, type: string): GuitarFingering 
 }
 
 // Open string notes for the 6 guitar strings (low E to high e)
-const OPEN_STRINGS = [4, 11, 7, 2, 9, 4]; // E B G D A E as NOTES indices
+const OPEN_STRINGS = [4, 9, 2, 7, 11, 4]; // E A D G B e as NOTES indices
 
 function generateSlashVoicing(base: GuitarFingering, bassNote: string): GuitarFingering | null {
   const bassIdx = NOTES.indexOf(bassNote as typeof NOTES[number]);
@@ -1098,28 +1098,22 @@ function generateSlashVoicing(base: GuitarFingering, bassNote: string): GuitarFi
   for (const stringIdx of [0, 1]) {
     const openNote = OPEN_STRINGS[stringIdx];
     const fret = (bassIdx - openNote + 12) % 12;
-    // Use open string (0) or frets 1-5 on low E, 0-5 on A
     if (fret > 5) continue;
 
     const newFrets = [...base.frets];
-    // If the base chord already uses this string with a different note, replace it
-    // If the base chord mutes this string, add the bass note
     newFrets[stringIdx] = fret;
-
-    // Mute strings between bass and the rest of the chord if needed
-    if (stringIdx === 0 && base.frets[0] === -1) {
-      // We're adding bass on low E; if A string was also muted, keep it muted
-      // unless the chord uses it
-    }
 
     // Compute startFret based on played frets
     const played = newFrets.filter(f => f > 0);
-    const minFret = played.length ? Math.min(...played) : 0;
     const maxFret = played.length ? Math.max(...played) : 0;
-    const startFret = maxFret <= 5 ? (base.startFret && base.startFret > 0 ? base.startFret : undefined) : Math.max(1, minFret - 1);
+    const minFret = played.length ? Math.min(...played) : 0;
 
     const result: GuitarFingering = { frets: newFrets };
-    if (startFret && startFret > 0) result.startFret = startFret;
+    if (maxFret > 5) {
+      result.startFret = Math.max(1, minFret - 1);
+    } else if (base.startFret && base.startFret > 0) {
+      result.startFret = base.startFret;
+    }
     return result;
   }
 
