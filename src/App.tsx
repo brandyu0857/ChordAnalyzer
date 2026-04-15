@@ -305,6 +305,7 @@ function App() {
             onChordSelect={handleChordSelect}
             appendChord={chordToAppend}
             onAppendDone={() => setChordToAppend(null)}
+            showToast={showToast}
           />
         </div>
 

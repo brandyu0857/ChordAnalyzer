@@ -19,9 +19,10 @@ interface Props {
   onChordSelect?: (chord: ParsedChord) => void;
   appendChord?: { display: string; fingeringIndex: number } | null;
   onAppendDone?: () => void;
+  showToast?: (msg: string) => void;
 }
 
-export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
+export default function ProgressionPanel({ appendChord, onAppendDone, showToast }: Props) {
   const { locale } = useLocale();
   const isEn = locale === 'en';
 
@@ -219,7 +220,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     });
     setCurrentSaveId(entry.id);
     setSavedList(loadProgressions());
-  }, [input, chords, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks]);
+    showToast?.(isEn ? 'Progression saved' : '和弦进行已保存');
+  }, [input, chords, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks, showToast, isEn]);
 
   const handleLoadSaved = useCallback((saved: SavedProgression) => {
     keepTranspose.current = true;
@@ -238,7 +240,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone }: Props) {
     deleteProgression(id);
     setSavedList(loadProgressions());
     if (currentSaveId === id) setCurrentSaveId(null);
-  }, [currentSaveId]);
+    showToast?.(isEn ? 'Deleted' : '已删除');
+  }, [currentSaveId, showToast, isEn]);
 
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState('');
