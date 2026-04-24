@@ -55,6 +55,74 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   const skipParse = useRef(false);
   const keepTranspose = useRef(false);
 
+  // Chord drag-and-drop reordering
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dropTarget, setDropTarget] = useState<number | null>(null);
+
+  const handleChordDragStart = useCallback((idx: number, e: React.DragEvent) => {
+    setDragFrom(idx);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(idx));
+    (e.currentTarget as HTMLElement).style.opacity = '0.4';
+  }, []);
+
+  const handleChordDragEnd = useCallback((e: React.DragEvent) => {
+    (e.currentTarget as HTMLElement).style.opacity = '1';
+    setDragFrom(null);
+    setDropTarget(null);
+  }, []);
+
+  const handleChordDragOverCard = useCallback((idx: number, e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragFrom !== null && idx !== dragFrom) {
+      setDropTarget(idx);
+    }
+  }, [dragFrom]);
+
+  const handleChordDropOnCard = useCallback((toIdx: number) => {
+    if (dragFrom === null || dragFrom === toIdx) { setDragFrom(null); setDropTarget(null); return; }
+    const fromIdx = dragFrom;
+
+    // Reorder baseChords
+    const newChords = [...baseChords];
+    const [moved] = newChords.splice(fromIdx, 1);
+    newChords.splice(toIdx, 0, moved);
+
+    // Reorder fingeringIndices
+    const newFi = [...fingeringIndices];
+    const [movedFi] = newFi.splice(fromIdx, 1);
+    newFi.splice(toIdx, 0, movedFi);
+
+    // Remap sectionBreaks: shift indices after the move
+    const newSections: Record<number, string> = {};
+    for (const [key, label] of Object.entries(sectionBreaks)) {
+      let idx = parseInt(key);
+      if (idx === fromIdx) {
+        // Section label follows the chord
+        newSections[toIdx] = label;
+      } else {
+        // Adjust index based on removal and insertion
+        if (fromIdx < toIdx) {
+          if (idx > fromIdx && idx <= toIdx) idx--;
+        } else {
+          if (idx >= toIdx && idx < fromIdx) idx++;
+        }
+        newSections[idx] = label;
+      }
+    }
+
+    skipParse.current = true;
+    keepTranspose.current = true;
+    setBaseChords(newChords);
+    setFingeringIndices(newFi);
+    setSectionBreaks(newSections);
+    setInput(newChords.map(c => c.display).join(' '));
+    setExpandedIdx(null);
+    setDragFrom(null);
+    setDropTarget(null);
+  }, [dragFrom, baseChords, fingeringIndices, sectionBreaks]);
+
   // Track grid column count for inline sub panel placement
   const [gridCols, setGridCols] = useState(() => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1280;
@@ -330,7 +398,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     dragCounter.current++;
-    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
+    if (e.dataTransfer.types.includes('Files') && !e.dataTransfer.types.includes('text/plain')) setIsDragging(true);
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -652,15 +720,24 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                               const isActive = activeIdx === i;
                               const row = Math.floor(j / gridCols);
 
+                              const isDropTarget = dropTarget === i && dragFrom !== null && dragFrom !== i;
+
                               return (
                                 <div key={i}
                                   style={{ order: row * 2 }}
+                                  draggable
+                                  onDragStart={e => handleChordDragStart(i, e)}
+                                  onDragEnd={handleChordDragEnd}
+                                  onDragOver={e => handleChordDragOverCard(i, e)}
+                                  onDrop={() => handleChordDropOnCard(i)}
                                   className={`group/card rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
-                                    ${isActive
-                                      ? 'bg-white ring-1 ring-gray-900 scale-105'
-                                      : isExpanded
-                                        ? 'bg-white ring-1 ring-gray-900'
-                                        : 'bg-white hover:bg-gray-50'}`}
+                                    ${isDropTarget
+                                      ? 'ring-2 ring-gray-400 bg-gray-100 scale-105'
+                                      : isActive
+                                        ? 'bg-white ring-1 ring-gray-900 scale-105'
+                                        : isExpanded
+                                          ? 'bg-white ring-1 ring-gray-900'
+                                          : 'bg-white hover:bg-gray-50'}`}
                                   onClick={() => setExpandedIdx(isExpanded ? null : i)}
                                 >
                                   {/* Chord diagram with hover circle-arrows for voicing switch */}
