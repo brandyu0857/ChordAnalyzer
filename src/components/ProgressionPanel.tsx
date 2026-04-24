@@ -313,6 +313,37 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
 
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState('');
+  const [editingSectionIdx, setEditingSectionIdx] = useState<number | null>(null);
+  const [editingSectionValue, setEditingSectionValue] = useState('');
+
+  const handleAddSection = useCallback((chordIdx: number) => {
+    const label = isEn ? 'Section' : '段落';
+    setSectionBreaks(prev => ({ ...prev, [chordIdx]: label }));
+    setEditingSectionIdx(chordIdx);
+    setEditingSectionValue(label);
+  }, [isEn]);
+
+  const handleRenameSection = useCallback((chordIdx: number, newLabel: string) => {
+    const trimmed = newLabel.trim();
+    if (trimmed) {
+      setSectionBreaks(prev => ({ ...prev, [chordIdx]: trimmed }));
+    } else {
+      setSectionBreaks(prev => {
+        const next = { ...prev };
+        delete next[chordIdx];
+        return next;
+      });
+    }
+    setEditingSectionIdx(null);
+  }, []);
+
+  const handleDeleteSection = useCallback((chordIdx: number) => {
+    setSectionBreaks(prev => {
+      const next = { ...prev };
+      delete next[chordIdx];
+      return next;
+    });
+  }, []);
 
   const handleRenameTitle = useCallback((id: string, newTitle: string) => {
     updateProgression(id, { title: newTitle.trim() || undefined });
@@ -696,11 +727,35 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                   return (
                     <div key={si} className={hasSections ? 'space-y-2' : ''}>
                       {hasSections && section.label && (
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full">
-                            {section.label}
-                          </span>
+                        <div className="flex items-center gap-2 pt-1 group/section">
+                          {editingSectionIdx === section.startIdx ? (
+                            <input
+                              autoFocus
+                              value={editingSectionValue}
+                              onChange={e => setEditingSectionValue(e.target.value)}
+                              onBlur={() => handleRenameSection(section.startIdx, editingSectionValue)}
+                              onKeyDown={e => { if (e.key === 'Enter') handleRenameSection(section.startIdx, editingSectionValue); if (e.key === 'Escape') setEditingSectionIdx(null); }}
+                              className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full outline-none w-24"
+                            />
+                          ) : (
+                            <span
+                              className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full cursor-pointer hover:bg-gray-700 transition-colors"
+                              onClick={() => { setEditingSectionIdx(section.startIdx); setEditingSectionValue(section.label); }}
+                              title={isEn ? 'Click to rename' : '点击重命名'}
+                            >
+                              {section.label}
+                            </span>
+                          )}
                           <div className="flex-1 h-px bg-gray-200" />
+                          <button
+                            onClick={() => handleDeleteSection(section.startIdx)}
+                            className="opacity-0 group-hover/section:opacity-100 transition-opacity w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-gray-500 cursor-pointer"
+                            title={isEn ? 'Remove section' : '删除段落'}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
                         </div>
                       )}
                       {(() => {
@@ -730,7 +785,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                   onDragEnd={handleChordDragEnd}
                                   onDragOver={e => handleChordDragOverCard(i, e)}
                                   onDrop={() => handleChordDropOnCard(i)}
-                                  className={`group/card rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
+                                  className={`group/card relative rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
                                     ${isDropTarget
                                       ? 'ring-2 ring-gray-400 bg-gray-100 scale-105'
                                       : isActive
@@ -740,6 +795,18 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                           : 'bg-white hover:bg-gray-50'}`}
                                   onClick={() => setExpandedIdx(isExpanded ? null : i)}
                                 >
+                                  {/* Add section button */}
+                                  {!(i in sectionBreaks) && (
+                                    <button
+                                      onClick={e => { e.stopPropagation(); handleAddSection(i); }}
+                                      className="absolute -top-1 -left-1 z-10 w-5 h-5 flex items-center justify-center rounded-full bg-gray-900 text-white opacity-0 group-hover/card:opacity-100 transition-opacity cursor-pointer hover:bg-gray-700 shadow-sm"
+                                      title={isEn ? 'Add section' : '添加段落'}
+                                    >
+                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                                      </svg>
+                                    </button>
+                                  )}
                                   {/* Chord diagram with hover circle-arrows for voicing switch */}
                                   <div className="relative flex items-center justify-center">
                                     {allFingerings.length > 1 && (
