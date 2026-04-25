@@ -350,19 +350,30 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   const handleSave = useCallback(() => {
     if (!input.trim()) return;
     const name = chords.map(c => c.display).join(' - ');
-    const entry = saveProgression({
-      name,
-      input,
-      templateKey,
-      semitones,
-      fingeringIndices,
-      chordStyle,
-      sectionBreaks,
-    });
-    setCurrentSaveId(entry.id);
-    setSavedList(loadProgressions());
-    showToast?.(isEn ? 'Progression saved' : '和弦进行已保存');
-  }, [input, chords, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks, showToast, isEn]);
+    if (currentSaveId) {
+      updateProgression(currentSaveId, { name, input, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks });
+      setSavedList(loadProgressions());
+      showToast?.(isEn ? 'Saved' : '已保存');
+    } else {
+      const entry = saveProgression({ name, input, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks });
+      setCurrentSaveId(entry.id);
+      setSavedList(loadProgressions());
+      showToast?.(isEn ? 'Progression saved' : '和弦进行已保存');
+    }
+  }, [input, chords, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks, showToast, isEn, currentSaveId]);
+
+  // Auto-save when editing a loaded progression
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!currentSaveId || !input.trim()) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      const name = chords.map(c => c.display).join(' - ');
+      updateProgression(currentSaveId, { name, input, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks });
+      setSavedList(loadProgressions());
+    }, 800);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [currentSaveId, input, templateKey, semitones, fingeringIndices, chordStyle, sectionBreaks, chords]);
 
   const handleLoadSaved = useCallback((saved: SavedProgression) => {
     keepTranspose.current = true;
