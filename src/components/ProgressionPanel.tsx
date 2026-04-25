@@ -124,12 +124,10 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     if (dragFrom === null) return;
-    // Determine if cursor is on the left or right half of the card
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const midX = rect.left + rect.width / 2;
     const insertAt = e.clientX < midX ? idx : idx + 1;
-    // Don't show indicator at the dragged chord's original position or the slot right after it
-    if (insertAt !== dragFrom && insertAt !== dragFrom + 1) {
+    if (insertAt !== dragFrom) {
       setDropTarget(insertAt);
     } else {
       setDropTarget(null);
@@ -137,7 +135,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   }, [dragFrom]);
 
   const handleChordDrop = useCallback((insertAt: number) => {
-    if (dragFrom === null || insertAt === dragFrom || insertAt === dragFrom + 1) {
+    if (dragFrom === null || insertAt === dragFrom) {
       setDragFrom(null); setDropTarget(null); return;
     }
     pushHistory();
@@ -962,7 +960,6 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                 className={`rounded-xl border-2 border-dashed flex items-center justify-center min-h-[80px] transition-colors
                                   ${dropTarget === nextStart ? 'border-gray-900 bg-gray-100' : 'border-gray-200'}`}
                                 onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(nextStart); }}
-                                onDragLeave={() => setDropTarget(null)}
                                 onDrop={() => handleChordDrop(nextStart)}
                               >
                                 <span className="text-xs text-gray-400">{isEn ? 'Drop here' : '放在这里'}</span>
