@@ -102,6 +102,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   }, [handleUndo]);
 
   // Chord drag-and-drop reordering
+  // dropTarget represents the insertion slot: chord will be inserted BEFORE this index.
+  // A value equal to chords.length means "append at end".
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
 
@@ -121,35 +123,57 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   const handleChordDragOverCard = useCallback((idx: number, e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragFrom !== null && idx !== dragFrom) {
-      setDropTarget(idx);
+    if (dragFrom === null) return;
+    // Determine if cursor is on the left or right half of the card
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+    const insertAt = e.clientX < midX ? idx : idx + 1;
+    // Don't show indicator at the dragged chord's original position or the slot right after it
+    if (insertAt !== dragFrom && insertAt !== dragFrom + 1) {
+      setDropTarget(insertAt);
+    } else {
+      setDropTarget(null);
     }
   }, [dragFrom]);
 
-  const handleChordDropOnCard = useCallback((toIdx: number) => {
-    if (dragFrom === null || dragFrom === toIdx) { setDragFrom(null); setDropTarget(null); return; }
+  const handleChordDrop = useCallback((insertAt: number) => {
+    if (dragFrom === null || insertAt === dragFrom || insertAt === dragFrom + 1) {
+      setDragFrom(null); setDropTarget(null); return;
+    }
     pushHistory();
     const fromIdx = dragFrom;
+    // When removing an item before the insertion point, the target shifts left by 1
+    const toIdx = fromIdx < insertAt ? insertAt - 1 : insertAt;
 
-    // Reorder baseChords
     const newChords = [...baseChords];
     const [moved] = newChords.splice(fromIdx, 1);
     newChords.splice(toIdx, 0, moved);
 
-    // Reorder fingeringIndices
     const newFi = [...fingeringIndices];
     const [movedFi] = newFi.splice(fromIdx, 1);
     newFi.splice(toIdx, 0, movedFi);
 
-    // Remap sectionBreaks: shift indices after the move
+    // Remap sectionBreaks: section labels stay in place, indices shift around the move
     const newSections: Record<number, string> = {};
     for (const [key, label] of Object.entries(sectionBreaks)) {
       let idx = parseInt(key);
       if (idx === fromIdx) {
-        // Section label follows the chord
-        newSections[toIdx] = label;
+        // Section label at the dragged chord's origin stays on the NEXT chord there
+        // (i.e. it doesn't follow the dragged chord)
+        // After removal, the chord that was at fromIdx+1 is now at fromIdx
+        // We keep the label at fromIdx so it applies to the next chord in that slot
+        if (fromIdx < toIdx) {
+          // Chord moved forward: the label stays at fromIdx (next chord slides into that slot)
+          newSections[fromIdx] = label;
+        } else {
+          // Chord moved backward: after removal at fromIdx, indices >= fromIdx shift.
+          // The next chord that was at fromIdx+1 becomes fromIdx after removal.
+          // But then insertion at toIdx shifts everything >= toIdx up by 1.
+          let adjusted = fromIdx; // stays
+          if (adjusted >= toIdx) adjusted++;
+          newSections[adjusted] = label;
+        }
       } else {
-        // Adjust index based on removal and insertion
         if (fromIdx < toIdx) {
           if (idx > fromIdx && idx <= toIdx) idx--;
         } else {
@@ -779,7 +803,11 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                   return (
                     <div key={si} className={hasSections ? 'space-y-2' : ''}>
                       {hasSections && section.label && (
-                        <div className="flex items-center gap-2 pt-1 group/section">
+                        <div
+                          className="flex items-center gap-2 pt-1 group/section"
+                          onDragOver={e => { if (dragFrom !== null) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(section.startIdx); } }}
+                          onDrop={() => { if (dropTarget !== null) handleChordDrop(dropTarget); }}
+                        >
                           {editingSectionIdx === section.startIdx ? (
                             <input
                               autoFocus
@@ -827,7 +855,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                               const isActive = activeIdx === i;
                               const row = Math.floor(j / gridCols);
 
-                              const isDropTarget = dropTarget === i && dragFrom !== null && dragFrom !== i;
+                              const showDropLeft = dropTarget === i && dragFrom !== null;
+                              const showDropRight = dropTarget === i + 1 && dragFrom !== null && j === sectionChords.length - 1;
 
                               return (
                                 <div key={i}
@@ -836,17 +865,22 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                   onDragStart={e => handleChordDragStart(i, e)}
                                   onDragEnd={handleChordDragEnd}
                                   onDragOver={e => handleChordDragOverCard(i, e)}
-                                  onDrop={() => handleChordDropOnCard(i)}
+                                  onDrop={() => { if (dropTarget !== null) handleChordDrop(dropTarget); }}
                                   className={`group/card relative rounded-xl p-2 flex flex-col items-center cursor-pointer transition-all
-                                    ${isDropTarget
-                                      ? 'ring-2 ring-gray-400 bg-gray-100 scale-105'
-                                      : isActive
-                                        ? 'bg-white ring-1 ring-gray-900 scale-105'
-                                        : isExpanded
-                                          ? 'bg-white ring-1 ring-gray-900'
-                                          : 'bg-white hover:bg-gray-50'}`}
+                                    ${isActive
+                                      ? 'bg-white ring-1 ring-gray-900 scale-105'
+                                      : isExpanded
+                                        ? 'bg-white ring-1 ring-gray-900'
+                                        : 'bg-white hover:bg-gray-50'}`}
                                   onClick={() => setExpandedIdx(isExpanded ? null : i)}
                                 >
+                                  {/* Drop insertion indicators */}
+                                  {showDropLeft && (
+                                    <div className="absolute -left-[7px] top-2 bottom-2 w-[3px] bg-gray-900 rounded-full z-20" />
+                                  )}
+                                  {showDropRight && (
+                                    <div className="absolute -right-[7px] top-2 bottom-2 w-[3px] bg-gray-900 rounded-full z-20" />
+                                  )}
                                   {/* Add section button */}
                                   {!(i in sectionBreaks) && (
                                     <button
@@ -910,6 +944,19 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                 </div>
                               );
                             })}
+                            {/* Drop zone at the end of this section */}
+                            {dragFrom !== null && (
+                              <div
+                                style={{ order: Math.floor((sectionChords.length - 1) / gridCols) * 2 }}
+                                className={`rounded-xl border-2 border-dashed flex items-center justify-center min-h-[80px] transition-colors
+                                  ${dropTarget === nextStart ? 'border-gray-900 bg-gray-100' : 'border-gray-200'}`}
+                                onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(nextStart); }}
+                                onDragLeave={() => setDropTarget(null)}
+                                onDrop={() => handleChordDrop(nextStart)}
+                              >
+                                <span className="text-xs text-gray-400">{isEn ? 'Drop here' : '放在这里'}</span>
+                              </div>
+                            )}
                             {/* Substitution panel — inserted in grid with order to appear after the correct row */}
                             {expandedRow >= 0 && chords[expandedIdx!] && (() => {
                               const chord = chords[expandedIdx!];
