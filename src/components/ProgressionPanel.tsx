@@ -55,6 +55,52 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   const skipParse = useRef(false);
   const keepTranspose = useRef(false);
 
+  // Undo history
+  interface HistorySnapshot {
+    input: string;
+    baseChords: ParsedChord[];
+    fingeringIndices: number[];
+    sectionBreaks: Record<number, string>;
+    semitones: number;
+    chordStyle: ChordStyle;
+  }
+  const historyStack = useRef<HistorySnapshot[]>([]);
+  const maxHistory = 50;
+
+  const pushHistory = useCallback(() => {
+    historyStack.current.push({
+      input, baseChords: [...baseChords], fingeringIndices: [...fingeringIndices],
+      sectionBreaks: { ...sectionBreaks }, semitones, chordStyle,
+    });
+    if (historyStack.current.length > maxHistory) historyStack.current.shift();
+  }, [input, baseChords, fingeringIndices, sectionBreaks, semitones, chordStyle]);
+
+  const handleUndo = useCallback(() => {
+    const prev = historyStack.current.pop();
+    if (!prev) return;
+    skipParse.current = true;
+    keepTranspose.current = true;
+    setInput(prev.input);
+    setBaseChords(prev.baseChords);
+    setFingeringIndices(prev.fingeringIndices);
+    setSectionBreaks(prev.sectionBreaks);
+    setSemitones(prev.semitones);
+    setChordStyle(prev.chordStyle);
+    setExpandedIdx(null);
+    showToast?.(isEn ? 'Undo' : '已撤销');
+  }, [showToast, isEn]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleUndo]);
+
   // Chord drag-and-drop reordering
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
@@ -82,6 +128,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
 
   const handleChordDropOnCard = useCallback((toIdx: number) => {
     if (dragFrom === null || dragFrom === toIdx) { setDragFrom(null); setDropTarget(null); return; }
+    pushHistory();
     const fromIdx = dragFrom;
 
     // Reorder baseChords
@@ -121,7 +168,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
     setExpandedIdx(null);
     setDragFrom(null);
     setDropTarget(null);
-  }, [dragFrom, baseChords, fingeringIndices, sectionBreaks]);
+  }, [dragFrom, baseChords, fingeringIndices, sectionBreaks, pushHistory]);
 
   // Track grid column count for inline sub panel placement
   const [gridCols, setGridCols] = useState(() => {
@@ -170,6 +217,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   }, [baseChords, semitones, chordStyle, templateKey]);
 
   const handleTemplateSelect = (idx: number) => {
+    pushHistory();
     const template = PROGRESSION_TEMPLATES[idx];
     const parsed = progressionDegreesToChords(template.degrees, templateKey)
       .filter((c): c is ParsedChord => c !== null);
@@ -264,6 +312,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
     if (expandedIdx === null) return;
     const parsed = parseChordName(subDisplay);
     if (!parsed) return;
+    pushHistory();
     const inBase = semitones !== 0 ? transposeChord(parsed, -semitones) : parsed;
     const newBase = baseChords.map((c, i) => i === expandedIdx ? inBase : c);
     skipParse.current = true;
@@ -272,7 +321,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
     setFingeringIndices(prev => prev.map((fi, i) => i === expandedIdx ? 0 : fi));
     setInput(newBase.map(c => c.display).join(' '));
     setExpandedIdx(null);
-  }, [expandedIdx, semitones, baseChords]);
+  }, [expandedIdx, semitones, baseChords, pushHistory]);
 
   const handleSave = useCallback(() => {
     if (!input.trim()) return;
@@ -317,13 +366,15 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   const [editingSectionValue, setEditingSectionValue] = useState('');
 
   const handleAddSection = useCallback((chordIdx: number) => {
+    pushHistory();
     const label = isEn ? 'Section' : '段落';
     setSectionBreaks(prev => ({ ...prev, [chordIdx]: label }));
     setEditingSectionIdx(chordIdx);
     setEditingSectionValue(label);
-  }, [isEn]);
+  }, [isEn, pushHistory]);
 
   const handleRenameSection = useCallback((chordIdx: number, newLabel: string) => {
+    pushHistory();
     const trimmed = newLabel.trim();
     if (trimmed) {
       setSectionBreaks(prev => ({ ...prev, [chordIdx]: trimmed }));
@@ -335,15 +386,16 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
       });
     }
     setEditingSectionIdx(null);
-  }, []);
+  }, [pushHistory]);
 
   const handleDeleteSection = useCallback((chordIdx: number) => {
+    pushHistory();
     setSectionBreaks(prev => {
       const next = { ...prev };
       delete next[chordIdx];
       return next;
     });
-  }, []);
+  }, [pushHistory]);
 
   const handleRenameTitle = useCallback((id: string, newTitle: string) => {
     updateProgression(id, { title: newTitle.trim() || undefined });
@@ -544,7 +596,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
             )}
             {input.trim() && (
               <button
-                onClick={() => { setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); setCurrentSaveId(null); }}
+                onClick={() => { pushHistory(); setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); setCurrentSaveId(null); }}
                 className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
               >
                 {isEn ? 'Clear' : '清空'}
