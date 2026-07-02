@@ -36,7 +36,9 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
   const [input, setInput] = useState('');
   const [baseChords, setBaseChords] = useState<ParsedChord[]>([]);
   const [semitones, setSemitones] = useState(0);
-  const analysisKey = getNoteAtInterval(templateKey, semitones);
+  const [analysisKeyOverride, setAnalysisKeyOverride] = useState<string | null>(null);
+  const derivedAnalysisKey = getNoteAtInterval(templateKey, semitones);
+  const analysisKey = analysisKeyOverride ?? derivedAnalysisKey;
   const [parseError, setParseError] = useState('');
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [activeIdx, setActiveIdx] = useState<number | undefined>(undefined);
@@ -1037,9 +1039,27 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                   <h3 className="text-sm font-semibold text-gray-500">
                     {isEn ? 'Progression Analysis' : '和弦进行分析'}
                   </h3>
-                  <span className="ml-auto text-xs text-gray-400">
-                    {analysisKey} {isEn ? 'Major' : '大调'}
-                  </span>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <span className="text-xs text-gray-400">{isEn ? 'Analyze in' : '分析调式'}</span>
+                    <select
+                      value={analysisKey}
+                      onChange={e => setAnalysisKeyOverride(e.target.value === derivedAnalysisKey ? null : e.target.value)}
+                      className="text-xs text-gray-700 bg-white border border-gray-200 rounded-md px-1.5 py-0.5 focus:outline-none focus:border-gray-400 cursor-pointer"
+                    >
+                      {NOTES.map(n => (
+                        <option key={n} value={n}>{n} {isEn ? 'Major' : '大调'}</option>
+                      ))}
+                    </select>
+                    {analysisKeyOverride && (
+                      <button
+                        onClick={() => setAnalysisKeyOverride(null)}
+                        className="text-[10px] text-gray-400 hover:text-gray-700 px-1 cursor-pointer"
+                        title={isEn ? 'Follow transpose' : '跟随转调'}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <ProgressionAnalysisView
                   chords={chords}
