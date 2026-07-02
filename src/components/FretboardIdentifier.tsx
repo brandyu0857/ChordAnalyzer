@@ -173,7 +173,8 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
   const stringY = (visualIdx: number) => topPad + visualIdx * stringSpacing;
 
   const muteBtnX = 14;
-  const labelX = 34;
+  const labelX = 30;
+  const openIndicatorX = 42;
 
   return (
     <svg
@@ -223,12 +224,13 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
           textAnchor="middle" fill={fc.fretNum} fontSize={10} fontFamily="Inter, sans-serif">{f}</text>
       ))}
 
-      {/* Per-string: × mute button + label */}
+      {/* Per-string: × mute button + label + open indicator */}
       {VISUAL_STRING_LABELS.map((label, visualIdx) => {
         const di = dataIdx(visualIdx);
         const fretVal = frets[di];
         const y = stringY(visualIdx);
         const isMuted = fretVal === -1;
+        const isOpen = fretVal === 0;
 
         return (
           <g key={`ctrl-${visualIdx}`}>
@@ -244,6 +246,20 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
             <text x={labelX} y={y + 4} textAnchor="middle"
               fill={isMuted ? '#bbb' : '#555'}
               fontSize={11} fontWeight="500" fontFamily="Inter, sans-serif">{label}</text>
+
+            {/* Open-string indicator (○) — click to mute */}
+            <g className="cursor-pointer" onClick={() => onStringMute(di)}>
+              <rect x={openIndicatorX - 10} y={y - 10} width={20} height={20} fill="transparent" />
+              {isOpen && (
+                <circle cx={openIndicatorX} cy={y} r={5}
+                  fill="none" stroke="#2563eb" strokeWidth={1.6} />
+              )}
+              {!isOpen && !isMuted && (
+                <circle cx={openIndicatorX} cy={y} r={5}
+                  fill="none" stroke="transparent" strokeWidth={1.6}
+                  className="hover:stroke-gray-300 transition-colors" />
+              )}
+            </g>
           </g>
         );
       })}
