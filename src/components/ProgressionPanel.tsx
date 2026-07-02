@@ -595,10 +595,10 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
 
       {/* Progression editor */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-900">
-              {isEn ? 'Custom Chord Progression' : '自定义和弦进行'}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
+              {isEn ? 'Progression' : '自定义和弦进行'}
             </span>
             <button
               onClick={() => setTemplatesOpen(v => !v)}
