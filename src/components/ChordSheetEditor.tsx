@@ -3,7 +3,7 @@ import { parseChordName } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
 import ChordDiagram from './ChordDiagram';
 import { useLocale } from '../i18n/context';
-import { loadChordSheets, saveChordSheet, deleteChordSheet, type SavedChordSheet } from '../utils/storage';
+import { loadChordSheets, saveChordSheet, updateChordSheet, deleteChordSheet, type SavedChordSheet } from '../utils/storage';
 
 interface ChordPlacement {
   line: number;
@@ -29,6 +29,9 @@ export default function ChordSheetEditor() {
   const [popoverInput, setPopoverInput] = useState('');
   const [savedSheets, setSavedSheets] = useState<SavedChordSheet[]>(() => loadChordSheets());
   const [currentSheetId, setCurrentSheetId] = useState<string | null>(null);
+  const [sheetName, setSheetName] = useState('');
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState('');
   const popoverInputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,34 +99,63 @@ export default function ChordSheetEditor() {
 
   const handleSaveSheet = useCallback(() => {
     if (!lyrics.trim() || !placements.length) return;
-    const firstLine = lyrics.split('\n').find(l => l.trim()) || '';
-    const name = firstLine.slice(0, 30) + (firstLine.length > 30 ? '...' : '');
-    const entry = saveChordSheet({ name, lyrics, placements });
-    setCurrentSheetId(entry.id);
+    let name = sheetName.trim();
+    if (!name) {
+      const firstLine = lyrics.split('\n').find(l => l.trim()) || '';
+      name = firstLine.slice(0, 30) + (firstLine.length > 30 ? '...' : '');
+    }
+    if (currentSheetId) {
+      updateChordSheet(currentSheetId, { name, lyrics, placements });
+    } else {
+      const entry = saveChordSheet({ name, lyrics, placements });
+      setCurrentSheetId(entry.id);
+    }
+    setSheetName(name);
     setSavedSheets(loadChordSheets());
-  }, [lyrics, placements]);
+  }, [lyrics, placements, sheetName, currentSheetId]);
 
   const handleLoadSheet = useCallback((sheet: SavedChordSheet) => {
     setLyrics(sheet.lyrics);
     setPlacements(sheet.placements);
     setIsEditing(false);
     setCurrentSheetId(sheet.id);
+    setSheetName(sheet.name);
     setPopover(null);
   }, []);
 
   const handleDeleteSheet = useCallback((id: string) => {
     deleteChordSheet(id);
     setSavedSheets(loadChordSheets());
-    if (currentSheetId === id) setCurrentSheetId(null);
+    if (currentSheetId === id) {
+      setCurrentSheetId(null);
+      setSheetName('');
+    }
+  }, [currentSheetId]);
+
+  const handleRenameSheet = useCallback((id: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) { setEditingNameId(null); return; }
+    updateChordSheet(id, { name: trimmed });
+    setSavedSheets(loadChordSheets());
+    if (currentSheetId === id) setSheetName(trimmed);
+    setEditingNameId(null);
   }, [currentSheetId]);
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-900">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-gray-900 shrink-0">
           {isEn ? 'Chord Sheet Editor' : '和弦谱编辑器'}
         </span>
-        <div className="flex items-center gap-2">
+        {placements.length > 0 && (
+          <input
+            value={sheetName}
+            onChange={e => setSheetName(e.target.value)}
+            placeholder={isEn ? 'Song name...' : '歌曲名称...'}
+            className="flex-1 min-w-0 px-2 py-1 text-xs bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
+          />
+        )}
+        <div className="flex items-center gap-2 shrink-0">
           {placements.length > 0 && (
             <button
               onClick={handleSaveSheet}
@@ -343,7 +375,32 @@ export default function ChordSheetEditor() {
                 onClick={() => handleLoadSheet(sheet)}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium text-gray-700 truncate">{sheet.name}</div>
+                  {editingNameId === sheet.id ? (
+                    <input
+                      autoFocus
+                      value={editingNameValue}
+                      onChange={e => setEditingNameValue(e.target.value)}
+                      onBlur={() => handleRenameSheet(sheet.id, editingNameValue)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRenameSheet(sheet.id, editingNameValue);
+                        if (e.key === 'Escape') setEditingNameId(null);
+                      }}
+                      onClick={e => e.stopPropagation()}
+                      className="w-full text-xs font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-gray-500"
+                    />
+                  ) : (
+                    <div
+                      className="text-xs font-medium text-gray-700 truncate hover:underline decoration-gray-300 cursor-text"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setEditingNameId(sheet.id);
+                        setEditingNameValue(sheet.name);
+                      }}
+                      title={isEn ? 'Click to rename' : '点击重命名'}
+                    >
+                      {sheet.name}
+                    </div>
+                  )}
                   <div className="text-[10px] text-gray-400">
                     {sheet.placements.length} {isEn ? 'chords' : '个和弦'}
                     {' · '}
