@@ -4,6 +4,8 @@ import { getGuitarFingerings } from '../data/chords';
 import ChordDiagram from './ChordDiagram';
 import { useLocale } from '../i18n/context';
 import { loadChordSheets, saveChordSheet, updateChordSheet, deleteChordSheet, type SavedChordSheet } from '../utils/storage';
+import { extractYouTubeId } from '../utils/youtube';
+import FloatingYouTubePlayer from './FloatingYouTubePlayer';
 
 interface ChordPlacement {
   line: number;
@@ -32,11 +34,15 @@ export default function ChordSheetEditor() {
   const [sheetName, setSheetName] = useState('');
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameValue, setEditingNameValue] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [showYoutubeInput, setShowYoutubeInput] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
   const popoverInputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const lines = lyrics.split('\n');
+  const videoId = extractYouTubeId(youtubeUrl);
 
   // Focus input when popover opens
   useEffect(() => {
@@ -104,15 +110,16 @@ export default function ChordSheetEditor() {
       const firstLine = lyrics.split('\n').find(l => l.trim()) || '';
       name = firstLine.slice(0, 30) + (firstLine.length > 30 ? '...' : '');
     }
+    const trimmedUrl = youtubeUrl.trim() || undefined;
     if (currentSheetId) {
-      updateChordSheet(currentSheetId, { name, lyrics, placements });
+      updateChordSheet(currentSheetId, { name, lyrics, placements, youtubeUrl: trimmedUrl });
     } else {
-      const entry = saveChordSheet({ name, lyrics, placements });
+      const entry = saveChordSheet({ name, lyrics, placements, youtubeUrl: trimmedUrl });
       setCurrentSheetId(entry.id);
     }
     setSheetName(name);
     setSavedSheets(loadChordSheets());
-  }, [lyrics, placements, sheetName, currentSheetId]);
+  }, [lyrics, placements, sheetName, currentSheetId, youtubeUrl]);
 
   const handleLoadSheet = useCallback((sheet: SavedChordSheet) => {
     setLyrics(sheet.lyrics);
@@ -120,6 +127,9 @@ export default function ChordSheetEditor() {
     setIsEditing(false);
     setCurrentSheetId(sheet.id);
     setSheetName(sheet.name);
+    setYoutubeUrl(sheet.youtubeUrl || '');
+    setShowYoutubeInput(!!sheet.youtubeUrl);
+    setShowPlayer(false);
     setPopover(null);
   }, []);
 
@@ -129,6 +139,9 @@ export default function ChordSheetEditor() {
     if (currentSheetId === id) {
       setCurrentSheetId(null);
       setSheetName('');
+      setYoutubeUrl('');
+      setShowYoutubeInput(false);
+      setShowPlayer(false);
     }
   }, [currentSheetId]);
 
@@ -156,6 +169,18 @@ export default function ChordSheetEditor() {
           />
         )}
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setShowYoutubeInput(v => !v)}
+            className={`text-xs transition-colors cursor-pointer flex items-center gap-1 ${
+              showYoutubeInput ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'
+            }`}
+            title={isEn ? 'Add YouTube link' : '添加YouTube链接'}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.3 3.6-6.3 3.6Z" />
+            </svg>
+            YouTube
+          </button>
           {placements.length > 0 && (
             <button
               onClick={handleSaveSheet}
@@ -177,6 +202,30 @@ export default function ChordSheetEditor() {
           )}
         </div>
       </div>
+
+      {showYoutubeInput && (
+        <div className="flex items-center gap-2">
+          <input
+            value={youtubeUrl}
+            onChange={e => setYoutubeUrl(e.target.value)}
+            placeholder={isEn ? 'Paste a YouTube link...' : '粘贴YouTube链接...'}
+            className={`flex-1 min-w-0 px-3 py-1.5 text-xs bg-white border rounded-lg placeholder-gray-300 focus:outline-none focus:ring-1 ${
+              youtubeUrl.trim()
+                ? videoId
+                  ? 'border-green-300 focus:border-green-400 focus:ring-green-200 text-green-700'
+                  : 'border-red-300 focus:border-red-400 focus:ring-red-200 text-red-700'
+                : 'border-gray-200 focus:border-gray-400 focus:ring-gray-200 text-gray-900'
+            }`}
+          />
+          <button
+            onClick={() => setShowPlayer(v => !v)}
+            disabled={!videoId}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors whitespace-nowrap"
+          >
+            {showPlayer ? (isEn ? 'Hide player' : '隐藏播放器') : (isEn ? 'Open player' : '打开播放器')}
+          </button>
+        </div>
+      )}
 
       {isEditing ? (
         <div className="space-y-2">
@@ -419,6 +468,10 @@ export default function ChordSheetEditor() {
             ))}
           </div>
         </div>
+      )}
+
+      {showPlayer && videoId && (
+        <FloatingYouTubePlayer videoId={videoId} onClose={() => setShowPlayer(false)} />
       )}
     </div>
   );

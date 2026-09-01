@@ -17,6 +17,7 @@ export interface SavedChordSheet {
   name: string;
   lyrics: string;
   placements: { line: number; charIndex: number; chord: string }[];
+  youtubeUrl?: string;
   createdAt: number;
   updatedAt: number;
 }
