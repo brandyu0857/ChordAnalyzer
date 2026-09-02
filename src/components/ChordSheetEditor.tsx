@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { toPng } from 'html-to-image';
 import { parseChordName } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
 import ChordDiagram from './ChordDiagram';
@@ -37,9 +38,11 @@ export default function ChordSheetEditor() {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const popoverInputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const lines = lyrics.split('\n');
   const videoId = extractYouTubeId(youtubeUrl);
@@ -154,6 +157,28 @@ export default function ChordSheetEditor() {
     setEditingNameId(null);
   }, [currentSheetId]);
 
+  const handleExportPng = useCallback(async () => {
+    if (!exportRef.current || isExporting) return;
+    setPopover(null);
+    setIsExporting(true);
+    try {
+      const dataUrl = await toPng(exportRef.current, {
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+      const safeName = (sheetName.trim() || (isEn ? 'chord-sheet' : '和弦谱')).replace(/[\\/:*?"<>|]/g, '_');
+      const link = document.createElement('a');
+      link.download = `${safeName}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export chord sheet as PNG', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [sheetName, isEn, isExporting]);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
@@ -190,6 +215,18 @@ export default function ChordSheetEditor() {
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
               </svg>
               {isEn ? 'Save' : '保存'}
+            </button>
+          )}
+          {!isEditing && placements.length > 0 && (
+            <button
+              onClick={handleExportPng}
+              disabled={isExporting}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-wait"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-5-5L5 21" />
+              </svg>
+              {isExporting ? (isEn ? 'Exporting...' : '导出中...') : (isEn ? 'Export PNG' : '导出图片')}
             </button>
           )}
           {placements.length > 0 && (
@@ -262,6 +299,7 @@ export default function ChordSheetEditor() {
             </span>
           </div>
 
+          <div ref={exportRef} className="space-y-3 bg-white">
           {/* Lyrics with chord placement */}
           <div ref={containerRef} className="bg-white rounded-xl p-5 space-y-0 select-none relative">
             {lines.map((line, li) => {
@@ -405,6 +443,7 @@ export default function ChordSheetEditor() {
               </div>
             </div>
           )}
+          </div>
         </div>
       )}
 
