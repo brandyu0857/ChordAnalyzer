@@ -6,7 +6,7 @@ import ChordDiagram from './ChordDiagram';
 import { useLocale } from '../i18n/context';
 import { loadChordSheets, saveChordSheet, updateChordSheet, deleteChordSheet, type SavedChordSheet } from '../utils/storage';
 import { extractYouTubeId } from '../utils/youtube';
-import { displayWidth } from '../utils/textWidth';
+import { measureTextWidth } from '../utils/textWidth';
 import FloatingYouTubePlayer from './FloatingYouTubePlayer';
 
 interface ChordPlacement {
@@ -21,6 +21,10 @@ interface PopoverState {
   x: number;
   y: number;
 }
+
+const LYRICS_FONT = '16px monospace';
+const CHORD_FONT = 'bold 16px monospace';
+const CHORD_GAP_PX = 6;
 
 export interface ChordSheetEditorHandle {
   newSheet: () => void;
@@ -414,33 +418,30 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
 
               return (
                 <div key={li}>
-                  {/* Chord row */}
-                  <div className="h-5 font-bold whitespace-pre" style={{ fontFamily: 'monospace', fontSize: '16px' }}>
+                  {/* Chord row: each label is pixel-positioned via measured text width,
+                      so it lands exactly above its target character regardless of font
+                      metrics (CJK glyphs render wider than Latin ones, and by how much
+                      varies by font/OS) — pushed right only if it would otherwise
+                      overlap the previous label. */}
+                  <div className="h-5 relative" style={{ fontFamily: 'monospace', fontSize: '16px' }}>
                     {(() => {
                       const sorted = [...lineChords].sort((a, b) => a.charIndex - b.charIndex);
                       if (!sorted.length) return null;
 
-                      const segments: { pos: number; chord: string; charIdx: number }[] = [];
-                      let cursor = 0;
-                      for (const c of sorted) {
-                        const targetCol = displayWidth(line.slice(0, c.charIndex));
-                        const pos = Math.max(targetCol, cursor);
-                        segments.push({ pos, chord: c.chord, charIdx: c.charIndex });
-                        cursor = pos + c.chord.length + 1;
-                      }
-
-                      return segments.map((seg, si) => {
-                        const padding = si === 0 ? seg.pos : seg.pos - (segments[si - 1].pos + segments[si - 1].chord.length);
+                      let minLeft = 0;
+                      return sorted.map(c => {
+                        const naturalLeft = measureTextWidth(line.slice(0, c.charIndex), LYRICS_FONT);
+                        const left = Math.max(naturalLeft, minLeft);
+                        minLeft = left + measureTextWidth(c.chord, CHORD_FONT) + CHORD_GAP_PX;
                         return (
-                          <span key={si}>
-                            {padding > 0 && <span>{' '.repeat(padding)}</span>}
-                            <span
-                              className="text-blue-600 cursor-pointer hover:text-red-500 transition-colors"
-                              onClick={() => removeChord(li, seg.charIdx)}
-                              title={isEn ? 'Click to remove' : '点击删除'}
-                            >
-                              {seg.chord}
-                            </span>
+                          <span
+                            key={c.charIndex}
+                            className="absolute top-0 font-bold whitespace-nowrap text-blue-600 cursor-pointer hover:text-red-500 transition-colors"
+                            style={{ left }}
+                            onClick={() => removeChord(li, c.charIndex)}
+                            title={isEn ? 'Click to remove' : '点击删除'}
+                          >
+                            {c.chord}
                           </span>
                         );
                       });
