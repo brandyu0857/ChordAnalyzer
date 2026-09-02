@@ -124,6 +124,26 @@ export default function ChordSheetEditor() {
     setSavedSheets(loadChordSheets());
   }, [lyrics, placements, sheetName, currentSheetId, youtubeUrl]);
 
+  const handleNewSheet = useCallback(() => {
+    const hasUnsavedContent = !currentSheetId && (lyrics.trim().length > 0 || placements.length > 0);
+    if (hasUnsavedContent) {
+      const msg = isEn
+        ? 'Start a new chord sheet? Unsaved changes will be lost.'
+        : '开始新的和弦谱？未保存的更改将会丢失。';
+      if (!window.confirm(msg)) return;
+    }
+    setLyrics('');
+    setPlacements([]);
+    setIsEditing(true);
+    setPopover(null);
+    setPopoverInput('');
+    setCurrentSheetId(null);
+    setSheetName('');
+    setYoutubeUrl('');
+    setShowYoutubeInput(false);
+    setShowPlayer(false);
+  }, [lyrics, placements, currentSheetId, isEn]);
+
   const handleLoadSheet = useCallback((sheet: SavedChordSheet) => {
     setLyrics(sheet.lyrics);
     setPlacements(sheet.placements);
@@ -194,6 +214,16 @@ export default function ChordSheetEditor() {
           />
         )}
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleNewSheet}
+            className="text-xs text-gray-600 hover:text-gray-900 transition-colors cursor-pointer flex items-center gap-1 px-2 py-1 rounded border border-gray-200 hover:border-gray-300"
+            title={isEn ? 'Start a new chord sheet' : '新建和弦谱'}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            {isEn ? 'New' : '新建'}
+          </button>
           <button
             onClick={() => setShowYoutubeInput(v => !v)}
             className={`text-xs transition-colors cursor-pointer flex items-center gap-1 ${
