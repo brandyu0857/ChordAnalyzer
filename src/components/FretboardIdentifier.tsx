@@ -69,14 +69,14 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
           <h2 className="text-lg font-semibold text-gray-900">
             {isEn ? 'Fretboard Chord Identifier' : '指板和弦识别'}
           </h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-base text-gray-500 mt-1">
             {isEn ? 'Click positions on the fretboard to mark frets, chords are identified automatically' : '点击指板上的位置标记按弦，系统自动识别和弦'}
           </p>
         </div>
         {hasNonDefault && (
           <button
             onClick={handleClear}
-            className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer shrink-0"
+            className="px-3 py-1.5 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer shrink-0"
           >
             {isEn ? 'Reset' : '重置'}
           </button>
@@ -97,9 +97,9 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
       {/* Selected notes */}
       {hasNonDefault && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-gray-500">{isEn ? 'Sounding notes:' : '发音音符：'}</span>
+          <span className="text-base text-gray-500">{isEn ? 'Sounding notes:' : '发音音符：'}</span>
           {soundingNotes.map((note, i) => (
-            <span key={i} className="px-2 py-0.5 text-sm font-medium bg-gray-100 text-gray-700 rounded">
+            <span key={i} className="px-2 py-0.5 text-base font-medium bg-gray-100 text-gray-700 rounded">
               {note}
             </span>
           ))}
@@ -109,7 +109,7 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
       {/* Results */}
       {results.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700">
+          <h3 className="text-base font-medium text-gray-700">
             {isEn ? 'Results' : '识别结果'}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -322,15 +322,15 @@ function ChordResultCard({ chord, rank, onSelect }: ChordResultCardProps) {
       onClick={handleClick}
       className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left cursor-pointer"
     >
-      <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-xs text-gray-400 shrink-0">
+      <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-sm text-gray-400 shrink-0">
         {rank}
       </span>
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
           <span className="text-base font-bold text-gray-900">{chord.symbol}</span>
-          <span className="text-xs text-gray-500">{isEn ? chord.nameEn : chord.name}</span>
+          <span className="text-sm text-gray-500">{isEn ? chord.nameEn : chord.name}</span>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">{isEn ? chord.descriptionEn : chord.description}</p>
+        <p className="text-sm text-gray-400 mt-0.5">{isEn ? chord.descriptionEn : chord.description}</p>
       </div>
     </button>
   );

@@ -126,7 +126,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
           <>
             <button
               onClick={signInWithGoogle}
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
             >
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -139,7 +139,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
 
             <div className="flex items-center gap-3 my-4">
               <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600" />
-              <span className="text-xs text-gray-400">{isEn ? 'or' : '或'}</span>
+              <span className="text-sm text-gray-400">{isEn ? 'or' : '或'}</span>
               <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600" />
             </div>
           </>
@@ -153,7 +153,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder={isEn ? 'Email address' : '邮箱地址'}
-              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:focus:ring-gray-400/30"
+              className="w-full px-3.5 py-2.5 text-base rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:focus:ring-gray-400/30"
               autoComplete="email"
             />
             {mode !== 'forgot' && (
@@ -162,7 +162,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder={isEn ? 'Password' : '密码'}
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:focus:ring-gray-400/30"
+                className="w-full px-3.5 py-2.5 text-base rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:focus:ring-gray-400/30"
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
             )}
@@ -172,19 +172,19 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder={isEn ? 'Confirm password' : '确认密码'}
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:focus:ring-gray-400/30"
+                className="w-full px-3.5 py-2.5 text-base rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:focus:ring-gray-400/30"
                 autoComplete="new-password"
               />
             )}
           </div>
 
-          {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-          {message && <p className="mt-3 text-sm text-green-600 dark:text-green-400">{message}</p>}
+          {error && <p className="mt-3 text-base text-red-500">{error}</p>}
+          {message && <p className="mt-3 text-base text-green-600 dark:text-green-400">{message}</p>}
 
           <button
             type="submit"
             disabled={submitting}
-            className="mt-4 w-full py-2.5 text-sm font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors cursor-pointer disabled:opacity-50"
+            className="mt-4 w-full py-2.5 text-base font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors cursor-pointer disabled:opacity-50"
           >
             {submitting
               ? (isEn ? 'Please wait...' : '请稍候...')
@@ -197,7 +197,7 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
         </form>
 
         {/* Footer links */}
-        <div className="mt-4 text-center text-xs text-gray-400 space-y-1.5">
+        <div className="mt-4 text-center text-sm text-gray-400 space-y-1.5">
           {mode === 'login' && (
             <>
               <button onClick={() => switchMode('forgot')} className="hover:text-gray-600 cursor-pointer">

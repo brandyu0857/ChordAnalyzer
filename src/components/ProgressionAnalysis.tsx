@@ -23,7 +23,7 @@ function FunctionBadge({ analysis }: { analysis: ChordAnalysis }) {
   };
 
   return (
-    <span className={`text-[11px] px-1.5 py-0.5 rounded border ${colorMap[analysis.function]}`}>
+    <span className={`text-sm px-1.5 py-0.5 rounded border ${colorMap[analysis.function]}`}>
       {analysis.functionLabel}
     </span>
   );
@@ -32,7 +32,7 @@ function FunctionBadge({ analysis }: { analysis: ChordAnalysis }) {
 function ConnectionArrow({ connection }: { connection: ConnectionAnalysis }) {
   return (
     <div className="flex flex-col items-center justify-center px-1 min-w-[60px]">
-      <div className="text-[10px] text-gray-400 text-center leading-tight mb-0.5">
+      <div className="text-sm text-gray-400 text-center leading-tight mb-0.5">
         {connection.commonNotes.length > 0 && (
           <span className="block">{connection.commonNotes.join(',')}</span>
         )}
@@ -41,7 +41,7 @@ function ConnectionArrow({ connection }: { connection: ConnectionAnalysis }) {
         <line x1="0" y1="7" x2="32" y2="7" stroke="currentColor" strokeWidth="1.5" />
         <polygon points="30,3 38,7 30,11" fill="currentColor" />
       </svg>
-      <div className="text-[9px] text-gray-400 text-center leading-tight mt-0.5 max-w-[70px]">
+      <div className="text-sm text-gray-400 text-center leading-tight mt-0.5 max-w-[70px]">
         {connection.rootMotionDirection}
       </div>
     </div>
@@ -73,7 +73,7 @@ export default function ProgressionAnalysisView({
                   : 'bg-white hover:bg-gray-50'
                 }`}
             >
-              <span className="text-xs text-gray-400 mb-1">{analysis.degreeDisplay}</span>
+              <span className="text-sm text-gray-400 mb-1">{analysis.degreeDisplay}</span>
               <span className="text-lg font-bold text-gray-900">{analysis.chord.display}</span>
               <FunctionBadge analysis={analysis} />
             </button>
@@ -112,39 +112,39 @@ function ExpandedChordAnalysis({
         <div>
           <h4 className="font-semibold text-gray-900">
             {analysis.chord.display}
-            <span className="text-gray-400 font-normal text-sm ml-2">
+            <span className="text-gray-400 font-normal text-base ml-2">
               {analysis.degree} {isEn ? '- ' : '级 - '}{isEn ? analysis.chord.chordType.nameEn : analysis.chord.chordType.name}
             </span>
           </h4>
-          <p className="text-sm text-gray-500 mt-1">{analysis.functionDescription}</p>
+          <p className="text-base text-gray-500 mt-1">{analysis.functionDescription}</p>
         </div>
         <FunctionBadge analysis={analysis} />
       </div>
 
       <div className="flex gap-2 items-center">
-        <span className="text-xs text-gray-400">{isEn ? 'Notes:' : '组成音:'}</span>
+        <span className="text-sm text-gray-400">{isEn ? 'Notes:' : '组成音:'}</span>
         {notes.map((n, i) => (
-          <span key={i} className="text-xs px-2 py-0.5 bg-white rounded text-gray-600">{n}</span>
+          <span key={i} className="text-sm px-2 py-0.5 bg-white rounded text-gray-600">{n}</span>
         ))}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {prevConnection && (
           <div className="bg-white rounded-lg p-3">
-            <div className="text-xs text-gray-400 mb-1">
+            <div className="text-sm text-gray-400 mb-1">
               {prevConnection.fromChord.display} → {prevConnection.toChord.display}
             </div>
-            <div className="text-sm text-gray-700 font-medium">{prevConnection.connectionType}</div>
-            <p className="text-xs text-gray-500 mt-1">{prevConnection.connectionDescription}</p>
+            <div className="text-base text-gray-700 font-medium">{prevConnection.connectionType}</div>
+            <p className="text-sm text-gray-500 mt-1">{prevConnection.connectionDescription}</p>
           </div>
         )}
         {nextConnection && (
           <div className="bg-white rounded-lg p-3">
-            <div className="text-xs text-gray-400 mb-1">
+            <div className="text-sm text-gray-400 mb-1">
               {nextConnection.fromChord.display} → {nextConnection.toChord.display}
             </div>
-            <div className="text-sm text-gray-700 font-medium">{nextConnection.connectionType}</div>
-            <p className="text-xs text-gray-500 mt-1">{nextConnection.connectionDescription}</p>
+            <div className="text-base text-gray-700 font-medium">{nextConnection.connectionType}</div>
+            <p className="text-sm text-gray-500 mt-1">{nextConnection.connectionDescription}</p>
           </div>
         )}
       </div>

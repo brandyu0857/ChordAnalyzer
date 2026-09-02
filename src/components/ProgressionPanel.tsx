@@ -548,22 +548,22 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
           <div className="bg-gray-50 rounded-xl px-4 pb-4 space-y-3">
             {/* Key selector */}
             <div className="flex items-center gap-2 pt-3">
-                <span className="text-xs text-gray-500">{isEn ? 'Load template in' : '以'}</span>
+                <span className="text-sm text-gray-500">{isEn ? 'Load template in' : '以'}</span>
                 <select
                   value={templateKey}
                   onChange={e => setTemplateKey(e.target.value)}
-                  className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none cursor-pointer"
+                  className="px-2 py-1 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none cursor-pointer"
                 >
                   {NOTES.map(n => <option key={n} value={n}>{n} {isEn ? 'Major' : '大调'}</option>)}
                 </select>
-                {!isEn && <span className="text-xs text-gray-500">加载模板</span>}
+                {!isEn && <span className="text-sm text-gray-500">加载模板</span>}
               </div>
 
               {/* Style filter */}
               <div className="flex gap-1.5 flex-wrap">
                 {styles.map(s => (
                   <button key={s} onClick={() => setStyleFilter(s)}
-                    className={`px-3 py-1 rounded-full text-xs transition-colors cursor-pointer border
+                    className={`px-3 py-1 rounded-full text-sm transition-colors cursor-pointer border
                       ${styleFilter === s
                         ? 'bg-gray-900 text-white border-gray-900'
                         : 'bg-white text-gray-500 hover:text-gray-700 border-gray-200 hover:border-gray-300'}`}
@@ -582,9 +582,9 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                           ? 'bg-white shadow-sm ring-1 ring-gray-900'
                           : 'bg-white hover:shadow-sm'}`}
                     >
-                      <div className="font-medium text-sm text-gray-900">{isEn ? t.nameEn : t.name}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{t.degrees.join(' - ')}</div>
-                      <div className="text-[10px] text-gray-300 mt-1">{isEn ? t.styleEn : t.style}</div>
+                      <div className="font-medium text-base text-gray-900">{isEn ? t.nameEn : t.name}</div>
+                      <div className="text-sm text-gray-400 mt-0.5">{t.degrees.join(' - ')}</div>
+                      <div className="text-sm text-gray-300 mt-1">{isEn ? t.styleEn : t.style}</div>
                     </button>
                   );
                 })}
@@ -597,12 +597,12 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
+            <span className="text-base font-medium text-gray-900 whitespace-nowrap">
               {isEn ? 'Progression' : '自定义和弦进行'}
             </span>
             <button
               onClick={() => setTemplatesOpen(v => !v)}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer flex items-center gap-1 ${
+              className={`text-sm px-2.5 py-1 rounded-full border transition-colors cursor-pointer flex items-center gap-1 ${
                 templatesOpen
                   ? 'bg-gray-900 text-white border-gray-900'
                   : 'text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300'
@@ -621,7 +621,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
             {baseChords.length > 0 && (
               <button
                 onClick={handleSave}
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center gap-1"
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center gap-1"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
@@ -632,7 +632,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
             {input.trim() && (
               <button
                 onClick={() => { pushHistory(); setInput(''); setBaseChords([]); setFingeringIndices([]); setParseError(''); setSemitones(0); setSelectedTemplateIdx(null); setExpandedIdx(null); setSectionBreaks({}); setCurrentSaveId(null); }}
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
               >
                 {isEn ? 'Clear' : '清空'}
               </button>
@@ -651,7 +651,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
           {/* Drag overlay */}
           {isDragging && (
             <div className="absolute inset-0 bg-gray-900/10 rounded-xl flex items-center justify-center z-10 pointer-events-none">
-              <div className="bg-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm font-medium text-gray-700">
+              <div className="bg-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 text-base font-medium text-gray-700">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   <circle cx="8.5" cy="8.5" r="1.5" />
@@ -667,7 +667,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
               value={input}
               onChange={e => { setInput(e.target.value); setParseError(''); }}
               placeholder={isEn ? 'Enter chords, or paste/drop an image' : '输入和弦，或粘贴/拖入图片识谱'}
-              className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
+              className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-base text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
             />
             {/* Image upload button */}
             <input
@@ -684,7 +684,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isRecognizing}
-              className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="px-3 py-2 text-base font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               title={isEn ? 'Upload chord sheet image' : '上传和弦谱图片'}
             >
               {isRecognizing ? (
@@ -703,20 +703,20 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
             {chords.length > 0 && (
               isPlaying
                 ? <button onClick={() => { stopProgression(); setIsPlaying(false); setActiveIdx(undefined); }}
-                    className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors">
+                    className="px-4 py-2 text-base font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors">
                     {isEn ? 'Stop' : '停止'}
                   </button>
                 : <PlayButton onPlay={handlePlayAll} label={isEn ? 'Play' : '播放'} />
             )}
           </div>
-          {parseError && <p className="text-xs text-red-400">{parseError}</p>}
-          {recognizeError && <p className="text-xs text-red-400">{recognizeError}</p>}
+          {parseError && <p className="text-sm text-red-400">{parseError}</p>}
+          {recognizeError && <p className="text-sm text-red-400">{recognizeError}</p>}
           {/* Image preview during recognition */}
           {previewImage && isRecognizing && (
             <div className="relative">
               <img src={previewImage} alt="Chord sheet" className="w-full max-h-48 object-contain rounded-lg border border-gray-200" />
               <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-base text-gray-600">
                   <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
@@ -727,9 +727,9 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
           )}
           {isNashville && baseChords.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-gray-400 shrink-0">{templateKey} {isEn ? 'Major' : '大调'} →</span>
+              <span className="text-sm text-gray-400 shrink-0">{templateKey} {isEn ? 'Major' : '大调'} →</span>
               {baseChords.map((c, i) => (
-                <span key={i} className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                <span key={i} className="text-sm font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
                   {c.display}
                 </span>
               ))}
@@ -740,7 +740,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
           {baseChords.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 shrink-0">
+                <span className="text-sm text-gray-500 shrink-0">
                   {isEn ? 'Style' : '风格'}
                 </span>
                 <div className="flex gap-1.5 flex-wrap">
@@ -752,7 +752,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                         setFingeringIndices(prev => prev.map(() => 0));
                         setExpandedIdx(null);
                       }}
-                      className={`px-3 py-1 rounded-full text-xs transition-colors cursor-pointer border
+                      className={`px-3 py-1 rounded-full text-sm transition-colors cursor-pointer border
                         ${chordStyle === s.id
                           ? 'bg-gray-900 text-white border-gray-900'
                           : 'bg-white text-gray-500 hover:text-gray-700 border-gray-200 hover:border-gray-300'}`}
@@ -764,7 +764,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                 </div>
               </div>
               {chordStyle !== 'default' && (
-                <p className="text-xs text-gray-400 pl-10">
+                <p className="text-sm text-gray-400 pl-10">
                   {isEn
                     ? CHORD_STYLES.find(s => s.id === chordStyle)?.descriptionEn
                     : CHORD_STYLES.find(s => s.id === chordStyle)?.description}
@@ -777,24 +777,24 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
             <>
               {/* Transpose bar */}
               <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
-                <span className="text-sm text-gray-500 flex-shrink-0">{isEn ? 'Transpose' : '转调'}</span>
+                <span className="text-base text-gray-500 flex-shrink-0">{isEn ? 'Transpose' : '转调'}</span>
                 <button onClick={() => setSemitones(s => s - 1)}
-                  className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">-</button>
-                <span className="text-sm font-medium text-gray-900 w-16 text-center tabular-nums">
+                  className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-base cursor-pointer transition-colors">-</button>
+                <span className="text-base font-medium text-gray-900 w-16 text-center tabular-nums">
                   {semitones === 0
                     ? (isEn ? 'Original' : '原调')
                     : `${semitones > 0 ? '+' : ''}${semitones} ${isEn ? 'st' : '半音'}`}
                 </span>
                 <button onClick={() => setSemitones(s => s + 1)}
-                  className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-sm cursor-pointer transition-colors">+</button>
+                  className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-600 text-base cursor-pointer transition-colors">+</button>
                 {semitones !== 0 && (
                   <button onClick={() => setSemitones(0)}
-                    className="ml-2 text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
+                    className="ml-2 text-sm text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
                     {isEn ? 'Reset' : '重置'}
                   </button>
                 )}
                 {baseChords[0] && semitones !== 0 && (
-                  <span className="ml-auto text-xs text-gray-400">{baseChords[0].display} → {chords[0].display}</span>
+                  <span className="ml-auto text-sm text-gray-400">{baseChords[0].display} → {chords[0].display}</span>
                 )}
               </div>
 
@@ -826,11 +826,11 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                               onChange={e => setEditingSectionValue(e.target.value)}
                               onBlur={() => handleRenameSection(section.startIdx, editingSectionValue)}
                               onKeyDown={e => { if (e.key === 'Enter') handleRenameSection(section.startIdx, editingSectionValue); if (e.key === 'Escape') setEditingSectionIdx(null); }}
-                              className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full outline-none w-24"
+                              className="text-sm font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full outline-none w-24"
                             />
                           ) : (
                             <span
-                              className="text-xs font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full cursor-pointer hover:bg-gray-700 transition-colors"
+                              className="text-sm font-semibold text-white bg-gray-900 px-2.5 py-0.5 rounded-full cursor-pointer hover:bg-gray-700 transition-colors"
                               onClick={() => { setEditingSectionIdx(section.startIdx); setEditingSectionValue(section.label); }}
                               title={isEn ? 'Click to rename' : '点击重命名'}
                             >
@@ -934,12 +934,12 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                       </button>
                                     )}
                                     {allFingerings.length > 1 && (
-                                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-gray-400 tabular-nums opacity-0 group-hover/card:opacity-100 transition-opacity">
+                                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-sm text-gray-400 tabular-nums opacity-0 group-hover/card:opacity-100 transition-opacity">
                                         {fi + 1}/{allFingerings.length}
                                       </span>
                                     )}
                                   </div>
-                                  <span className="text-sm font-semibold text-gray-900 mt-1">{chord.display}</span>
+                                  <span className="text-base font-semibold text-gray-900 mt-1">{chord.display}</span>
                                   <div className="flex items-center gap-1.5 mt-1">
                                     <button
                                       onClick={e => { e.stopPropagation(); handlePlay(chord.root, chord.type); }}
@@ -948,7 +948,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                     >
                                       <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                                     </button>
-                                    <span className={`text-[10px] ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>
+                                    <span className={`text-sm ${isExpanded ? 'text-gray-600' : 'text-gray-300'}`}>
                                       {isEn ? 'Sub' : '替代'}
                                     </span>
                                   </div>
@@ -964,7 +964,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                 onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(nextStart); }}
                                 onDrop={() => handleChordDrop(nextStart)}
                               >
-                                <span className="text-xs text-gray-400">{isEn ? 'Drop here' : '放在这里'}</span>
+                                <span className="text-sm text-gray-400">{isEn ? 'Drop here' : '放在这里'}</span>
                               </div>
                             )}
                             {/* Substitution panel — inserted in grid with order to appear after the correct row */}
@@ -974,15 +974,15 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                               return (
                                 <div ref={subPanelRef} style={{ order: expandedRow * 2 + 1 }} className="col-span-full bg-white rounded-xl p-4 shadow-sm">
                                   <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-6 bg-gray-900 text-white rounded-md flex items-center justify-center text-xs font-bold">
+                                    <div className="w-6 h-6 bg-gray-900 text-white rounded-md flex items-center justify-center text-sm font-bold">
                                       {expandedIdx! + 1}
                                     </div>
-                                    <span className="text-sm font-semibold text-gray-900">{chord.display}</span>
-                                    <span className="text-xs text-gray-400">
+                                    <span className="text-base font-semibold text-gray-900">{chord.display}</span>
+                                    <span className="text-sm text-gray-400">
                                       {isEn ? 'substitutions' : '的替代和弦'}
                                     </span>
                                     <button onClick={() => setExpandedIdx(null)}
-                                      className="ml-auto text-xs text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded hover:bg-gray-50 transition-colors">
+                                      className="ml-auto text-sm text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded hover:bg-gray-50 transition-colors">
                                       {isEn ? 'Collapse' : '收起'}
                                     </button>
                                   </div>
@@ -992,7 +992,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                         const sf = getGuitarFingerings(sub.root, sub.type)[0];
                                         return (
                                           <div key={si} className="group flex-shrink-0 flex flex-col items-center gap-1 w-32">
-                                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full leading-4 ${CATEGORY_STYLES[sub.category]}`}>
+                                            <span className={`text-sm font-medium px-2 py-0.5 rounded-full leading-4 ${CATEGORY_STYLES[sub.category]}`}>
                                               {sub.categoryLabel}
                                             </span>
                                             <div
@@ -1002,22 +1002,22 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                                               {sf ? (
                                                 <ChordDiagram fingering={sf} chordName={sub.display} size="small" interactive={false} />
                                               ) : (
-                                                <div className="w-14 h-20 flex items-center justify-center text-sm font-bold text-gray-900">{sub.display}</div>
+                                                <div className="w-14 h-20 flex items-center justify-center text-base font-bold text-gray-900">{sub.display}</div>
                                               )}
                                             </div>
                                             <div className="flex items-center gap-1 w-full">
-                                              <span className="text-sm font-semibold text-gray-700 flex-1 text-center">{sub.display}</span>
+                                              <span className="text-base font-semibold text-gray-700 flex-1 text-center">{sub.display}</span>
                                               <button onClick={() => handlePlay(sub.root, sub.type)}
                                                 className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 cursor-pointer flex-shrink-0">
                                                 <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                                               </button>
                                             </div>
-                                            <p className="text-xs text-gray-400 leading-relaxed text-center line-clamp-2 group-hover:line-clamp-none transition-all">{sub.explanation}</p>
+                                            <p className="text-sm text-gray-400 leading-relaxed text-center line-clamp-2 group-hover:line-clamp-none transition-all">{sub.explanation}</p>
                                           </div>
                                         );
                                       })}
                                       {subs.length === 0 && (
-                                        <span className="text-sm text-gray-300 py-4">
+                                        <span className="text-base text-gray-300 py-4">
                                           {isEn ? 'No substitution suggestions' : '暂无替代建议'}
                                         </span>
                                       )}
@@ -1036,15 +1036,15 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
               {/* Analysis */}
               <div className="border-t border-gray-100 pt-4 mt-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <h3 className="text-sm font-semibold text-gray-500">
+                  <h3 className="text-base font-semibold text-gray-500">
                     {isEn ? 'Progression Analysis' : '和弦进行分析'}
                   </h3>
                   <div className="ml-auto flex items-center gap-1.5">
-                    <span className="text-xs text-gray-400">{isEn ? 'Analyze in' : '分析调式'}</span>
+                    <span className="text-sm text-gray-400">{isEn ? 'Analyze in' : '分析调式'}</span>
                     <select
                       value={analysisKey}
                       onChange={e => setAnalysisKeyOverride(e.target.value === derivedAnalysisKey ? null : e.target.value)}
-                      className="text-xs text-gray-700 bg-white border border-gray-200 rounded-md px-1.5 py-0.5 focus:outline-none focus:border-gray-400 cursor-pointer"
+                      className="text-sm text-gray-700 bg-white border border-gray-200 rounded-md px-1.5 py-0.5 focus:outline-none focus:border-gray-400 cursor-pointer"
                     >
                       {NOTES.map(n => (
                         <option key={n} value={n}>{n} {isEn ? 'Major' : '大调'}</option>
@@ -1053,7 +1053,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                     {analysisKeyOverride && (
                       <button
                         onClick={() => setAnalysisKeyOverride(null)}
-                        className="text-[10px] text-gray-400 hover:text-gray-700 px-1 cursor-pointer"
+                        className="text-sm text-gray-400 hover:text-gray-700 px-1 cursor-pointer"
                         title={isEn ? 'Follow transpose' : '跟随转调'}
                       >
                         ×
@@ -1082,16 +1082,16 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-gray-400" strokeWidth="2">
                   <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
                 </svg>
-                <span className="text-xs font-medium text-gray-500">
+                <span className="text-sm font-medium text-gray-500">
                   {isEn ? 'Songs using this progression' : '使用此进行的歌曲'}
                 </span>
-                <span className="text-[10px] text-gray-300 font-mono">{match.progressionKey}</span>
+                <span className="text-sm text-gray-300 font-mono">{match.progressionKey}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {match.songs.map((song, i) => (
                   <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg shadow-sm">
-                    <span className="text-sm font-medium text-gray-800">{song.title}</span>
-                    <span className="text-xs text-gray-400">— {song.artist}</span>
+                    <span className="text-base font-medium text-gray-800">{song.title}</span>
+                    <span className="text-sm text-gray-400">— {song.artist}</span>
                   </div>
                 ))}
               </div>
@@ -1107,7 +1107,7 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                 <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
               </svg>
             </div>
-            <p className="text-sm text-gray-400">
+            <p className="text-base text-gray-400">
               {isEn ? 'Select a template above, or enter a chord progression directly' : '从上方选择模板，或直接输入和弦进行'}
             </p>
           </div>
@@ -1118,10 +1118,10 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
       {savedList.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-base font-medium text-gray-900">
               {isEn ? 'Saved Progressions' : '已保存的进行'}
             </span>
-            <span className="text-xs text-gray-300">{savedList.length}</span>
+            <span className="text-sm text-gray-300">{savedList.length}</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {savedList.map(saved => (
@@ -1147,11 +1147,11 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                       }}
                       onClick={e => e.stopPropagation()}
                       placeholder={isEn ? 'Title (e.g. song name)' : '标题（如歌名）'}
-                      className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-gray-500"
+                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-gray-500"
                     />
                   ) : (
                     <div
-                      className="text-sm font-medium text-gray-900 truncate hover:underline decoration-gray-300 cursor-text"
+                      className="text-base font-medium text-gray-900 truncate hover:underline decoration-gray-300 cursor-text"
                       onClick={e => {
                         e.stopPropagation();
                         setEditingNameId(saved.id);
@@ -1162,8 +1162,8 @@ export default function ProgressionPanel({ appendChord, onAppendDone, showToast 
                       {saved.title || <span className="text-gray-300 italic">{isEn ? 'Untitled' : '未命名'}</span>}
                     </div>
                   )}
-                  <div className="text-xs text-gray-500 mt-0.5 truncate">{saved.name}</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">
+                  <div className="text-sm text-gray-500 mt-0.5 truncate">{saved.name}</div>
+                  <div className="text-sm text-gray-400 mt-0.5">
                     {saved.templateKey}{saved.semitones !== 0 ? ` (${saved.semitones > 0 ? '+' : ''}${saved.semitones})` : ''}
                     {' · '}
                     {new Date(saved.updatedAt).toLocaleDateString()}

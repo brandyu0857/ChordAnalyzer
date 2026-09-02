@@ -41,7 +41,7 @@ function ChordCard({
   return (
     <div className="flex flex-col items-center gap-1.5 w-32 flex-shrink-0">
       {label && (
-        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{label}</span>
+        <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">{label}</span>
       )}
       <div
         className="bg-gray-50 rounded-xl p-2 cursor-pointer hover:bg-gray-100 transition-colors w-full flex flex-col items-center"
@@ -56,7 +56,7 @@ function ChordCard({
         )}
       </div>
       <div className="flex items-center gap-1.5 w-full">
-        <span className="text-sm font-semibold text-gray-900 flex-1 text-center">{display}</span>
+        <span className="text-base font-semibold text-gray-900 flex-1 text-center">{display}</span>
         <button
           onClick={onPlay}
           className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 cursor-pointer"
@@ -87,7 +87,7 @@ function SubCard({
   return (
     <div className="flex flex-col gap-1.5 w-36 flex-shrink-0">
       {/* Category badge */}
-      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full self-start leading-4 ${CATEGORY_STYLES[sub.category]}`}>
+      <span className={`text-sm font-medium px-2 py-0.5 rounded-full self-start leading-4 ${CATEGORY_STYLES[sub.category]}`}>
         {sub.categoryLabel}
       </span>
 
@@ -107,7 +107,7 @@ function SubCard({
 
       {/* Name + play */}
       <div className="flex items-center gap-1">
-        <span className="text-sm font-semibold text-gray-900 flex-1">{sub.display}</span>
+        <span className="text-base font-semibold text-gray-900 flex-1">{sub.display}</span>
         <button
           onClick={onPlay}
           className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex-shrink-0"
@@ -124,11 +124,11 @@ function SubCard({
         className="text-left"
         onClick={() => setExpanded(v => !v)}
       >
-        <p className={`text-[11px] text-gray-400 leading-relaxed ${expanded ? '' : 'line-clamp-2'}`}>
+        <p className={`text-sm text-gray-400 leading-relaxed ${expanded ? '' : 'line-clamp-2'}`}>
           {sub.explanation}
         </p>
         {!expanded && (
-          <span className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors">
+          <span className="text-sm text-gray-300 hover:text-gray-500 transition-colors">
             {isEn ? 'More ↓' : '展开 ↓'}
           </span>
         )}
@@ -197,11 +197,11 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
             onChange={e => { setInput(e.target.value); setAnalyzed(false); setError(''); }}
             onKeyDown={e => e.key === 'Enter' && handleAnalyze()}
             placeholder={isEn ? 'Enter chord progression, e.g. C - Am - F - G' : '输入和弦进行，如 C - Am - F - G'}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
+            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-base text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
           />
           <button
             onClick={handleAnalyze}
-            className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer"
+            className="px-5 py-2.5 bg-gray-900 text-white rounded-lg text-base font-medium hover:bg-gray-800 transition-colors cursor-pointer"
           >
             {isEn ? 'Analyze' : '分析'}
           </button>
@@ -209,19 +209,19 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
 
         {/* Examples */}
         <div className="flex flex-wrap gap-x-4 gap-y-1">
-          <span className="text-xs text-gray-300">{isEn ? 'Examples:' : '示例：'}</span>
+          <span className="text-sm text-gray-300">{isEn ? 'Examples:' : '示例：'}</span>
           {EXAMPLES.map(ex => (
             <button
               key={ex}
               onClick={() => { setInput(ex); setAnalyzed(false); setError(''); }}
-              className="text-xs text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+              className="text-sm text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
             >
               {ex}
             </button>
           ))}
         </div>
 
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
       </div>
 
       {/* Results */}
@@ -234,7 +234,7 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
               <section key={idx} className="space-y-4">
                 {/* Section header */}
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-lg text-xs font-bold flex-shrink-0">
+                  <div className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-lg text-sm font-bold flex-shrink-0">
                     {idx + 1}
                   </div>
                   <h3 className="text-base font-semibold text-gray-900">{chord.display}</h3>
@@ -270,7 +270,7 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
                         onPlay={() => handlePlay(sub.root, sub.type)}
                       />
                     )) : (
-                      <div className="flex items-center self-center mt-6 text-sm text-gray-300">
+                      <div className="flex items-center self-center mt-6 text-base text-gray-300">
                         {isEn ? 'No substitution suggestions' : '暂无替代建议'}
                       </div>
                     )}
@@ -290,10 +290,10 @@ export default function SubstitutionPanel({ onChordSelect }: SubstitutionPanelPr
               <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
             </svg>
           </div>
-          <p className="text-sm text-gray-400">
+          <p className="text-base text-gray-400">
             {isEn ? 'Enter a chord progression to see substitution suggestions for each chord' : '输入和弦进行，查看每个和弦的替代建议'}
           </p>
-          <p className="text-xs text-gray-300 mt-1">
+          <p className="text-sm text-gray-300 mt-1">
             {isEn ? 'Supports tritone substitution, relative key substitution, extensions, and more' : '支持三全音替代、关系调替代、延伸音版本等多种和声手法'}
           </p>
         </div>

@@ -111,7 +111,7 @@ function App() {
                   <div className="relative">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 cursor-pointer hover:ring-2 hover:ring-gray-300 transition-all overflow-hidden"
+                      className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300 cursor-pointer hover:ring-2 hover:ring-gray-300 transition-all overflow-hidden"
                     >
                       {user.user_metadata?.avatar_url ? (
                         <img src={user.user_metadata.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -123,12 +123,12 @@ function App() {
                       <>
                         <div className="fixed inset-0 z-30" onClick={() => setUserMenuOpen(false)} />
                         <div className="absolute right-0 top-9 z-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg py-1 min-w-[180px]">
-                          <div className="px-3 py-2 text-xs text-gray-400 truncate border-b border-gray-100 dark:border-gray-700">
+                          <div className="px-3 py-2 text-sm text-gray-400 truncate border-b border-gray-100 dark:border-gray-700">
                             {user.email}
                           </div>
                           <button
                             onClick={() => { signOut(); setUserMenuOpen(false); }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                            className="w-full text-left px-3 py-2 text-base text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                           >
                             {isEn ? 'Sign Out' : '退出登录'}
                           </button>
@@ -139,7 +139,7 @@ function App() {
                 ) : (
                   <button
                     onClick={() => setAuthModalOpen(true)}
-                    className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   >
                     {isEn ? 'Sign In' : '登录'}
                   </button>
@@ -182,22 +182,22 @@ function App() {
               <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
                 <button
                   onClick={() => setLocale('en')}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer
+                  className={`px-2.5 py-1 text-sm font-medium rounded-md transition-colors cursor-pointer
                     ${locale === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 >EN</button>
                 <button
                   onClick={() => setLocale('zh')}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer
+                  className={`px-2.5 py-1 text-sm font-medium rounded-md transition-colors cursor-pointer
                     ${locale === 'zh' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 >中</button>
               </div>
             </div>
           </div>
 
-          <nav className="flex gap-0 -mb-px">
+          <nav className="flex gap-0 -mb-px overflow-x-auto">
             <button
               onClick={() => setPage('chord')}
-              className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
+              className={`px-2.5 sm:px-4 py-2.5 text-base font-medium transition-colors relative cursor-pointer whitespace-nowrap shrink-0
                 ${page === 'chord' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
             >
               {isEn ? 'Chord Lookup' : '和弦查询'}
@@ -205,7 +205,7 @@ function App() {
             </button>
             <button
               onClick={() => setPage('progression')}
-              className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
+              className={`px-2.5 sm:px-4 py-2.5 text-base font-medium transition-colors relative cursor-pointer whitespace-nowrap shrink-0
                 ${page === 'progression' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
             >
               {isEn ? 'Progressions' : '和弦进行'}
@@ -213,7 +213,7 @@ function App() {
             </button>
             <button
               onClick={() => setPage('identify')}
-              className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
+              className={`px-2.5 sm:px-4 py-2.5 text-base font-medium transition-colors relative cursor-pointer whitespace-nowrap shrink-0
                 ${page === 'identify' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
             >
               {isEn ? 'Identify' : '反查和弦'}
@@ -221,7 +221,7 @@ function App() {
             </button>
             <button
               onClick={() => setPage('sheet')}
-              className={`px-4 py-2.5 text-sm font-medium transition-colors relative cursor-pointer
+              className={`px-2.5 sm:px-4 py-2.5 text-base font-medium transition-colors relative cursor-pointer whitespace-nowrap shrink-0
                 ${page === 'sheet' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
             >
               {isEn ? 'Chord Sheet' : '和弦谱'}
@@ -235,7 +235,7 @@ function App() {
         {page === 'chord' && (
           <div className="space-y-6">
             <ChordSearch onSearch={handleSearch} currentChord={searchInput} />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="text-red-500 text-base">{error}</p>}
 
             {currentChord && (
               <section className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8">
@@ -256,7 +256,7 @@ function App() {
                               <polyline points="15 18 9 12 15 6" />
                             </svg>
                           </button>
-                          <span className="text-xs text-gray-400 tabular-nums">
+                          <span className="text-sm text-gray-400 tabular-nums">
                             {isEn ? 'Voicing' : '按法'} {voicingIndex + 1} / {totalVoicings}
                           </span>
                           <button
@@ -275,7 +275,7 @@ function App() {
                         <PlayButton onPlay={handlePlayBlock} label={isEn ? 'Chord' : '和弦'} small />
                         <button
                           onClick={handleAddToProgression}
-                          className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer flex items-center gap-1"
+                          className="px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer flex items-center gap-1"
                         >
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -287,7 +287,7 @@ function App() {
                   ) : (
                     <div className="flex flex-col items-center justify-center w-48 h-48 rounded-xl bg-gray-50">
                       <span className="text-3xl font-bold text-gray-900 mb-1">{currentChord.display}</span>
-                      <span className="text-xs text-gray-400">{isEn ? 'No fingering available' : '指法图暂无'}</span>
+                      <span className="text-sm text-gray-400">{isEn ? 'No fingering available' : '指法图暂无'}</span>
                       <div className="mt-3">
                         <PlayButton onPlay={handlePlayBlock} label={isEn ? 'Play' : '播放'} small />
                       </div>
@@ -319,7 +319,7 @@ function App() {
             <div className="flex justify-end">
               <button
                 onClick={() => chordSheetEditorRef.current?.newSheet()}
-                className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors flex items-center gap-2 shadow-sm"
+                className="px-5 py-2.5 text-base font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors flex items-center gap-2 shadow-sm"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -327,14 +327,12 @@ function App() {
                 {isEn ? 'New Chord Sheet' : '新增和弦谱'}
               </button>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4">
-              <ChordSheetEditor ref={chordSheetEditorRef} />
-            </div>
+            <ChordSheetEditor ref={chordSheetEditorRef} />
           </div>
         )}
       </main>
 
-      <footer className="border-t border-gray-100 mt-16 py-4 text-center text-xs text-gray-300">
+      <footer className="border-t border-gray-100 mt-16 py-4 text-center text-sm text-gray-300">
         ChordAnalyzer
       </footer>
 
@@ -351,7 +349,7 @@ function App() {
           transform: toast ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(8px)',
         }}
       >
-        <div className="bg-gray-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg whitespace-nowrap">
+        <div className="bg-gray-900 text-white text-base px-4 py-2.5 rounded-xl shadow-lg whitespace-nowrap">
           {toast}
         </div>
       </div>

@@ -12,12 +12,6 @@ body {
   transition: background-color 0.15s, color 0.15s;
 }
 
-/* Global +2px font size bump */
-.text-xs { font-size: 0.8125rem !important; }    /* 12→13px */
-.text-sm { font-size: 0.9375rem !important; }    /* 14→15px */
-.text-base { font-size: 1.125rem !important; }   /* 16→18px */
-.text-lg { font-size: 1.25rem !important; }       /* 18→20px */
-.text-xl { font-size: 1.375rem !important; }      /* 20→22px */
 
 * {
   box-sizing: border-box;
