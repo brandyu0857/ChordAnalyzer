@@ -6,6 +6,7 @@ import ChordDiagram from './ChordDiagram';
 import { useLocale } from '../i18n/context';
 import { loadChordSheets, saveChordSheet, updateChordSheet, deleteChordSheet, type SavedChordSheet } from '../utils/storage';
 import { extractYouTubeId } from '../utils/youtube';
+import { displayWidth } from '../utils/textWidth';
 import FloatingYouTubePlayer from './FloatingYouTubePlayer';
 
 interface ChordPlacement {
@@ -51,9 +52,18 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+  const lyricsTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const lines = lyrics.split('\n');
   const videoId = extractYouTubeId(youtubeUrl);
+
+  // Auto-grow the lyrics textarea to fit its content instead of scrolling internally
+  useEffect(() => {
+    const el = lyricsTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [lyrics, isEditing]);
 
   // Focus input when popover opens
   useEffect(() => {
@@ -210,7 +220,73 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
   }, [sheetName, isEn, isExporting]);
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col md:flex-row gap-4 items-start">
+      {/* Left: saved sheets sidebar */}
+      <div className="order-2 md:order-1 w-full md:w-64 shrink-0 space-y-2">
+        <span className="text-xs text-gray-400">{isEn ? 'Saved sheets' : '已保存的谱'} ({savedSheets.length})</span>
+        {savedSheets.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            {savedSheets.map(sheet => (
+              <div
+                key={sheet.id}
+                className={`group flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                  currentSheetId === sheet.id
+                    ? 'bg-white border border-gray-900'
+                    : 'bg-white border border-gray-200 hover:bg-gray-50'
+                }`}
+                onClick={() => handleLoadSheet(sheet)}
+              >
+                <div className="flex-1 min-w-0">
+                  {editingNameId === sheet.id ? (
+                    <input
+                      autoFocus
+                      value={editingNameValue}
+                      onChange={e => setEditingNameValue(e.target.value)}
+                      onBlur={() => handleRenameSheet(sheet.id, editingNameValue)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRenameSheet(sheet.id, editingNameValue);
+                        if (e.key === 'Escape') setEditingNameId(null);
+                      }}
+                      onClick={e => e.stopPropagation()}
+                      className="w-full text-xs font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-gray-500"
+                    />
+                  ) : (
+                    <div
+                      className="text-xs font-medium text-gray-700 truncate hover:underline decoration-gray-300 cursor-text"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setEditingNameId(sheet.id);
+                        setEditingNameValue(sheet.name);
+                      }}
+                      title={isEn ? 'Click to rename' : '点击重命名'}
+                    >
+                      {sheet.name}
+                    </div>
+                  )}
+                  <div className="text-[10px] text-gray-400">
+                    {sheet.placements.length} {isEn ? 'chords' : '个和弦'}
+                    {' · '}
+                    {new Date(sheet.updatedAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); handleDeleteSheet(sheet.id); }}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all cursor-pointer"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-300 italic">{isEn ? 'No saved sheets yet' : '暂无已保存的谱'}</p>
+        )}
+      </div>
+
+      {/* Right: workspace */}
+      <div className="order-1 md:order-2 flex-1 min-w-0 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-medium text-gray-900 shrink-0">
           {isEn ? 'Chord Sheet Editor' : '和弦谱编辑器'}
@@ -307,13 +383,13 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
       {isEditing ? (
         <div className="space-y-2">
           <textarea
+            ref={lyricsTextareaRef}
             value={lyrics}
             onChange={e => setLyrics(e.target.value)}
             placeholder={isEn
               ? 'Paste lyrics here...\n\nExample:\nYesterday, all my troubles seemed so far away\nNow it looks as though they\'re here to stay'
               : '粘贴歌词...\n\n例如：\n已经为了变的更好去掉锋芒\n一不小心成了你的倾诉对象'}
-            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 min-h-32 resize-y"
-            rows={6}
+            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 min-h-32 resize-none overflow-hidden"
           />
           {lyrics.trim() && (
             <button
@@ -357,7 +433,8 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
                       const segments: { pos: number; chord: string; charIdx: number }[] = [];
                       let cursor = 0;
                       for (const c of sorted) {
-                        const pos = Math.max(c.charIndex, cursor);
+                        const targetCol = displayWidth(line.slice(0, c.charIndex));
+                        const pos = Math.max(targetCol, cursor);
                         segments.push({ pos, chord: c.chord, charIdx: c.charIndex });
                         cursor = pos + c.chord.length + 1;
                       }
@@ -485,68 +562,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
           </div>
         </div>
       )}
-
-      {/* Saved sheets */}
-      {savedSheets.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-gray-200">
-          <span className="text-xs text-gray-400">{isEn ? 'Saved sheets' : '已保存的谱'} ({savedSheets.length})</span>
-          <div className="flex flex-col gap-1.5">
-            {savedSheets.map(sheet => (
-              <div
-                key={sheet.id}
-                className={`group flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
-                  currentSheetId === sheet.id
-                    ? 'bg-white border border-gray-900'
-                    : 'bg-white border border-gray-200 hover:bg-gray-50'
-                }`}
-                onClick={() => handleLoadSheet(sheet)}
-              >
-                <div className="flex-1 min-w-0">
-                  {editingNameId === sheet.id ? (
-                    <input
-                      autoFocus
-                      value={editingNameValue}
-                      onChange={e => setEditingNameValue(e.target.value)}
-                      onBlur={() => handleRenameSheet(sheet.id, editingNameValue)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') handleRenameSheet(sheet.id, editingNameValue);
-                        if (e.key === 'Escape') setEditingNameId(null);
-                      }}
-                      onClick={e => e.stopPropagation()}
-                      className="w-full text-xs font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-gray-500"
-                    />
-                  ) : (
-                    <div
-                      className="text-xs font-medium text-gray-700 truncate hover:underline decoration-gray-300 cursor-text"
-                      onClick={e => {
-                        e.stopPropagation();
-                        setEditingNameId(sheet.id);
-                        setEditingNameValue(sheet.name);
-                      }}
-                      title={isEn ? 'Click to rename' : '点击重命名'}
-                    >
-                      {sheet.name}
-                    </div>
-                  )}
-                  <div className="text-[10px] text-gray-400">
-                    {sheet.placements.length} {isEn ? 'chords' : '个和弦'}
-                    {' · '}
-                    {new Date(sheet.updatedAt).toLocaleDateString()}
-                  </div>
-                </div>
-                <button
-                  onClick={e => { e.stopPropagation(); handleDeleteSheet(sheet.id); }}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all cursor-pointer"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
 
       {showPlayer && videoId && (
         <FloatingYouTubePlayer videoId={videoId} onClose={() => setShowPlayer(false)} />
