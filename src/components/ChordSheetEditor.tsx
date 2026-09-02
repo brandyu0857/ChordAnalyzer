@@ -343,9 +343,8 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
           {/* Lyrics with chord placement */}
           <div ref={containerRef} className="bg-white rounded-xl p-5 space-y-0 select-none relative">
             {lines.map((line, li) => {
-              if (!line.trim()) return <div key={li} className="h-4" />;
-
               const lineChords = getChordsForLine(li);
+              if (!line.trim() && !lineChords.length) return <div key={li} className="h-4" />;
 
               return (
                 <div key={li}>
