@@ -63,15 +63,15 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
       {/* Inversion / slash chord info */}
       {inversion && (
         <div className="mb-4 flex items-start gap-2.5 px-3.5 py-2.5 bg-white rounded-lg">
-          <span className="text-xs font-semibold px-2 py-0.5 bg-gray-200 text-gray-700 rounded-full flex-shrink-0 mt-0.5 whitespace-nowrap">
+          <span className="text-sm font-semibold px-2 py-0.5 bg-gray-200 text-gray-700 rounded-full flex-shrink-0 mt-0.5 whitespace-nowrap">
             {inversion.label}
           </span>
-          <p className="text-sm text-gray-500 leading-snug">{inversion.desc}</p>
+          <p className="text-base text-gray-500 leading-snug">{inversion.desc}</p>
         </div>
       )}
 
       <div className="mb-5">
-        <div className="text-sm text-gray-400 uppercase tracking-wider mb-2">
+        <div className="text-base text-gray-400 uppercase tracking-wider mb-2">
           {isEn ? 'Notes' : '组成音'}
         </div>
         <div className="flex gap-2 flex-wrap items-center">
@@ -95,19 +95,19 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
           ))}
         </div>
         {chord.bassNote && chord.bassNote !== chord.root && (
-          <p className="text-xs text-gray-400 mt-1.5">
+          <p className="text-sm text-gray-400 mt-1.5">
             {isEn ? 'Dark gray = bass · Black = root' : '深灰 = 低音 · 黑色 = 根音'}
           </p>
         )}
       </div>
 
       <div>
-        <div className="text-sm text-gray-400 uppercase tracking-wider mb-2">
+        <div className="text-base text-gray-400 uppercase tracking-wider mb-2">
           {isEn ? 'Intervals' : '音程结构'}
         </div>
         <div className="flex flex-wrap gap-2">
           {intervals.map((interval, i) => (
-            <span key={i} className="text-sm px-2.5 py-1 rounded-md bg-white text-gray-600">
+            <span key={i} className="text-base px-2.5 py-1 rounded-md bg-white text-gray-600">
               {intervalNames[interval % 12] || (isEn ? `${interval} st` : `${interval}半音`)}
               <span className="text-gray-400 ml-1">({notes[i]})</span>
             </span>

@@ -82,7 +82,7 @@ export default function FloatingYouTubePlayer({ videoId, onClose }: FloatingYouT
         className="flex items-center justify-between px-2 bg-gray-800 cursor-move touch-none"
         style={{ height: HEADER_HEIGHT }}
       >
-        <span className="text-[10px] text-gray-400 truncate">
+        <span className="text-sm text-gray-400 truncate">
           {isEn ? 'Drag to move' : '拖动移动'}
         </span>
         <div className="flex items-center gap-1">

@@ -223,7 +223,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     <div className="flex flex-col md:flex-row gap-4 items-start">
       {/* Left: saved sheets sidebar */}
       <div className="order-2 md:order-1 w-full md:w-64 shrink-0 space-y-2">
-        <span className="text-xs text-gray-400">{isEn ? 'Saved sheets' : '已保存的谱'} ({savedSheets.length})</span>
+        <span className="text-sm text-gray-400">{isEn ? 'Saved sheets' : '已保存的谱'} ({savedSheets.length})</span>
         {savedSheets.length > 0 ? (
           <div className="flex flex-col gap-1.5">
             {savedSheets.map(sheet => (
@@ -248,11 +248,11 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
                         if (e.key === 'Escape') setEditingNameId(null);
                       }}
                       onClick={e => e.stopPropagation()}
-                      className="w-full text-xs font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-gray-500"
+                      className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-gray-500"
                     />
                   ) : (
                     <div
-                      className="text-xs font-medium text-gray-700 truncate hover:underline decoration-gray-300 cursor-text"
+                      className="text-sm font-medium text-gray-700 truncate hover:underline decoration-gray-300 cursor-text"
                       onClick={e => {
                         e.stopPropagation();
                         setEditingNameId(sheet.id);
@@ -263,7 +263,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
                       {sheet.name}
                     </div>
                   )}
-                  <div className="text-[10px] text-gray-400">
+                  <div className="text-sm text-gray-400">
                     {sheet.placements.length} {isEn ? 'chords' : '个和弦'}
                     {' · '}
                     {new Date(sheet.updatedAt).toLocaleDateString()}
@@ -281,14 +281,14 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
             ))}
           </div>
         ) : (
-          <p className="text-xs text-gray-300 italic">{isEn ? 'No saved sheets yet' : '暂无已保存的谱'}</p>
+          <p className="text-sm text-gray-300 italic">{isEn ? 'No saved sheets yet' : '暂无已保存的谱'}</p>
         )}
       </div>
 
       {/* Right: workspace */}
-      <div className="order-1 md:order-2 flex-1 min-w-0 space-y-3">
+      <div className="order-1 md:order-2 flex-1 min-w-0 space-y-3 bg-gray-50 rounded-xl p-4">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-medium text-gray-900 shrink-0">
+        <span className="text-base font-medium text-gray-900 shrink-0">
           {isEn ? 'Chord Sheet Editor' : '和弦谱编辑器'}
         </span>
         {placements.length > 0 && (
@@ -296,23 +296,13 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
             value={sheetName}
             onChange={e => setSheetName(e.target.value)}
             placeholder={isEn ? 'Song name...' : '歌曲名称...'}
-            className="flex-1 min-w-0 px-2 py-1 text-xs bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
+            className="flex-1 min-w-0 px-2 py-1 text-sm bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
           />
         )}
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={handleNewSheet}
-            className="text-xs text-gray-600 hover:text-gray-900 transition-colors cursor-pointer flex items-center gap-1 px-2 py-1 rounded border border-gray-200 hover:border-gray-300"
-            title={isEn ? 'Start a new chord sheet' : '新建和弦谱'}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            {isEn ? 'New' : '新建'}
-          </button>
-          <button
             onClick={() => setShowYoutubeInput(v => !v)}
-            className={`text-xs transition-colors cursor-pointer flex items-center gap-1 ${
+            className={`text-sm transition-colors cursor-pointer flex items-center gap-1 ${
               showYoutubeInput ? 'text-red-500' : 'text-gray-400 hover:text-gray-600'
             }`}
             title={isEn ? 'Add YouTube link' : '添加YouTube链接'}
@@ -325,7 +315,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
           {placements.length > 0 && (
             <button
               onClick={handleSaveSheet}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center gap-1"
+              className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center gap-1"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
@@ -337,7 +327,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
             <button
               onClick={handleExportPng}
               disabled={isExporting}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-wait"
+              className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-wait"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-5-5L5 21" />
@@ -348,7 +338,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
           {placements.length > 0 && (
             <button
               onClick={() => setPlacements([])}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               {isEn ? 'Clear chords' : '清除和弦'}
             </button>
@@ -362,7 +352,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
             value={youtubeUrl}
             onChange={e => setYoutubeUrl(e.target.value)}
             placeholder={isEn ? 'Paste a YouTube link...' : '粘贴YouTube链接...'}
-            className={`flex-1 min-w-0 px-3 py-1.5 text-xs bg-white border rounded-lg placeholder-gray-300 focus:outline-none focus:ring-1 ${
+            className={`flex-1 min-w-0 px-3 py-1.5 text-sm bg-white border rounded-lg placeholder-gray-300 focus:outline-none focus:ring-1 ${
               youtubeUrl.trim()
                 ? videoId
                   ? 'border-green-300 focus:border-green-400 focus:ring-green-200 text-green-700'
@@ -373,7 +363,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
           <button
             onClick={() => setShowPlayer(v => !v)}
             disabled={!videoId}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors whitespace-nowrap"
+            className="px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors whitespace-nowrap"
           >
             {showPlayer ? (isEn ? 'Hide player' : '隐藏播放器') : (isEn ? 'Open player' : '打开播放器')}
           </button>
@@ -389,12 +379,12 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
             placeholder={isEn
               ? 'Paste lyrics here...\n\nExample:\nYesterday, all my troubles seemed so far away\nNow it looks as though they\'re here to stay'
               : '粘贴歌词...\n\n例如：\n已经为了变的更好去掉锋芒\n一不小心成了你的倾诉对象'}
-            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 min-h-32 resize-none overflow-hidden"
+            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-base text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 min-h-32 resize-none overflow-hidden"
           />
           {lyrics.trim() && (
             <button
               onClick={() => setIsEditing(false)}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors"
+              className="px-4 py-2 text-base font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors"
             >
               {isEn ? 'Place Chords' : '开始放置和弦'} →
             </button>
@@ -406,11 +396,11 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsEditing(true)}
-              className="text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors"
+              className="text-sm text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors"
             >
               ← {isEn ? 'Edit lyrics' : '编辑歌词'}
             </button>
-            <span className="text-xs text-gray-400">
+            <span className="text-sm text-gray-400">
               {isEn ? 'Click lyrics to place chord, click chord to remove' : '点击歌词放置和弦，点击和弦删除'}
             </span>
           </div>
@@ -425,7 +415,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
               return (
                 <div key={li}>
                   {/* Chord row */}
-                  <div className="h-5 text-xs font-bold whitespace-pre" style={{ fontFamily: 'monospace', fontSize: '14px' }}>
+                  <div className="h-5 font-bold whitespace-pre" style={{ fontFamily: 'monospace', fontSize: '16px' }}>
                     {(() => {
                       const sorted = [...lineChords].sort((a, b) => a.charIndex - b.charIndex);
                       if (!sorted.length) return null;
@@ -459,7 +449,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
                   {/* Lyrics row */}
                   <div
                     className="whitespace-pre text-gray-800 leading-relaxed mb-1"
-                    style={{ fontFamily: 'monospace', fontSize: '14px' }}
+                    style={{ fontFamily: 'monospace', fontSize: '16px' }}
                   >
                     {[...line].map((char, ci) => {
                       const hasChord = lineChords.some(p => p.charIndex === ci);
@@ -499,7 +489,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
                       if (e.key === 'Escape') { setPopover(null); setPopoverInput(''); }
                     }}
                     placeholder={isEn ? 'Chord name...' : '和弦名...'}
-                    className={`w-32 px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
+                    className={`w-32 px-3 py-1.5 border rounded-lg text-base focus:outline-none focus:ring-1 ${
                       popoverInput.trim()
                         ? isValidChord
                           ? 'border-green-300 focus:border-green-400 focus:ring-green-200 text-green-700 bg-green-50'
@@ -510,7 +500,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
                   <button
                     onClick={confirmChord}
                     disabled={!isValidChord}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
                   >
                     ✓
                   </button>
@@ -526,7 +516,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-center text-gray-500 font-medium">{popoverInput.trim()}</p>
+                    <p className="text-sm text-center text-gray-500 font-medium">{popoverInput.trim()}</p>
                   );
                 })()}
               </div>
@@ -537,7 +527,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
           {placements.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">{isEn ? 'Chords used' : '使用的和弦'}</span>
+                <span className="text-sm text-gray-500">{isEn ? 'Chords used' : '使用的和弦'}</span>
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
               <div className="flex gap-3 flex-wrap">
@@ -550,9 +540,9 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
                       {f ? (
                         <ChordDiagram fingering={f} chordName="" size="small" interactive={false} />
                       ) : (
-                        <div className="w-16 h-24 flex items-center justify-center text-sm font-bold text-gray-900">{chord}</div>
+                        <div className="w-16 h-24 flex items-center justify-center text-base font-bold text-gray-900">{chord}</div>
                       )}
-                      <span className="text-xs font-semibold text-gray-700 mt-1">{chord}</span>
+                      <span className="text-sm font-semibold text-gray-700 mt-1">{chord}</span>
                     </div>
                   );
                 })}
