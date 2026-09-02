@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useImperativeHandle } from 'react';
 import { toPng } from 'html-to-image';
 import { parseChordName } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
@@ -21,7 +21,15 @@ interface PopoverState {
   y: number;
 }
 
-export default function ChordSheetEditor() {
+export interface ChordSheetEditorHandle {
+  newSheet: () => void;
+}
+
+interface ChordSheetEditorProps {
+  ref?: React.Ref<ChordSheetEditorHandle>;
+}
+
+export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
   const { locale } = useLocale();
   const isEn = locale === 'en';
 
@@ -143,6 +151,8 @@ export default function ChordSheetEditor() {
     setShowYoutubeInput(false);
     setShowPlayer(false);
   }, [lyrics, placements, currentSheetId, isEn]);
+
+  useImperativeHandle(ref, () => ({ newSheet: handleNewSheet }), [handleNewSheet]);
 
   const handleLoadSheet = useCallback((sheet: SavedChordSheet) => {
     setLyrics(sheet.lyrics);
