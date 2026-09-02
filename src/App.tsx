@@ -5,7 +5,7 @@ import ChordInfo from './components/ChordInfo';
 import PlayButton from './components/PlayButton';
 import ProgressionPanel from './components/ProgressionPanel';
 import FretboardIdentifier from './components/FretboardIdentifier';
-import ChordSheetEditor from './components/ChordSheetEditor';
+import ChordSheetEditor, { type ChordSheetEditorHandle } from './components/ChordSheetEditor';
 import AuthModal from './components/AuthModal';
 import type { ParsedChord } from './utils/chordUtils';
 import { parseChordName, getChordNotes } from './utils/chordUtils';
@@ -32,6 +32,7 @@ function App() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const chordSheetEditorRef = useRef<ChordSheetEditorHandle>(null);
 
   const showToast = useCallback((msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -314,8 +315,21 @@ function App() {
         </div>
 
         {page === 'sheet' && (
-          <div className="bg-gray-50 rounded-xl p-4">
-            <ChordSheetEditor />
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <button
+                onClick={() => chordSheetEditorRef.current?.newSheet()}
+                className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors flex items-center gap-2 shadow-sm"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                {isEn ? 'New Chord Sheet' : '新增和弦谱'}
+              </button>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4">
+              <ChordSheetEditor ref={chordSheetEditorRef} />
+            </div>
           </div>
         )}
       </main>
