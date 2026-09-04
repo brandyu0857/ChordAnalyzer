@@ -205,8 +205,17 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     if (!exportRef.current || isExporting) return;
     setPopover(null);
     setIsExporting(true);
+    const container = exportRef.current;
+    const displayName = sheetName.trim() || (isEn ? 'Untitled' : '未命名');
+    const titleEl = document.createElement('div');
+    titleEl.textContent = displayName;
+    titleEl.style.fontSize = '24px';
+    titleEl.style.fontWeight = '700';
+    titleEl.style.color = '#111827';
+    titleEl.style.marginBottom = '8px';
+    container.insertBefore(titleEl, container.firstChild);
     try {
-      const dataUrl = await toPng(exportRef.current, {
+      const dataUrl = await toPng(container, {
         backgroundColor: '#ffffff',
         pixelRatio: 2,
         cacheBust: true,
@@ -219,6 +228,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     } catch (err) {
       console.error('Failed to export chord sheet as PNG', err);
     } finally {
+      container.removeChild(titleEl);
       setIsExporting(false);
     }
   }, [sheetName, isEn, isExporting]);
