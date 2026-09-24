@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { identifyChords, getNoteAtFret } from '../utils/chordIdentifier';
+import { identifyChords, approximateChords, describeInterval, getDegreeLabel, getNoteAtFret } from '../utils/chordIdentifier';
 import type { IdentifiedChord } from '../utils/chordIdentifier';
 import type { ParsedChord } from '../utils/chordUtils';
 import { parseChordName } from '../utils/chordUtils';
@@ -45,7 +45,23 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
     setFrets([0, 0, 0, 0, 0, 0]);
   }, []);
 
-  const results = useMemo(() => identifyChords(frets), [frets]);
+  const exactResults = useMemo(() => identifyChords(frets), [frets]);
+  // Nothing matched exactly (an omitted tone, or a colour note outside the
+  // chord table) — fall back to the closest chords so the shape always gets
+  // a name.
+  const approxResults = useMemo(
+    () => (exactResults.length > 0 ? [] : approximateChords(frets)),
+    [exactResults, frets],
+  );
+  const results = exactResults.length > 0 ? exactResults : approxResults;
+  const primary = results[0] ?? null;
+  const alternatives = results.slice(1);
+
+  const intervalLabel = useMemo(
+    () => describeInterval(frets, isEn ? 'en' : 'zh'),
+    [frets, isEn],
+  );
+
   // Show reset only when something is non-default (a fret pressed or a string muted)
   const hasNonDefault = frets.some(f => f !== 0);
 
@@ -60,6 +76,17 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
   const soundingNotes = useMemo(() => {
     return selectedNotes.filter((n): n is string => n !== null);
   }, [selectedNotes]);
+
+  // Hand the shape to the chord page. `frets` is already low-E-first, the
+  // same order GuitarFingering uses.
+  const handleChordSelect = useCallback((parsed: ParsedChord) => {
+    if (!onChordSelect) return;
+    const pressed = frets.filter(f => f > 0);
+    const maxFret = pressed.length ? Math.max(...pressed) : 0;
+    const minFret = pressed.length ? Math.min(...pressed) : 0;
+    const startFret = maxFret <= 5 ? 0 : Math.max(1, minFret - 1);
+    onChordSelect(parsed, { frets: [...frets], startFret: startFret || undefined });
+  }, [frets, onChordSelect]);
 
   return (
     <div className="space-y-6">
@@ -94,43 +121,112 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
         </div>
       </div>
 
-      {/* Selected notes */}
-      {hasNonDefault && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-base text-gray-500">{isEn ? 'Sounding notes:' : '发音音符：'}</span>
-          {soundingNotes.map((note, i) => (
-            <span key={i} className="px-2 py-0.5 text-base font-medium bg-gray-100 text-gray-700 rounded">
-              {note}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Live result — directly under the fretboard, so the chord name is
+          visible the instant a note is placed */}
+      <LiveResult
+        chord={primary}
+        soundingNotes={soundingNotes}
+        intervalLabel={intervalLabel}
+        onSelect={onChordSelect ? handleChordSelect : undefined}
+      />
 
-      {/* Results */}
-      {results.length > 0 && (
+      {/* Other readings of the same shape */}
+      {alternatives.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-base font-medium text-gray-700">
-            {isEn ? 'Results' : '识别结果'}
+            {isEn ? 'Other readings' : '其他可能'}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {results.map((chord, idx) => (
+            {alternatives.map((chord, idx) => (
               <ChordResultCard
                 key={chord.symbol}
                 chord={chord}
-                rank={idx + 1}
-                onSelect={(parsed) => {
-                  if (!onChordSelect) return;
-                  // Convert visual order (high e first) to GuitarFingering order (low E first)
-                  const fingeringFrets = [...frets].reverse();
-                  const pressed = fingeringFrets.filter(f => f > 0);
-                  const maxFret = pressed.length ? Math.max(...pressed) : 0;
-                  const minFret = pressed.length ? Math.min(...pressed) : 0;
-                  const startFret = maxFret <= 5 ? 0 : Math.max(1, minFret - 1);
-                  onChordSelect(parsed, { frets: fingeringFrets, startFret: startFret || undefined });
-                }}
+                rank={idx + 2}
+                onSelect={handleChordSelect}
               />
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Live result banner ─── */
+
+interface LiveResultProps {
+  chord: IdentifiedChord | null;
+  soundingNotes: string[];
+  intervalLabel: string | null;
+  onSelect?: (chord: ParsedChord) => void;
+}
+
+function LiveResult({ chord, soundingNotes, intervalLabel, onSelect }: LiveResultProps) {
+  const { locale } = useLocale();
+  const isEn = locale === 'en';
+
+  // "omits 3, 5" / "added D#" — why the match isn't exact
+  const hints: string[] = [];
+  if (chord?.omitted?.length) {
+    hints.push(isEn ? `omits ${chord.omitted.join(', ')}` : `省略 ${chord.omitted.join('、')}`);
+  }
+  if (chord?.added?.length) {
+    hints.push(isEn ? `added ${chord.added.join(', ')}` : `额外音 ${chord.added.join('、')}`);
+  }
+
+  const canSelect = Boolean(chord && onSelect);
+  const handleClick = () => {
+    if (!chord || !onSelect) return;
+    const parsed = parseChordName(chord.root + (chord.type === 'major' ? '' : chord.type));
+    if (parsed) onSelect(parsed);
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 px-4 py-3.5 space-y-2.5">
+      {chord ? (
+        <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
+          {canSelect ? (
+            <button
+              onClick={handleClick}
+              title={isEn ? 'Open this chord' : '查看该和弦'}
+              className="text-3xl font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              {chord.symbol}
+            </button>
+          ) : (
+            <span className="text-3xl font-bold text-gray-900">{chord.symbol}</span>
+          )}
+          <span className="text-base text-gray-500">{isEn ? chord.nameEn : chord.name}</span>
+          {chord.approximate && (
+            <span className="px-1.5 py-0.5 text-sm rounded bg-gray-100 text-gray-500">
+              {isEn ? 'closest match' : '近似'}
+            </span>
+          )}
+          {hints.length > 0 && (
+            <span className="text-sm text-gray-400">{hints.join(' · ')}</span>
+          )}
+        </div>
+      ) : (
+        <div className="text-base text-gray-400">
+          {soundingNotes.length < 2
+            ? (isEn ? 'Press at least two strings to identify a chord' : '按下至少两根弦即可识别和弦')
+            : (isEn ? 'No matching chord' : '未匹配到标准和弦')}
+        </div>
+      )}
+
+      {/* Sounding notes, labelled by their degree in the chord above */}
+      {soundingNotes.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-gray-400">{isEn ? 'Notes' : '发音音符'}</span>
+          {soundingNotes.map((note, i) => (
+            <span key={i} className="px-2 py-0.5 text-base font-medium bg-gray-100 text-gray-700 rounded">
+              {note}
+              {chord && (
+                <span className="ml-1 text-sm text-gray-400">{getDegreeLabel(chord, note)}</span>
+              )}
+            </span>
+          ))}
+          {intervalLabel && <span className="text-sm text-gray-400">{intervalLabel}</span>}
         </div>
       )}
     </div>
