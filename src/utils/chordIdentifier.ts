@@ -1,4 +1,4 @@
-import { NOTES, INTERVAL_NAMES, INTERVAL_NAMES_EN, getNoteIndex } from '../data/notes';
+import { NOTES, INTERVAL_NAMES, INTERVAL_NAMES_EN, getNoteIndex, getIntervalDegree } from '../data/notes';
 import { CHORD_TYPES, GUITAR_TUNING } from '../data/chords';
 
 export interface IdentifiedChord {
@@ -182,14 +182,6 @@ export function getNoteAtFret(stringIdx: number, fret: number): string {
  * the closest chords instead, flagged so the UI can label them as guesses.
  * ---------------------------------------------------------------------- */
 
-// Interval label relative to the root, used for "omits …" hints. Keyed on the
-// raw interval so a 6 chord says "6" and a 13 chord says "13".
-const INTERVAL_LABELS: Record<number, string> = {
-  0: 'R', 1: 'b9', 2: '2', 3: 'b3', 4: '3', 5: '4',
-  6: 'b5', 7: '5', 8: '#5', 9: '6', 10: 'b7', 11: '7',
-  13: 'b9', 14: '9', 15: '#9', 17: '11', 21: '13',
-};
-
 // How much a missing chord tone hurts: the 5th is freely dropped, the 3rd
 // defines the chord's quality, the root can be implied by the bass.
 function missingWeight(interval: number): number {
@@ -273,7 +265,7 @@ export function approximateChords(frets: number[]): IdentifiedChord[] {
           bassNote,
           confidence: score,
           approximate: true,
-          omitted: missingIntervals.map(i => INTERVAL_LABELS[i] ?? INTERVAL_LABELS[i % 12]),
+          omitted: missingIntervals.map(i => getIntervalDegree(i, typeKey)),
           added,
         },
       });
@@ -314,7 +306,7 @@ export function describeInterval(frets: number[], locale: 'zh' | 'en' = 'zh'): s
 
 // Labels for notes that aren't chord tones: extensions read as 9/11/13
 const PITCH_CLASS_LABELS: Record<number, string> = {
-  0: 'R', 1: 'b9', 2: '9', 3: 'b3', 4: '3', 5: '11',
+  0: '1', 1: 'b9', 2: '9', 3: 'b3', 4: '3', 5: '11',
   6: 'b5', 7: '5', 8: '#5', 9: '13', 10: 'b7', 11: '7',
 };
 
@@ -325,6 +317,6 @@ const PITCH_CLASS_LABELS: Record<number, string> = {
 export function getDegreeLabel(chord: IdentifiedChord, note: string): string {
   const semitones = (getNoteIndex(note) - getNoteIndex(chord.root) + 12) % 12;
   const raw = CHORD_TYPES[chord.type]?.intervals.find(i => i % 12 === semitones);
-  if (raw !== undefined && INTERVAL_LABELS[raw]) return INTERVAL_LABELS[raw];
+  if (raw !== undefined) return getIntervalDegree(raw, chord.type);
   return PITCH_CLASS_LABELS[semitones];
 }

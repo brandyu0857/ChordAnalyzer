@@ -23,6 +23,49 @@ export const INTERVAL_NAMES_EN: Record<number, string> = {
   9: 'Major 6th (6)', 10: 'Minor 7th (b7)', 11: 'Major 7th (7)',
 };
 
+// Names for intervals past the octave, so a 9th doesn't read as a 2nd
+export const EXTENDED_INTERVAL_NAMES: Record<number, string> = {
+  13: '小九度 (b9)', 14: '大九度 (9)', 15: '增九度 (#9)',
+  17: '纯十一度 (11)', 21: '大十三度 (13)',
+};
+
+export const EXTENDED_INTERVAL_NAMES_EN: Record<number, string> = {
+  13: 'Minor 9th (b9)', 14: 'Major 9th (9)', 15: 'Augmented 9th (#9)',
+  17: 'Perfect 11th (11)', 21: 'Major 13th (13)',
+};
+
+/**
+ * Full name of a chord interval, e.g. 14 → '大九度 (9)'.
+ * chordTypeKey only matters for the diminished 7th, whose 9-semitone tone is
+ * a diminished 7th rather than a major 6th.
+ */
+export function getIntervalName(interval: number, isEn: boolean, chordTypeKey?: string): string {
+  if (chordTypeKey === 'dim7' && interval % 12 === 9) {
+    return isEn ? 'Diminished 7th (bb7)' : '减七度 (bb7)';
+  }
+  const extended = isEn ? EXTENDED_INTERVAL_NAMES_EN : EXTENDED_INTERVAL_NAMES;
+  const base = isEn ? INTERVAL_NAMES_EN : INTERVAL_NAMES;
+  return extended[interval] ?? base[interval % 12] ?? (isEn ? `${interval} st` : `${interval}半音`);
+}
+
+// Scale-degree labels for chord tones, keyed on the raw interval so that
+// extensions read as 9/11/13 rather than 2/4/6.
+export const DEGREE_LABELS: Record<number, string> = {
+  0: '1', 1: 'b2', 2: '2', 3: 'b3', 4: '3', 5: '4',
+  6: 'b5', 7: '5', 8: '#5', 9: '6', 10: 'b7', 11: '7',
+  13: 'b9', 14: '9', 15: '#9', 17: '11', 21: '13',
+};
+
+/**
+ * Label a chord interval by its degree, e.g. 3 → 'b3', 14 → '9'.
+ * chordTypeKey only matters for the diminished 7th, whose 9-semitone tone is
+ * a bb7 rather than a 6.
+ */
+export function getIntervalDegree(interval: number, chordTypeKey?: string): string {
+  if (chordTypeKey === 'dim7' && interval % 12 === 9) return 'bb7';
+  return DEGREE_LABELS[interval] ?? DEGREE_LABELS[interval % 12] ?? `${interval}`;
+}
+
 export const SCALE_DEGREES = ['I', 'bII', 'II', 'bIII', 'III', 'IV', 'bV', 'V', 'bVI', 'VI', 'bVII', 'VII'] as const;
 
 // Major scale intervals: W W H W W W H

@@ -1,6 +1,6 @@
 import type { ParsedChord } from '../utils/chordUtils';
 import { getChordNotes } from '../utils/chordUtils';
-import { INTERVAL_NAMES, INTERVAL_NAMES_EN, getNoteIndex } from '../data/notes';
+import { INTERVAL_NAMES, INTERVAL_NAMES_EN, getNoteIndex, getIntervalDegree, getIntervalName } from '../data/notes';
 import { useLocale } from '../i18n/context';
 
 interface ChordInfoProps {
@@ -45,7 +45,6 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
   const notes = getChordNotes(chord.root, chord.type);
   const intervals = chord.chordType.intervals;
   const inversion = getInversionLabel(chord, isEn);
-  const intervalNames = isEn ? INTERVAL_NAMES_EN : INTERVAL_NAMES;
 
   return (
     <div className="rounded-xl p-5 bg-gray-50">
@@ -79,9 +78,14 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
           {chord.bassNote && chord.bassNote !== chord.root && (
             <>
               <span
-                className="inline-flex items-center justify-center w-11 h-11 rounded-lg text-base font-bold bg-gray-600 text-white"
+                className="inline-flex flex-col items-center justify-center w-11 h-12 rounded-lg bg-gray-600 text-white"
                 title={isEn ? `Bass ${chord.bassNote}` : `低音 ${chord.bassNote}`}
-              >{chord.bassNote}</span>
+              >
+                <span className="text-base font-bold leading-none">{chord.bassNote}</span>
+                <span className="text-sm leading-none mt-1 text-white opacity-55">
+                  {isEn ? 'bass' : '低音'}
+                </span>
+              </span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-300 flex-shrink-0">
                 <path d="M5 12h14" />
               </svg>
@@ -89,9 +93,15 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
           )}
           {notes.map((note, i) => (
             <span key={i}
-              className={`inline-flex items-center justify-center w-11 h-11 rounded-lg text-base font-bold
+              className={`inline-flex flex-col items-center justify-center w-11 h-12 rounded-lg
                 ${i === 0 ? 'bg-gray-900 text-white' : 'bg-white text-gray-700'}`}
-            >{note}</span>
+            >
+              <span className="text-base font-bold leading-none">{note}</span>
+              {/* Scale degree: 1, b3, 5, b7 … */}
+              <span className={`text-sm leading-none mt-1 ${i === 0 ? 'text-white opacity-55' : 'text-gray-400'}`}>
+                {getIntervalDegree(intervals[i], chord.type)}
+              </span>
+            </span>
           ))}
         </div>
         {chord.bassNote && chord.bassNote !== chord.root && (
@@ -108,7 +118,7 @@ export default function ChordInfo({ chord }: ChordInfoProps) {
         <div className="flex flex-wrap gap-2">
           {intervals.map((interval, i) => (
             <span key={i} className="text-base px-2.5 py-1 rounded-md bg-white text-gray-600">
-              {intervalNames[interval % 12] || (isEn ? `${interval} st` : `${interval}半音`)}
+              {getIntervalName(interval, isEn, chord.type)}
               <span className="text-gray-400 ml-1">({notes[i]})</span>
             </span>
           ))}
