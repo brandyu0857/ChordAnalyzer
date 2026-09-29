@@ -18,6 +18,9 @@ export interface SavedChordSheet {
   lyrics: string;
   placements: { line: number; charIndex: number; chord: string }[];
   youtubeUrl?: string;
+  // Start time (seconds into the video) of each lyric line, when known —
+  // from synced lyrics or marked while listening. null for lines without one.
+  lineTimes?: (number | null)[];
   createdAt: number;
   updatedAt: number;
 }

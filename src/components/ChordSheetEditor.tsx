@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, useEffect, useImperativeHandle } from 'react';
+import { useState, useCallback, useRef, useEffect, useImperativeHandle, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import { toPng } from 'html-to-image';
 import { parseChordName } from '../utils/chordUtils';
 import { getGuitarFingerings } from '../data/chords';
@@ -6,8 +7,17 @@ import ChordDiagram from './ChordDiagram';
 import { useLocale } from '../i18n/context';
 import { loadChordSheets, saveChordSheet, updateChordSheet, deleteChordSheet, type SavedChordSheet } from '../utils/storage';
 import { extractYouTubeId } from '../utils/youtube';
-import { measureTextWidth } from '../utils/textWidth';
 import FloatingYouTubePlayer from './FloatingYouTubePlayer';
+import LyricLine, { type LineTone } from './LyricLine';
+import LineByLineView from './LineByLineView';
+import LyricsImportBanner, { type LyricsLookupState } from './LyricsImportBanner';
+import ChordSuggestions from './ChordSuggestions';
+import { suggestNextChords } from '../utils/chordSuggestions';
+import {
+  findLyricsForVideo, searchLyrics, rankResults, isConfidentMatch, toImportedLyrics, remapLineTimes,
+  type RankedResult,
+} from '../utils/lyrics';
+import type { YouTubeController } from '../utils/youtubeApi';
 
 interface ChordPlacement {
   line: number;
@@ -20,11 +30,34 @@ interface PopoverState {
   charIndex: number;
   x: number;
   y: number;
+  charHeight: number;
 }
 
-const LYRICS_FONT = '16px monospace';
-const CHORD_FONT = 'bold 16px monospace';
-const CHORD_GAP_PX = 6;
+const POPOVER_WIDTH = 320;
+
+type SheetView = 'line' | 'full';
+const VIEW_KEY = 'chord_analyzer_sheet_view';
+
+const IDLE_LOOKUP: LyricsLookupState = { status: 'idle', videoTitle: '', ranked: [], importedId: null, note: null };
+
+// What an import replaced, so it can be undone
+interface Snapshot {
+  lyrics: string;
+  placements: ChordPlacement[];
+  lineTimes: (number | null)[] | null;
+  sheetName: string;
+  isEditing: boolean;
+}
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+function loadView(): SheetView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'full' ? 'full' : 'line';
+  } catch {
+    return 'line';
+  }
+}
 
 export interface ChordSheetEditorHandle {
   newSheet: () => void;
@@ -52,14 +85,84 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Line-by-line transcribing
+  const [view, setViewState] = useState<SheetView>(loadView);
+  const [focusLine, setFocusLine] = useState(0);
+  const [lineTimes, setLineTimes] = useState<(number | null)[] | null>(null);
+
+  // The YouTube player, once it's ready
+  const [controller, setController] = useState<YouTubeController | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [follow, setFollow] = useState(true);
+  const stopAtRef = useRef<number | null>(null);   // "play this line" pauses here
+
+  // Lyrics lookup from the video
+  const [lookup, setLookup] = useState<LyricsLookupState>(IDLE_LOOKUP);
+  const [undoImport, setUndoImport] = useState<Snapshot | null>(null);
+  const lookupAbort = useRef<AbortController | null>(null);
+  const lookedUpVideo = useRef<string | null>(null);
+  const pendingLookup = useRef(false);   // "Find lyrics" clicked before the player was ready
+  const [playerApiFailed, setPlayerApiFailed] = useState(false);
+
   const popoverInputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const lyricsTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const lines = lyrics.split('\n');
+  const lines = useMemo(() => lyrics.split('\n'), [lyrics]);
   const videoId = extractYouTubeId(youtubeUrl);
+  const navLines = useMemo(() => lines.flatMap((l, i) => (l.trim() ? [i] : [])), [lines]);
+  const activeLine = navLines.includes(focusLine) ? focusLine : (navLines[0] ?? 0);
+  const hasTimes = !!lineTimes?.some(t => t !== null);
+
+  const setView = useCallback((v: SheetView) => {
+    setViewState(v);
+    try { localStorage.setItem(VIEW_KEY, v); } catch { /* preference only */ }
+  }, []);
+
+  // Line being sung right now: the one with the latest start time ≤ now
+  const lineAt = useCallback((t: number, times: (number | null)[] | null) => {
+    if (!times) return null;
+    let best: number | null = null;
+    times.forEach((lt, i) => {
+      if (lt !== null && lt <= t + 0.15 && (best === null || lt >= (times[best] ?? -1))) best = i;
+    });
+    return best;
+  }, []);
+  const playbackLine = controller && hasTimes ? lineAt(currentTime, lineTimes) : null;
+
+  // Values the playback timer reads without restarting on every change
+  const live = useRef({ follow, popover, view, isEditing, lineTimes, lines });
+  useEffect(() => {
+    live.current = { follow, popover, view, isEditing, lineTimes, lines };
+  });
+
+  // Follow playback: update the clock, stop at the end of a replayed line, and
+  // move the focus to the line being sung (unless a chord is being entered)
+  useEffect(() => {
+    if (!controller) return;
+    const tick = () => {
+      const t = controller.getTime();
+      setCurrentTime(t);
+      setDuration(controller.getDuration());
+      if (stopAtRef.current !== null && t >= stopAtRef.current) {
+        stopAtRef.current = null;
+        controller.pause();
+      }
+      const s = live.current;
+      if (s.follow && !s.popover && !s.isEditing && s.view === 'line' && controller.isPlaying()) {
+        const li = lineAt(t, s.lineTimes);
+        if (li !== null && s.lines[li]?.trim()) setFocusLine(li);
+      }
+    };
+    const first = setTimeout(tick, 0);
+    const timer = playing ? setInterval(tick, 200) : undefined;
+    return () => { clearTimeout(first); clearInterval(timer); };
+  }, [controller, playing, lineAt]);
 
   // Auto-grow the lyrics textarea to fit its content instead of scrolling internally
   useEffect(() => {
@@ -89,9 +192,9 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, [popover]);
 
-  const confirmChord = useCallback(() => {
+  const placeChord = useCallback((chordText: string) => {
     if (!popover) return;
-    const chord = popoverInput.trim();
+    const chord = chordText.trim();
     if (!chord || !parseChordName(chord)) return;
     setPlacements(prev => {
       const filtered = prev.filter(p => !(p.line === popover.line && p.charIndex === popover.charIndex));
@@ -100,7 +203,19 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     });
     setPopover(null);
     setPopoverInput('');
-  }, [popover, popoverInput]);
+  }, [popover]);
+
+  const confirmChord = useCallback(() => placeChord(popoverInput), [placeChord, popoverInput]);
+
+  // Clues for the chord being placed, from the chord just before it
+  const suggestionContext = useMemo(() => {
+    if (!popover) return null;
+    const before = placements
+      .filter(p => p.line < popover.line || (p.line === popover.line && p.charIndex < popover.charIndex))
+      .sort((a, b) => a.line - b.line || a.charIndex - b.charIndex)
+      .map(p => p.chord);
+    return suggestNextChords(before[before.length - 1] ?? null, before, isEn);
+  }, [popover, placements, isEn]);
 
   const removeChord = useCallback((line: number, charIndex: number) => {
     setPlacements(prev => prev.filter(p => !(p.line === line && p.charIndex === charIndex)));
@@ -120,13 +235,249 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     // Open popover positioned above the clicked character
     const charRect = (e.target as HTMLElement).getBoundingClientRect();
     const containerRect = containerRef.current?.getBoundingClientRect();
-    const x = containerRect ? charRect.left - containerRect.left : 0;
+    // Keep the popover inside the card when clicking near its right edge
+    const maxX = containerRect ? Math.max(0, containerRect.width - POPOVER_WIDTH - 8) : 0;
+    const x = containerRect ? Math.min(charRect.left - containerRect.left, maxX) : 0;
     const y = containerRect ? charRect.top - containerRect.top : 0;
-    setPopover({ line, charIndex, x, y });
+    setPopover({ line, charIndex, x, y, charHeight: charRect.height });
     setPopoverInput('');
   }, [placements, removeChord]);
 
   const isValidChord = popoverInput.trim() ? parseChordName(popoverInput.trim()) !== null : false;
+
+  // Move to a line. With a timestamp, the video jumps there too; without one,
+  // stepping to the next line while the song plays marks where it starts.
+  const goToLine = useCallback((li: number, { markStart = false } = {}) => {
+    setFocusLine(li);
+    setPopover(null);
+    if (!controller) return;
+    const t = lineTimes?.[li] ?? null;
+    if (t !== null) {
+      stopAtRef.current = null;
+      controller.seek(t);
+      setCurrentTime(t);
+    } else if (markStart && controller.isPlaying()) {
+      const now = controller.getTime();
+      setLineTimes(prev => {
+        const next = prev ? [...prev] : lines.map(() => null);
+        next[li] = now;
+        return next;
+      });
+    }
+  }, [controller, lineTimes, lines]);
+
+  const stepLine = useCallback((dir: 1 | -1) => {
+    const pos = navLines.indexOf(activeLine);
+    const target = navLines[pos + dir];
+    if (target !== undefined) goToLine(target, { markStart: dir === 1 });
+  }, [navLines, activeLine, goToLine]);
+
+  const togglePlay = useCallback(() => {
+    if (!controller) return;
+    if (controller.isPlaying()) controller.pause();
+    else controller.play();
+  }, [controller]);
+
+  const skipBy = useCallback((delta: number) => {
+    if (!controller) return;
+    stopAtRef.current = null;
+    const t = Math.max(0, controller.getTime() + delta);
+    controller.seek(t);
+    setCurrentTime(t);
+  }, [controller]);
+
+  // Replay the focused line: from its start, pausing where the next line begins
+  const playLine = useCallback(() => {
+    const start = lineTimes?.[activeLine];
+    if (!controller || start === null || start === undefined) return;
+    const pos = navLines.indexOf(activeLine);
+    const nextStart = navLines.slice(pos + 1).map(li => lineTimes?.[li] ?? null).find((t): t is number => t !== null && t > start);
+    stopAtRef.current = nextStart ?? null;
+    controller.seek(start);
+    setCurrentTime(start);
+    controller.play();
+    // Stop right as the next line starts; the 200ms playback poll alone
+    // would let its first syllable through
+    if (nextStart !== undefined) {
+      const stopAt = nextStart;
+      setTimeout(() => {
+        if (stopAtRef.current === stopAt && controller.getTime() >= stopAt - 0.25) {
+          stopAtRef.current = null;
+          controller.pause();
+        }
+      }, (stopAt - start) * 1000);
+    }
+  }, [controller, lineTimes, activeLine, navLines]);
+
+  // Keyboard: ← → jump 5s, Space play/pause, ↑ ↓ change line, R replay line.
+  // Ignored while typing, with modifier keys, and for Space on a focused button.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+      if (e.key === ' ' && target?.closest('button, a, [role="button"]')) return;
+
+      const lineMode = !isEditing && view === 'line';
+      let handled = true;
+      if (e.key === 'ArrowLeft' && controller) skipBy(-5);
+      else if (e.key === 'ArrowRight' && controller) skipBy(5);
+      else if (e.key === ' ' && controller) togglePlay();
+      else if (e.key === 'ArrowUp' && lineMode) stepLine(-1);
+      else if (e.key === 'ArrowDown' && lineMode) stepLine(1);
+      else if ((e.key === 'r' || e.key === 'R') && lineMode && controller) playLine();
+      else handled = false;
+      if (handled) e.preventDefault();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [controller, isEditing, view, skipBy, togglePlay, stepLine, playLine]);
+
+  // ---------- Lyrics from the video ----------
+
+  const lyricsRef = useRef(lyrics);
+  const placementsRef = useRef(placements);
+  useEffect(() => { lyricsRef.current = lyrics; placementsRef.current = placements; });
+
+  const snapshot = useCallback((): Snapshot => ({
+    lyrics: lyricsRef.current, placements: placementsRef.current, lineTimes, sheetName, isEditing,
+  }), [lineTimes, sheetName, isEditing]);
+
+  const importLyrics = useCallback((r: RankedResult) => {
+    const imported = toImportedLyrics(r.result);
+    if (!imported) return;
+    const currentLines = lyricsRef.current.split('\n');
+    const nonEmpty = currentLines.filter(l => l.trim()).length;
+
+    if (nonEmpty > 0) {
+      // Same song already in the editor: keep its text and chords, add timing
+      if (imported.times) {
+        const times = remapLineTimes(imported.lines, imported.times, currentLines);
+        const matched = times?.filter(t => t !== null).length ?? 0;
+        if (matched >= nonEmpty * 0.5) {
+          setUndoImport(snapshot());
+          setLineTimes(times);
+          setLookup(s => ({
+            ...s, importedId: r.result.id,
+            note: isEn ? `Timing added to ${matched} of ${nonEmpty} lines; chords kept.` : `已为 ${matched}/${nonEmpty} 句加上时间轴，和弦保留。`,
+          }));
+          return;
+        }
+      }
+      const msg = isEn
+        ? 'Replace the current lyrics? Chords placed on them will be removed.'
+        : '替换当前歌词？已经放置的和弦会被清除。';
+      if (placementsRef.current.length && !window.confirm(msg)) return;
+    }
+
+    setUndoImport(snapshot());
+    setLyrics(imported.lines.join('\n'));
+    setLineTimes(imported.times);
+    setPlacements([]);
+    setSheetName(name => name.trim() ? name : r.result.trackName);
+    setIsEditing(false);
+    setView('line');
+    setFocusLine(0);
+    setPopover(null);
+    setLookup(s => ({ ...s, importedId: r.result.id, note: null }));
+  }, [snapshot, isEn, setView]);
+
+  const handleUndoImport = useCallback(() => {
+    if (!undoImport) return;
+    setLyrics(undoImport.lyrics);
+    setPlacements(undoImport.placements);
+    setLineTimes(undoImport.lineTimes);
+    setSheetName(undoImport.sheetName);
+    setIsEditing(undoImport.isEditing);
+    setUndoImport(null);
+    setLookup(s => ({ ...s, importedId: null, note: null }));
+  }, [undoImport]);
+
+  // Look up lyrics from the video title, or from a name the user typed
+  const runLookup = useCallback(async (query?: string) => {
+    if (!controller && !query) return;
+    lookupAbort.current?.abort();
+    const abort = new AbortController();
+    lookupAbort.current = abort;
+
+    // Title and length can arrive a moment after the player is ready
+    let info = controller?.getInfo() ?? { title: '', author: '' };
+    let length = controller?.getDuration() ?? 0;
+    for (let i = 0; controller && i < 15 && (!info.title || !length); i++) {
+      await sleep(200);
+      info = controller.getInfo();
+      length = controller.getDuration();
+    }
+    if (abort.signal.aborted) return;
+
+    setLookup({ ...IDLE_LOOKUP, status: 'searching', videoTitle: query ?? info.title });
+    try {
+      const ranked = query
+        ? rankResults(await searchLyrics(query, abort.signal), query, '', length)
+        : await findLyricsForVideo(info.title, info.author, length, abort.signal);
+      if (abort.signal.aborted) return;
+      if (!ranked.length) {
+        setLookup(s => ({ ...s, status: 'none' }));
+        return;
+      }
+      setLookup(s => ({ ...s, status: 'found', ranked }));
+      // Import straight away only when it's clearly the right song and the
+      // editor is still empty; otherwise the user picks from the list
+      if (!query && isConfidentMatch(ranked[0]) && !lyricsRef.current.trim()) importLyrics(ranked[0]);
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') setLookup(s => ({ ...s, status: 'error' }));
+    }
+  }, [controller, importLyrics]);
+
+  // Once the player is ready: run a lookup the user asked for while it was
+  // loading, or — for a new video and an empty editor — look up automatically
+  useEffect(() => {
+    if (!controller || !videoId) return;
+    const requested = pendingLookup.current;
+    if (!requested && (lookedUpVideo.current === videoId || lyricsRef.current.trim())) return;
+    pendingLookup.current = false;
+    lookedUpVideo.current = videoId;
+    const t = setTimeout(() => void runLookup(), 0);
+    return () => clearTimeout(t);
+  }, [controller, videoId, runLookup]);
+
+  const requestLookup = useCallback(() => {
+    if (controller) void runLookup();
+    // No player API means no video title to search with: ask for a name
+    else if (playerApiFailed) setLookup({ ...IDLE_LOOKUP, status: 'manual' });
+    else {
+      pendingLookup.current = true;
+      setShowPlayer(true);
+      setLookup({ ...IDLE_LOOKUP, status: 'searching' });
+    }
+  }, [controller, playerApiFailed, runLookup]);
+
+  const handlePlayerApiUnavailable = useCallback(() => {
+    setPlayerApiFailed(true);
+    if (pendingLookup.current) {
+      pendingLookup.current = false;
+      setLookup({ ...IDLE_LOOKUP, status: 'manual' });
+    }
+  }, []);
+
+  useEffect(() => () => lookupAbort.current?.abort(), []);
+
+  const handleYoutubeUrlChange = useCallback((value: string, input: HTMLInputElement) => {
+    const id = extractYouTubeId(value);
+    // Pasting a new video opens it, which also starts the lyrics lookup. The
+    // link is complete, so leave the field: otherwise Space and the arrow keys
+    // would keep typing into it instead of controlling playback.
+    if (id && id !== extractYouTubeId(youtubeUrl)) {
+      setShowPlayer(true);
+      input.blur();
+    }
+    setYoutubeUrl(value);
+  }, [youtubeUrl]);
+
+  const handleLyricsChange = useCallback((value: string) => {
+    setLineTimes(prev => remapLineTimes(lines, prev, value.split('\n')));
+    setLyrics(value);
+  }, [lines]);
 
   const handleSaveSheet = useCallback(() => {
     if (!lyrics.trim() || !placements.length) return;
@@ -136,15 +487,16 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
       name = firstLine.slice(0, 30) + (firstLine.length > 30 ? '...' : '');
     }
     const trimmedUrl = youtubeUrl.trim() || undefined;
+    const times = lineTimes ?? undefined;
     if (currentSheetId) {
-      updateChordSheet(currentSheetId, { name, lyrics, placements, youtubeUrl: trimmedUrl });
+      updateChordSheet(currentSheetId, { name, lyrics, placements, youtubeUrl: trimmedUrl, lineTimes: times });
     } else {
-      const entry = saveChordSheet({ name, lyrics, placements, youtubeUrl: trimmedUrl });
+      const entry = saveChordSheet({ name, lyrics, placements, youtubeUrl: trimmedUrl, lineTimes: times });
       setCurrentSheetId(entry.id);
     }
     setSheetName(name);
     setSavedSheets(loadChordSheets());
-  }, [lyrics, placements, sheetName, currentSheetId, youtubeUrl]);
+  }, [lyrics, placements, sheetName, currentSheetId, youtubeUrl, lineTimes]);
 
   const handleNewSheet = useCallback(() => {
     const hasUnsavedContent = !currentSheetId && (lyrics.trim().length > 0 || placements.length > 0);
@@ -164,6 +516,12 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     setYoutubeUrl('');
     setShowYoutubeInput(false);
     setShowPlayer(false);
+    setLineTimes(null);
+    setFocusLine(0);
+    setLookup(IDLE_LOOKUP);
+    setUndoImport(null);
+    lookupAbort.current?.abort();
+    lookedUpVideo.current = null;
   }, [lyrics, placements, currentSheetId, isEn]);
 
   useImperativeHandle(ref, () => ({ newSheet: handleNewSheet }), [handleNewSheet]);
@@ -178,6 +536,12 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     setShowYoutubeInput(!!sheet.youtubeUrl);
     setShowPlayer(false);
     setPopover(null);
+    setLineTimes(sheet.lineTimes ?? null);
+    setFocusLine(0);
+    setLookup(IDLE_LOOKUP);
+    setUndoImport(null);
+    lookupAbort.current?.abort();
+    lookedUpVideo.current = sheet.youtubeUrl ? extractYouTubeId(sheet.youtubeUrl) : null;
   }, []);
 
   const handleDeleteSheet = useCallback((id: string) => {
@@ -202,7 +566,11 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
   }, [currentSheetId]);
 
   const handleExportPng = useCallback(async () => {
-    if (!exportRef.current || isExporting) return;
+    if (isExporting) return;
+    // The image is of the whole sheet, so render the full view for it
+    const restoreView = view;
+    if (view !== 'full') flushSync(() => setViewState('full'));
+    if (!exportRef.current) return;
     setPopover(null);
     setIsExporting(true);
     const container = exportRef.current;
@@ -230,11 +598,70 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     } finally {
       container.removeChild(titleEl);
       setIsExporting(false);
+      if (restoreView !== 'full') setViewState(restoreView);
     }
-  }, [sheetName, isEn, isExporting]);
+  }, [sheetName, isEn, isExporting, view]);
+
+  // Chord entry, shown above the clicked character in either view
+  const popoverNode = popover && (
+    <div
+      ref={popoverRef}
+      className="absolute z-50 bg-white rounded-xl shadow-lg border border-gray-200 p-3 space-y-2"
+      // Line view opens it below the character, over the preview lines, so the
+      // line above and the playback controls stay visible
+      style={view === 'line'
+        ? { left: popover.x, top: popover.y + popover.charHeight + 8, width: POPOVER_WIDTH }
+        : { left: popover.x, top: popover.y - 8, transform: 'translateY(-100%)', width: POPOVER_WIDTH }}
+    >
+      <div className="flex items-center gap-2">
+        <input
+          ref={popoverInputRef}
+          value={popoverInput}
+          onChange={e => setPopoverInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') confirmChord();
+            if (e.key === 'Escape') { setPopover(null); setPopoverInput(''); }
+          }}
+          placeholder={isEn ? 'Chord name...' : '和弦名...'}
+          className={`w-32 px-3 py-1.5 border rounded-lg text-base focus:outline-none focus:ring-1 ${
+            popoverInput.trim()
+              ? isValidChord
+                ? 'border-green-300 focus:border-green-400 focus:ring-green-200 text-green-700 bg-green-50'
+                : 'border-red-300 focus:border-red-400 focus:ring-red-200 text-red-700 bg-red-50'
+              : 'border-gray-200 focus:border-gray-400 focus:ring-gray-200 text-gray-900'
+          }`}
+        />
+        <button
+          onClick={confirmChord}
+          disabled={!isValidChord}
+          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        >
+          ✓
+        </button>
+      </div>
+      {/* Mini chord preview */}
+      {popoverInput.trim() && isValidChord && (() => {
+        const parsed = parseChordName(popoverInput.trim())!;
+        const f = getGuitarFingerings(parsed.root, parsed.type)[0];
+        return f ? (
+          <div className="flex justify-center">
+            <div className="w-20">
+              <ChordDiagram fingering={f} chordName={parsed.root + (parsed.chordType?.symbol || '')} size="small" interactive={false} />
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-center text-gray-500 font-medium">{popoverInput.trim()}</p>
+        );
+      })()}
+      {/* Can't hear it? Likely chords after the previous one */}
+      {!popoverInput.trim() && suggestionContext && (
+        <ChordSuggestions context={suggestionContext} isEn={isEn} onPick={placeChord} />
+      )}
+    </div>
+  );
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 items-start">
+    <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-start">
       {/* Left: saved sheets sidebar */}
       <div className="order-2 md:order-1 w-full md:w-64 shrink-0 space-y-2">
         <span className="text-sm text-gray-400">{isEn ? 'Saved sheets' : '已保存的谱'} ({savedSheets.length})</span>
@@ -301,7 +728,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
 
       {/* Right: workspace */}
       <div className="order-1 md:order-2 flex-1 min-w-0 space-y-3 bg-gray-50 rounded-xl p-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-x-3 gap-y-2 flex-wrap">
         <span className="text-base font-medium text-gray-900 shrink-0">
           {isEn ? 'Chord Sheet Editor' : '和弦谱编辑器'}
         </span>
@@ -310,7 +737,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
             value={sheetName}
             onChange={e => setSheetName(e.target.value)}
             placeholder={isEn ? 'Song name...' : '歌曲名称...'}
-            className="flex-1 min-w-0 px-2 py-1 text-sm bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
+            className="flex-1 min-w-32 px-2 py-1 text-sm bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
           />
         )}
         <div className="flex items-center gap-2 shrink-0">
@@ -364,7 +791,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
         <div className="flex items-center gap-2">
           <input
             value={youtubeUrl}
-            onChange={e => setYoutubeUrl(e.target.value)}
+            onChange={e => handleYoutubeUrlChange(e.target.value, e.target)}
             placeholder={isEn ? 'Paste a YouTube link...' : '粘贴YouTube链接...'}
             className={`flex-1 min-w-0 px-3 py-1.5 text-sm bg-white border rounded-lg placeholder-gray-300 focus:outline-none focus:ring-1 ${
               youtubeUrl.trim()
@@ -381,7 +808,28 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
           >
             {showPlayer ? (isEn ? 'Hide player' : '隐藏播放器') : (isEn ? 'Open player' : '打开播放器')}
           </button>
+          {videoId && lookup.status === 'idle' && (
+            <button
+              // Without the player API there's no video title to go on, so
+              // open the search box instead
+              onClick={requestLookup}
+              className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 bg-white hover:bg-gray-50 cursor-pointer whitespace-nowrap"
+            >
+              {isEn ? 'Find lyrics' : '查找歌词'}
+            </button>
+          )}
         </div>
+      )}
+
+      {lookup.status !== 'idle' && (
+        <LyricsImportBanner
+          state={lookup}
+          isEn={isEn}
+          onImport={importLyrics}
+          onSearch={q => void runLookup(q)}
+          onUndo={undoImport ? handleUndoImport : undefined}
+          onDismiss={() => { lookupAbort.current?.abort(); setLookup(IDLE_LOOKUP); }}
+        />
       )}
 
       {isEditing ? (
@@ -389,7 +837,7 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
           <textarea
             ref={lyricsTextareaRef}
             value={lyrics}
-            onChange={e => setLyrics(e.target.value)}
+            onChange={e => handleLyricsChange(e.target.value)}
             placeholder={isEn
               ? 'Paste lyrics here...\n\nExample:\nYesterday, all my troubles seemed so far away\nNow it looks as though they\'re here to stay'
               : '粘贴歌词...\n\n例如：\n已经为了变的更好去掉锋芒\n一不小心成了你的倾诉对象'}
@@ -414,10 +862,56 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
             >
               ← {isEn ? 'Edit lyrics' : '编辑歌词'}
             </button>
-            <span className="text-sm text-gray-400">
-              {isEn ? 'Click lyrics to place chord, click chord to remove' : '点击歌词放置和弦，点击和弦删除'}
-            </span>
+            {/* One line at a time, or the whole sheet */}
+            <div className="flex rounded-lg border border-gray-200 bg-white p-0.5 text-sm">
+              {(['line', 'full'] as const).map(v => (
+                <button
+                  key={v}
+                  onClick={() => { setView(v); setPopover(null); }}
+                  className={`px-2.5 py-0.5 rounded-md cursor-pointer transition-colors ${
+                    view === v ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  {v === 'line' ? (isEn ? 'Line by line' : '逐句') : (isEn ? 'Full sheet' : '全文')}
+                </button>
+              ))}
+            </div>
+            {view === 'full' && (
+              <span className="text-sm text-gray-400">
+                {isEn ? 'Click lyrics to place chord, click chord to remove' : '点击歌词放置和弦，点击和弦删除'}
+              </span>
+            )}
           </div>
+
+          {view === 'line' && (
+            <LineByLineView
+              lines={lines}
+              navLines={navLines}
+              focusLine={activeLine}
+              chordsForLine={getChordsForLine}
+              onFocusLine={li => goToLine(li)}
+              onCharClick={handleCharClick}
+              onChordClick={removeChord}
+              containerRef={containerRef}
+              isEn={isEn}
+              transport={controller ? {
+                playing,
+                time: currentTime,
+                duration,
+                hasTimes,
+                canPlayLine: lineTimes?.[activeLine] != null,
+                follow,
+                onToggle: togglePlay,
+                onSkip: skipBy,
+                onPlayLine: playLine,
+                onFollowChange: setFollow,
+              } : null}
+            >
+              {popoverNode}
+            </LineByLineView>
+          )}
+
+          {view === 'full' && (
 
           <div ref={exportRef} className="space-y-3 bg-white">
           {/* Lyrics with chord placement */}
@@ -425,113 +919,25 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
             {lines.map((line, li) => {
               const lineChords = getChordsForLine(li);
               if (!line.trim() && !lineChords.length) return <div key={li} className="h-4" />;
-
+              // While a synced video plays: sung lines dark, the rest light
+              const tone: LineTone = playbackLine === null
+                ? 'normal'
+                : li === playbackLine ? 'current' : li < playbackLine ? 'sung' : 'upcoming';
               return (
-                <div key={li}>
-                  {/* Chord row: each label is pixel-positioned via measured text width,
-                      so it lands exactly above its target character regardless of font
-                      metrics (CJK glyphs render wider than Latin ones, and by how much
-                      varies by font/OS) — pushed right only if it would otherwise
-                      overlap the previous label. */}
-                  <div className="h-5 relative" style={{ fontFamily: 'monospace', fontSize: '16px' }}>
-                    {(() => {
-                      const sorted = [...lineChords].sort((a, b) => a.charIndex - b.charIndex);
-                      if (!sorted.length) return null;
-
-                      let minLeft = 0;
-                      return sorted.map(c => {
-                        const naturalLeft = measureTextWidth(line.slice(0, c.charIndex), LYRICS_FONT);
-                        const left = Math.max(naturalLeft, minLeft);
-                        minLeft = left + measureTextWidth(c.chord, CHORD_FONT) + CHORD_GAP_PX;
-                        return (
-                          <span
-                            key={c.charIndex}
-                            className="absolute top-0 font-bold whitespace-nowrap text-blue-600 cursor-pointer hover:text-red-500 transition-colors"
-                            style={{ left }}
-                            onClick={() => removeChord(li, c.charIndex)}
-                            title={isEn ? 'Click to remove' : '点击删除'}
-                          >
-                            {c.chord}
-                          </span>
-                        );
-                      });
-                    })()}
-                  </div>
-                  {/* Lyrics row */}
-                  <div
-                    className="whitespace-pre text-gray-800 leading-relaxed mb-1"
-                    style={{ fontFamily: 'monospace', fontSize: '16px' }}
-                  >
-                    {[...line].map((char, ci) => {
-                      const hasChord = lineChords.some(p => p.charIndex === ci);
-                      return (
-                        <span
-                          key={ci}
-                          className={`cursor-pointer transition-colors rounded-sm ${
-                            hasChord
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'hover:bg-gray-100'
-                          }`}
-                          onClick={e => handleCharClick(e, li, ci)}
-                        >
-                          {char}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
+                <LyricLine
+                  key={li}
+                  line={line}
+                  chords={lineChords}
+                  fontPx={16}
+                  tone={tone}
+                  onCharClick={(e, ci) => handleCharClick(e, li, ci)}
+                  onChordClick={ci => removeChord(li, ci)}
+                  chordTitle={isEn ? 'Click to remove' : '点击删除'}
+                />
               );
             })}
 
-            {/* Chord input popover */}
-            {popover && (
-              <div
-                ref={popoverRef}
-                className="absolute z-50 bg-white rounded-xl shadow-lg border border-gray-200 p-3 space-y-2"
-                style={{ left: popover.x, top: popover.y - 8, transform: 'translateY(-100%)' }}
-              >
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={popoverInputRef}
-                    value={popoverInput}
-                    onChange={e => setPopoverInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') confirmChord();
-                      if (e.key === 'Escape') { setPopover(null); setPopoverInput(''); }
-                    }}
-                    placeholder={isEn ? 'Chord name...' : '和弦名...'}
-                    className={`w-32 px-3 py-1.5 border rounded-lg text-base focus:outline-none focus:ring-1 ${
-                      popoverInput.trim()
-                        ? isValidChord
-                          ? 'border-green-300 focus:border-green-400 focus:ring-green-200 text-green-700 bg-green-50'
-                          : 'border-red-300 focus:border-red-400 focus:ring-red-200 text-red-700 bg-red-50'
-                        : 'border-gray-200 focus:border-gray-400 focus:ring-gray-200 text-gray-900'
-                    }`}
-                  />
-                  <button
-                    onClick={confirmChord}
-                    disabled={!isValidChord}
-                    className="px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                  >
-                    ✓
-                  </button>
-                </div>
-                {/* Mini chord preview */}
-                {popoverInput.trim() && isValidChord && (() => {
-                  const parsed = parseChordName(popoverInput.trim())!;
-                  const f = getGuitarFingerings(parsed.root, parsed.type)[0];
-                  return f ? (
-                    <div className="flex justify-center">
-                      <div className="w-20">
-                        <ChordDiagram fingering={f} chordName={parsed.root + (parsed.chordType?.symbol || '')} size="small" interactive={false} />
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-center text-gray-500 font-medium">{popoverInput.trim()}</p>
-                  );
-                })()}
-              </div>
-            )}
+            {popoverNode}
           </div>
 
           {/* Chord legend */}
@@ -561,12 +967,19 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
             </div>
           )}
           </div>
+          )}
         </div>
       )}
       </div>
 
       {showPlayer && videoId && (
-        <FloatingYouTubePlayer videoId={videoId} onClose={() => setShowPlayer(false)} />
+        <FloatingYouTubePlayer
+          videoId={videoId}
+          onClose={() => setShowPlayer(false)}
+          onController={setController}
+          onPlayingChange={setPlaying}
+          onApiUnavailable={handlePlayerApiUnavailable}
+        />
       )}
     </div>
   );
