@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useId } from 'react';
+import { useState, useMemo, useCallback, useId, useEffect, useRef } from 'react';
 import { identifyChords, approximateChords, describeInterval, getDegreeLabel, getNoteAtFret } from '../utils/chordIdentifier';
 import type { IdentifiedChord } from '../utils/chordIdentifier';
 import type { ParsedChord } from '../utils/chordUtils';
@@ -16,6 +16,17 @@ const VISUAL_STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E'];
 // Fret inlay positions (standard guitar dots)
 const INLAY_FRETS = [3, 5, 7, 9, 12, 15];
 const DOUBLE_INLAY_FRETS = [12];
+
+// Move the whole shape `delta` frets along the neck. Open strings move with it
+// (as if the nut were a barre) so the chord keeps its quality; muted strings
+// stay muted. Returns null when a note would land behind the nut or past the
+// last fret, rather than distorting the shape.
+function shiftShape(frets: number[], delta: number): number[] | null {
+  const sounding = frets.filter(f => f >= 0);
+  if (sounding.length === 0) return null;
+  if (sounding.some(f => f + delta < 0 || f + delta > NUM_FRETS)) return null;
+  return frets.map(f => (f < 0 ? f : f + delta));
+}
 
 export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifierProps) {
   const { locale } = useLocale();
@@ -44,6 +55,43 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
   const handleClear = useCallback(() => {
     setFrets([0, 0, 0, 0, 0, 0]);
   }, []);
+
+  const handleShift = useCallback((delta: number) => {
+    setFrets(prev => shiftShape(prev, delta) ?? prev);
+  }, []);
+  const canShiftDown = shiftShape(frets, -1) !== null;
+  const canShiftUp = shiftShape(frets, 1) !== null;
+
+  // Lowest sounding fret, shown between the shift buttons
+  const soundingFrets = frets.filter(f => f >= 0);
+  const lowestFret = soundingFrets.length ? Math.min(...soundingFrets) : null;
+  const positionLabel = lowestFret === null
+    ? '—'
+    : lowestFret === 0
+      ? (isEn ? 'Open' : '开放把位')
+      : (isEn ? `Fret ${lowestFret}` : `第 ${lowestFret} 品`);
+
+  // + / − shift the shape from the keyboard. This page stays mounted while
+  // other tabs are showing, so only react while it's actually visible, and
+  // never while the user is typing or zooming the browser (Ctrl/⌘ +/−).
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+      if (!rootRef.current || rootRef.current.offsetParent === null) return;
+
+      let delta = 0;
+      if (e.key === '+' || e.key === '=') delta = 1;        // '=' is + without Shift
+      else if (e.key === '-' || e.key === '_') delta = -1;
+      if (!delta) return;
+      e.preventDefault();
+      handleShift(delta);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleShift]);
 
   const exactResults = useMemo(() => identifyChords(frets), [frets]);
   // Nothing matched exactly (an omitted tone, or a colour note outside the
@@ -89,9 +137,9 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
   }, [frets, onChordSelect]);
 
   return (
-    <div className="space-y-6">
+    <div ref={rootRef} className="space-y-6">
       {/* Instructions */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">
             {isEn ? 'Fretboard Chord Identifier' : '指板和弦识别'}
@@ -100,14 +148,42 @@ export default function FretboardIdentifier({ onChordSelect }: FretboardIdentifi
             {isEn ? 'Click positions on the fretboard to mark frets, chords are identified automatically' : '点击指板上的位置标记按弦，系统自动识别和弦'}
           </p>
         </div>
-        {hasNonDefault && (
-          <button
-            onClick={handleClear}
-            className="px-3 py-1.5 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer shrink-0"
-          >
-            {isEn ? 'Reset' : '重置'}
-          </button>
-        )}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Shift the whole shape along the neck */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-gray-500 mr-0.5">{isEn ? 'Position' : '移动把位'}</span>
+            <button
+              onClick={() => handleShift(-1)}
+              disabled={!canShiftDown}
+              aria-label={isEn ? 'Move shape down one fret (−)' : '整体下移一品（−）'}
+              title={isEn ? 'Move down one fret  ( − )' : '下移一品  ( − )'}
+              className="w-8 h-8 flex items-center justify-center text-base text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            >−</button>
+            <span className="min-w-[4.5rem] text-center text-sm font-medium text-gray-700 tabular-nums">
+              {positionLabel}
+            </span>
+            <button
+              onClick={() => handleShift(1)}
+              disabled={!canShiftUp}
+              aria-label={isEn ? 'Move shape up one fret (+)' : '整体上移一品（+）'}
+              title={isEn ? 'Move up one fret  ( + )' : '上移一品  ( + )'}
+              className="w-8 h-8 flex items-center justify-center text-base text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            >+</button>
+            <span className="hidden sm:inline text-sm text-gray-400 ml-1">
+              {isEn ? 'keys' : '快捷键'}{' '}
+              <kbd className="px-1.5 py-0.5 text-xs border border-gray-200 rounded bg-gray-50 font-sans">+</kbd>{' '}
+              <kbd className="px-1.5 py-0.5 text-xs border border-gray-200 rounded bg-gray-50 font-sans">−</kbd>
+            </span>
+          </div>
+          {hasNonDefault && (
+            <button
+              onClick={handleClear}
+              className="px-3 py-1.5 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer shrink-0"
+            >
+              {isEn ? 'Reset' : '重置'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Fretboard */}
