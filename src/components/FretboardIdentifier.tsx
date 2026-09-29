@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useId } from 'react';
 import { identifyChords, approximateChords, describeInterval, getDegreeLabel, getNoteAtFret } from '../utils/chordIdentifier';
 import type { IdentifiedChord } from '../utils/chordIdentifier';
 import type { ParsedChord } from '../utils/chordUtils';
@@ -235,6 +235,16 @@ function LiveResult({ chord, soundingNotes, intervalLabel, onSelect }: LiveResul
 
 /* ─── Fretboard SVG ─── */
 
+// Drawn to look like a real acoustic neck: rosewood board, bone nut, nickel
+// frets, pearl inlays and strings of real gauges. Fret spacing follows the
+// 12th-root-of-2 rule, softened a little so the high frets stay clickable.
+const FRET_TAPER = 0.75; // 0 = evenly spaced, 1 = true guitar proportions
+
+// Visual order (high e → low E): string thickness in px, and whether it's a
+// wound (phosphor-bronze) string or plain steel
+const STRING_GAUGES = [1.1, 1.4, 1.9, 2.4, 2.9, 3.4];
+const WOUND_STRINGS = [false, false, true, true, true, true];
+
 interface FretboardProps {
   frets: number[];
   onFretClick: (stringIdx: number, fret: number) => void;
@@ -243,80 +253,209 @@ interface FretboardProps {
 
 function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
   const { isDark } = useLocale();
-  const fc = isDark
-    ? { nut: '#e5e5e5', fretWire: '#3a3a3a', string: '#525252', inlay: '#333', fretNum: '#555', muted: '#ef4444', muteOff: '#444' }
-    : { nut: '#1a1a1a', fretWire: '#c4c4c4', string: '#a3a3a3', inlay: '#e0e0e0', fretNum: '#bbb', muted: '#ef4444', muteOff: '#d1d5db' };
-  const stringSpacing = 28;
-  const fretWidth = 56;
-  const controlW = 46;  // space for × button + string label
-  const nutX = controlW;
-  const leftPad = nutX;
-  const topPad = 8;
-  const bottomPad = 24;
-  const dotRadius = 10;
+  // Several fretboards can be on screen, so gradient/filter ids must be unique
+  const uid = useId().replace(/:/g, '');
+  const id = (name: string) => `${uid}-${name}`;
+  const url = (name: string) => `url(#${id(name)})`;
 
-  const fretboardWidth = NUM_FRETS * fretWidth;
-  const fretboardHeight = 5 * stringSpacing;
-  const totalWidth = leftPad + fretboardWidth + 10;
-  const totalHeight = topPad + fretboardHeight + bottomPad;
+  // The neck looks the same in both themes; only the labels around it change
+  const fc = isDark
+    ? { label: '#a3a3a3', labelMuted: '#555', fretNum: '#666', muted: '#ef4444', muteOff: '#444' }
+    : { label: '#555', labelMuted: '#bbb', fretNum: '#aaa', muted: '#ef4444', muteOff: '#d1d5db' };
+
+  const controlW = 52;    // × mute button + string label + open-string ring
+  const nutW = 9;
+  const boardLen = 840;   // nut → last fret
+  const overhang = 30;    // the neck carries on past the last fret, fading out
+  const topPad = 6;
+  const edgePad = 13;     // board edge → outer string
+  const stringSpacing = 30;
+  const bottomPad = 26;   // room for fret numbers
+  const dotRadius = 11;
+
+  const boardX = controlW;                  // left edge of the nut
+  const fret0X = boardX + nutW;             // playing surface starts after the nut
+  const boardEndX = fret0X + boardLen + overhang;
+  const boardTop = topPad;
+  const boardH = edgePad * 2 + 5 * stringSpacing;
+  const totalWidth = boardEndX + 4;
+  const totalHeight = topPad + boardH + bottomPad;
 
   // Visual row 0 (top) = 1st string (high e) = frets[5]
   // Visual row 5 (bottom) = 6th string (low E) = frets[0]
   const dataIdx = (visualIdx: number) => 5 - visualIdx;
+  const stringY = (visualIdx: number) => boardTop + edgePad + visualIdx * stringSpacing;
 
-  const fretX = (fret: number) => leftPad + fret * fretWidth;
-  const fretCenterX = (fret: number) => leftPad + (fret - 0.5) * fretWidth;
-  const stringY = (visualIdx: number) => topPad + visualIdx * stringSpacing;
+  // x of the nth fret wire, 0 being the nut
+  const fretX = (n: number) => {
+    const even = n / NUM_FRETS;
+    const real = (1 - 2 ** (-n / 12)) / (1 - 2 ** (-NUM_FRETS / 12));
+    return fret0X + boardLen * ((1 - FRET_TAPER) * even + FRET_TAPER * real);
+  };
+  const fretCenterX = (n: number) => (fretX(n - 1) + fretX(n)) / 2;
+  const fadeStartX = fretX(NUM_FRETS) + 6;
 
-  const muteBtnX = 14;
-  const labelX = 30;
-  const openIndicatorX = 42;
+  const muteBtnX = 13;
+  const labelX = 29;
+  const openIndicatorX = boardX - 8;
 
   return (
     <svg
       width="100%"
       viewBox={`0 0 ${totalWidth} ${totalHeight}`}
       className="select-none"
-      style={{ maxHeight: 280 }}
+      style={{ maxHeight: 300 }}
     >
-      {/* Nut */}
-      <rect x={nutX - 3} y={topPad - 4} width={5} height={fretboardHeight + 8} fill={fc.nut} rx={1} />
+      <defs>
+        {/* Rosewood: dark base, grain streaks, and shading where the board
+            curves away at its edges */}
+        <linearGradient id={id('wood')} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#2b1a10" />
+          <stop offset="0.5" stopColor="#40281a" />
+          <stop offset="1" stopColor="#26170e" />
+        </linearGradient>
+        <filter id={id('grain')} x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.004 0.32" numOctaves="3" seed="7" result="darkNoise" />
+          <feColorMatrix in="darkNoise" type="matrix" result="darkGrain"
+            values="0 0 0 0 0.08  0 0 0 0 0.04  0 0 0 0 0.02  1.4 0 0 0 -0.62" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.003 0.9" numOctaves="2" seed="3" result="lightNoise" />
+          <feColorMatrix in="lightNoise" type="matrix" result="lightGrain"
+            values="0 0 0 0 0.55  0 0 0 0 0.36  0 0 0 0 0.22  1.2 0 0 0 -0.72" />
+          <feMerge>
+            <feMergeNode in="darkGrain" />
+            <feMergeNode in="lightGrain" />
+          </feMerge>
+          <feComposite in2="SourceGraphic" operator="in" />
+        </filter>
+        <linearGradient id={id('edge')} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#000" stopOpacity="0.45" />
+          <stop offset="0.12" stopColor="#000" stopOpacity="0" />
+          <stop offset="0.88" stopColor="#000" stopOpacity="0" />
+          <stop offset="1" stopColor="#000" stopOpacity="0.5" />
+        </linearGradient>
+        <filter id={id('neckShadow')} x="-5%" y="-20%" width="110%" height="150%">
+          <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000" floodOpacity="0.28" />
+        </filter>
 
-      {/* Fret wires */}
-      {Array.from({ length: NUM_FRETS }, (_, i) => (
-        <line key={`fw-${i}`}
-          x1={fretX(i + 1)} y1={topPad - 2}
-          x2={fretX(i + 1)} y2={topPad + fretboardHeight + 2}
-          stroke={fc.fretWire} strokeWidth={1.5}
-        />
-      ))}
+        {/* Bone nut and nickel frets, lit from the left */}
+        <linearGradient id={id('nut')} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#bfb291" />
+          <stop offset="0.4" stopColor="#f8f3e6" />
+          <stop offset="1" stopColor="#d9cdb0" />
+        </linearGradient>
+        <linearGradient id={id('fret')} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#707478" />
+          <stop offset="0.45" stopColor="#f1f3f4" />
+          <stop offset="1" stopColor="#8d9195" />
+        </linearGradient>
 
-      {/* Strings — thinnest at top (high e), thickest at bottom (low E) */}
-      {Array.from({ length: 6 }, (_, visualIdx) => (
-        <line key={`str-${visualIdx}`}
-          x1={nutX} y1={stringY(visualIdx)}
-          x2={leftPad + fretboardWidth} y2={stringY(visualIdx)}
-          stroke={fc.string} strokeWidth={0.85 + visualIdx * 0.15}
-        />
-      ))}
+        {/* Mother-of-pearl inlay with a faint pink/teal shimmer */}
+        <radialGradient id={id('pearl')} cx="0.4" cy="0.35" r="0.7">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.45" stopColor="#eef1ee" />
+          <stop offset="0.7" stopColor="#e3dbe6" />
+          <stop offset="0.85" stopColor="#d3e1e4" />
+          <stop offset="1" stopColor="#aebbbf" />
+        </radialGradient>
 
-      {/* Fret inlays */}
-      {INLAY_FRETS.map(f => {
-        if (f > NUM_FRETS) return null;
-        const cx = fretCenterX(f);
-        return DOUBLE_INLAY_FRETS.includes(f) ? (
-          <g key={`inlay-${f}`}>
-            <circle cx={cx} cy={topPad + 1.5 * stringSpacing} r={3.5} fill={fc.inlay} />
-            <circle cx={cx} cy={topPad + 3.5 * stringSpacing} r={3.5} fill={fc.inlay} />
-          </g>
-        ) : (
-          <circle key={`inlay-${f}`} cx={cx} cy={topPad + 2.5 * stringSpacing} r={3.5} fill={fc.inlay} />
-        );
-      })}
+        {/* Strings: round highlight across the width; wound strings get a
+            diagonal winding texture on top */}
+        <linearGradient id={id('steel')} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8a9094" />
+          <stop offset="0.4" stopColor="#f7f9fa" />
+          <stop offset="1" stopColor="#6d7377" />
+        </linearGradient>
+        <linearGradient id={id('bronze')} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#6e5129" />
+          <stop offset="0.4" stopColor="#f0d49d" />
+          <stop offset="1" stopColor="#5e4421" />
+        </linearGradient>
+        <pattern id={id('winding')} width="2.4" height="8" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)">
+          <rect width="0.9" height="8" fill="#000" fillOpacity="0.35" />
+        </pattern>
+        <filter id={id('stringShadow')} x="-1%" y="-400%" width="102%" height="900%">
+          <feGaussianBlur stdDeviation="1.1" />
+        </filter>
+
+        {/* Pressed-note marker */}
+        <radialGradient id={id('marker')} cx="0.35" cy="0.3" r="0.75">
+          <stop offset="0" stopColor="#7cb4ff" />
+          <stop offset="0.55" stopColor="#2563eb" />
+          <stop offset="1" stopColor="#1e3a8a" />
+        </radialGradient>
+        <filter id={id('markerShadow')} x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#000" floodOpacity="0.5" />
+        </filter>
+
+        {/* Fade the neck out past the last fret */}
+        <linearGradient id={id('fadeGrad')} gradientUnits="userSpaceOnUse" x1={fadeStartX} y1="0" x2={boardEndX} y2="0">
+          <stop offset="0" stopColor="#fff" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <mask id={id('fade')} maskUnits="userSpaceOnUse" x="0" y="0" width={totalWidth} height={totalHeight}>
+          <rect x="0" y="0" width={totalWidth} height={totalHeight} fill={url('fadeGrad')} />
+        </mask>
+      </defs>
+
+      {/* Neck */}
+      <g filter={url('neckShadow')}>
+        <g mask={url('fade')}>
+          <rect x={fret0X} y={boardTop} width={boardEndX - fret0X} height={boardH} fill={url('wood')} />
+          <rect x={fret0X} y={boardTop} width={boardEndX - fret0X} height={boardH} fill="#000" filter={url('grain')} />
+          <rect x={fret0X} y={boardTop} width={boardEndX - fret0X} height={boardH} fill={url('edge')} />
+          {/* Cream binding along both edges */}
+          <rect x={fret0X} y={boardTop} width={boardEndX - fret0X} height={1.6} fill="#eadfc6" />
+          <rect x={fret0X} y={boardTop + boardH - 1.6} width={boardEndX - fret0X} height={1.6} fill="#eadfc6" />
+
+          {/* Inlays — centred on the board, doubled at the 12th fret */}
+          {INLAY_FRETS.map(f => {
+            const cx = fretCenterX(f);
+            const ys = DOUBLE_INLAY_FRETS.includes(f)
+              ? [stringY(1) + stringSpacing / 2, stringY(3) + stringSpacing / 2]
+              : [stringY(2) + stringSpacing / 2];
+            return ys.map((cy, i) => (
+              <circle key={`inlay-${f}-${i}`} cx={cx} cy={cy} r={6.5}
+                fill={url('pearl')} stroke="#000" strokeOpacity={0.35} strokeWidth={0.6} />
+            ));
+          })}
+
+          {/* Fret wires, each casting a shadow toward the body */}
+          {Array.from({ length: NUM_FRETS }, (_, i) => {
+            const x = fretX(i + 1);
+            return (
+              <g key={`fw-${i}`}>
+                <rect x={x + 1.5} y={boardTop} width={3} height={boardH} fill="#000" opacity={0.3} />
+                <rect x={x - 2} y={boardTop} width={4} height={boardH} fill={url('fret')} />
+              </g>
+            );
+          })}
+
+          <rect x={boardX} y={boardTop - 2} width={nutW} height={boardH + 4} rx={1.5} fill={url('nut')} />
+
+          {/* Strings — thinnest at top (high e), thickest at bottom (low E);
+              a muted string is dimmed */}
+          {STRING_GAUGES.map((gauge, visualIdx) => {
+            const y = stringY(visualIdx);
+            const muted = frets[dataIdx(visualIdx)] === -1;
+            const w = boardEndX - boardX;
+            return (
+              <g key={`str-${visualIdx}`} opacity={muted ? 0.35 : 1}>
+                <rect x={boardX} y={y - gauge / 2 + 2.2} width={w} height={gauge}
+                  fill="#000" opacity={0.55} filter={url('stringShadow')} />
+                <rect x={boardX} y={y - gauge / 2} width={w} height={gauge}
+                  fill={url(WOUND_STRINGS[visualIdx] ? 'bronze' : 'steel')} />
+                {WOUND_STRINGS[visualIdx] && (
+                  <rect x={boardX} y={y - gauge / 2} width={w} height={gauge} fill={url('winding')} />
+                )}
+              </g>
+            );
+          })}
+        </g>
+      </g>
 
       {/* Fret numbers */}
       {[1, 3, 5, 7, 9, 12, 15].map(f => f <= NUM_FRETS && (
-        <text key={`fn-${f}`} x={fretCenterX(f)} y={topPad + fretboardHeight + 18}
+        <text key={`fn-${f}`} x={fretCenterX(f)} y={boardTop + boardH + 18}
           textAnchor="middle" fill={fc.fretNum} fontSize={10} fontFamily="Inter, sans-serif">{f}</text>
       ))}
 
@@ -340,12 +479,12 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
 
             {/* String label */}
             <text x={labelX} y={y + 4} textAnchor="middle"
-              fill={isMuted ? '#bbb' : '#555'}
+              fill={isMuted ? fc.labelMuted : fc.label}
               fontSize={11} fontWeight="500" fontFamily="Inter, sans-serif">{label}</text>
 
             {/* Open-string indicator (○) — click to mute */}
             <g className="cursor-pointer" onClick={() => onStringMute(di)}>
-              <rect x={openIndicatorX - 10} y={y - 10} width={20} height={20} fill="transparent" />
+              <rect x={openIndicatorX - 8} y={y - 10} width={16} height={20} fill="transparent" />
               {isOpen && (
                 <circle cx={openIndicatorX} cy={y} r={5}
                   fill="none" stroke="#2563eb" strokeWidth={1.6} />
@@ -360,31 +499,34 @@ function Fretboard({ frets, onFretClick, onStringMute }: FretboardProps) {
         );
       })}
 
-      {/* Clickable fret zones */}
+      {/* Clickable fret zones — the whole cell is the target, the ring
+          lights up on hover */}
       {Array.from({ length: 6 }, (_, visualIdx) => {
         const di = dataIdx(visualIdx);
         return Array.from({ length: NUM_FRETS }, (_, fretIdx) => {
           const fret = fretIdx + 1;
-          const cx = fretCenterX(fret);
+          const x0 = fretX(fret - 1);
+          const x1 = fretX(fret);
+          const cx = (x0 + x1) / 2;
           const cy = stringY(visualIdx);
           const isSelected = frets[di] === fret;
 
           return (
-            <g key={`zone-${visualIdx}-${fret}`} className="cursor-pointer" onClick={() => onFretClick(di, fret)}>
-              <rect x={cx - fretWidth / 2} y={cy - stringSpacing / 2}
-                width={fretWidth} height={stringSpacing} fill="transparent" />
+            <g key={`zone-${visualIdx}-${fret}`} className="group cursor-pointer" onClick={() => onFretClick(di, fret)}>
+              <rect x={x0} y={cy - stringSpacing / 2} width={x1 - x0} height={stringSpacing} fill="transparent" />
               {!isSelected && (
-                <circle cx={cx} cy={cy} r={dotRadius}
-                  fill="transparent" className="hover:fill-gray-200 transition-colors" />
+                <circle cx={cx} cy={cy} r={dotRadius} fill="transparent"
+                  className="group-hover:fill-[rgba(255,255,255,0.22)] transition-colors" />
               )}
               {isSelected && (
-                <>
-                  <circle cx={cx} cy={cy} r={dotRadius} fill="#2563eb" />
+                <g filter={url('markerShadow')}>
+                  <circle cx={cx} cy={cy} r={dotRadius} fill={url('marker')}
+                    stroke="#fff" strokeOpacity={0.85} strokeWidth={1.4} />
                   <text x={cx} y={cy + 3.5} textAnchor="middle" fill="white"
-                    fontSize={8} fontWeight="bold" fontFamily="Inter, sans-serif">
+                    fontSize={9} fontWeight="bold" fontFamily="Inter, sans-serif">
                     {getNoteAtFret(di, fret)}
                   </text>
-                </>
+                </g>
               )}
             </g>
           );
