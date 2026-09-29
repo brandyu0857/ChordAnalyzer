@@ -7,7 +7,7 @@ import ChordDiagram from './ChordDiagram';
 import { useLocale } from '../i18n/context';
 import { loadChordSheets, saveChordSheet, updateChordSheet, deleteChordSheet, type SavedChordSheet } from '../utils/storage';
 import { extractYouTubeId } from '../utils/youtube';
-import FloatingYouTubePlayer from './FloatingYouTubePlayer';
+import YouTubePlayer from './YouTubePlayer';
 import LyricLine, { type LineTone } from './LyricLine';
 import LineByLineView from './LineByLineView';
 import LyricsImportBanner, { type LyricsLookupState } from './LyricsImportBanner';
@@ -278,13 +278,17 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     else controller.play();
   }, [controller]);
 
-  const skipBy = useCallback((delta: number) => {
+  const seekTo = useCallback((seconds: number) => {
     if (!controller) return;
     stopAtRef.current = null;
-    const t = Math.max(0, controller.getTime() + delta);
+    const t = Math.max(0, seconds);
     controller.seek(t);
     setCurrentTime(t);
   }, [controller]);
+
+  const skipBy = useCallback((delta: number) => {
+    if (controller) seekTo(controller.getTime() + delta);
+  }, [controller, seekTo]);
 
   // Replay the focused line: from its start, pausing where the next line begins
   const playLine = useCallback(() => {
@@ -315,7 +319,10 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
-      if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+      // Typing into a field keeps its keys; a slider or checkbox doesn't
+      const typing = !!target && (target.isContentEditable || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT'
+        || (target instanceof HTMLInputElement && !['range', 'checkbox', 'radio', 'button'].includes(target.type)));
+      if (typing) return;
       if (e.key === ' ' && target?.closest('button, a, [role="button"]')) return;
 
       const lineMode = !isEditing && view === 'line';
@@ -821,6 +828,24 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
         </div>
       )}
 
+      {/* The song's video, right above the lyrics */}
+      {showPlayer && videoId && (
+        <YouTubePlayer
+          videoId={videoId}
+          isEn={isEn}
+          playing={playing}
+          time={currentTime}
+          duration={duration}
+          onToggle={togglePlay}
+          onSkip={skipBy}
+          onSeek={seekTo}
+          onClose={() => setShowPlayer(false)}
+          onController={setController}
+          onPlayingChange={setPlaying}
+          onApiUnavailable={handlePlayerApiUnavailable}
+        />
+      )}
+
       {lookup.status !== 'idle' && (
         <LyricsImportBanner
           state={lookup}
@@ -895,14 +920,9 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
               containerRef={containerRef}
               isEn={isEn}
               transport={controller ? {
-                playing,
-                time: currentTime,
-                duration,
                 hasTimes,
                 canPlayLine: lineTimes?.[activeLine] != null,
                 follow,
-                onToggle: togglePlay,
-                onSkip: skipBy,
                 onPlayLine: playLine,
                 onFollowChange: setFollow,
               } : null}
@@ -972,15 +992,6 @@ export default function ChordSheetEditor({ ref }: ChordSheetEditorProps) {
       )}
       </div>
 
-      {showPlayer && videoId && (
-        <FloatingYouTubePlayer
-          videoId={videoId}
-          onClose={() => setShowPlayer(false)}
-          onController={setController}
-          onPlayingChange={setPlaying}
-          onApiUnavailable={handlePlayerApiUnavailable}
-        />
-      )}
     </div>
   );
 }

@@ -1,16 +1,12 @@
 import type { ReactNode, Ref } from 'react';
 import LyricLine, { type LineChord } from './LyricLine';
-import { formatTime, SEEK_STEP_SECONDS } from '../utils/youtubeApi';
 
+// Line controls shown when a video is open (play/pause and ±5s sit under
+// the video itself)
 export interface TransportProps {
-  playing: boolean;
-  time: number;
-  duration: number;
   hasTimes: boolean;          // lyrics carry per-line timestamps
   canPlayLine: boolean;       // the focused line has a timestamp
   follow: boolean;            // focus follows playback
-  onToggle: () => void;
-  onSkip: (delta: number) => void;
   onPlayLine: () => void;
   onFollowChange: (follow: boolean) => void;
 }
@@ -78,35 +74,15 @@ export default function LineByLineView({
         </button>
       </div>
 
-      {/* Playback controls, when a video is open */}
+      {/* Line playback, when a video is open */}
       {transport && (
         <div className="flex items-center gap-2 flex-wrap">
-          <button className={btn} onMouseDown={noFocus} onClick={() => transport.onSkip(-SEEK_STEP_SECONDS)}
-            title={isEn ? `Back ${SEEK_STEP_SECONDS}s (←)` : `后退 ${SEEK_STEP_SECONDS} 秒（←）`}>
-            ⟲ {SEEK_STEP_SECONDS}s
-          </button>
-          <button className={`${btn} w-10 justify-center`} onMouseDown={noFocus} onClick={transport.onToggle}
-            title={isEn ? 'Play / pause (Space)' : '播放 / 暂停（空格）'}
-            aria-label={transport.playing ? (isEn ? 'Pause' : '暂停') : (isEn ? 'Play' : '播放')}>
-            {transport.playing ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" /><rect x="14" y="4" width="5" height="16" /></svg>
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z" /></svg>
-            )}
-          </button>
-          <button className={btn} onMouseDown={noFocus} onClick={() => transport.onSkip(SEEK_STEP_SECONDS)}
-            title={isEn ? `Forward ${SEEK_STEP_SECONDS}s (→)` : `快进 ${SEEK_STEP_SECONDS} 秒（→）`}>
-            {SEEK_STEP_SECONDS}s ⟳
-          </button>
           <button className={btn} onMouseDown={noFocus} onClick={transport.onPlayLine} disabled={!transport.canPlayLine}
             title={isEn ? 'Play this line from its start (R)' : '从这句开头播放到下一句（R）'}>
             ↻ {isEn ? 'Play line' : '播放本句'}
           </button>
-          <span className="text-sm text-gray-500 tabular-nums">
-            {formatTime(transport.time)} / {formatTime(transport.duration)}
-          </span>
           {transport.hasTimes && (
-            <label className="ml-auto flex items-center gap-1.5 text-sm text-gray-500 cursor-pointer select-none">
+            <label className="flex items-center gap-1.5 text-sm text-gray-500 cursor-pointer select-none">
               <input type="checkbox" checked={transport.follow}
                 onChange={e => transport.onFollowChange(e.target.checked)} className="cursor-pointer" />
               {isEn ? 'Follow the song' : '跟随歌曲进度'}
