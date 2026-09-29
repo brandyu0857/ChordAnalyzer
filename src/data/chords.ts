@@ -1,4 +1,5 @@
-import { NOTES } from './notes';
+import { NOTES, getNoteIndex } from './notes';
+import { assessVoicing, fitsDiagram, generateVoicings, type ChordSpec } from '../utils/guitarVoicings';
 
 export interface ChordType {
   name: string;
@@ -1120,28 +1121,72 @@ function generateSlashVoicing(base: GuitarFingering, bassNote: string): GuitarFi
   return null;
 }
 
-/** Returns all available voicings for a chord (primary + alternatives).
- *  If bassNote is provided, the matching slash voicing is prepended. */
+// Every chord offers at least this many playable charts. Curated shapes come
+// first, in their original order; any shortfall is found by searching the neck.
+const MIN_VOICINGS = 3;
+const voicingCache = new Map<string, GuitarFingering[]>();
+
+function isPlayable(f: GuitarFingering, spec: ChordSpec): boolean {
+  return assessVoicing(f.frets, spec, GUITAR_TUNING).ok && fitsDiagram(f);
+}
+
+// Drop curated shapes a hand can't play (or that aren't this chord), then top
+// the list up to MIN_VOICINGS with generated ones.
+function withMinimum(curated: GuitarFingering[], spec: ChordSpec): GuitarFingering[] {
+  const seen = new Set<string>();
+  const kept = curated.filter(f => {
+    const key = f.frets.join(',');
+    if (seen.has(key) || !isPlayable(f, spec)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (kept.length >= MIN_VOICINGS) return kept;
+  const found = [...kept];
+  found.push(...generateVoicings(spec, GUITAR_TUNING, MIN_VOICINGS - found.length, found.map(f => f.frets)));
+  // A few chords (minor add9 on some roots) have no 3 shapes within four
+  // frets; allow a five-fret stretch higher up the neck for those
+  if (found.length < MIN_VOICINGS) {
+    found.push(...generateVoicings(spec, GUITAR_TUNING, MIN_VOICINGS - found.length,
+      found.map(f => f.frets), { allowStretch: true }));
+  }
+  return found;
+}
+
+/** Returns playable voicings for a chord — at least MIN_VOICINGS of them.
+ *  With a bassNote, voicings with that note in the bass come first. The
+ *  result is cached and shared, so callers must not mutate it. */
 export function getGuitarFingerings(root: string, type: string, bassNote?: string): GuitarFingering[] {
+  const cacheKey = `${root}|${type}|${bassNote ?? ''}`;
+  const cached = voicingCache.get(cacheKey);
+  if (cached) return cached;
+
   const key = getChordShapeKey(root, type);
   const primary = GUITAR_CHORD_SHAPES[key];
   const alts = ALTERNATIVE_VOICINGS[key] || [];
-  const all: GuitarFingering[] = primary ? [primary, ...alts] : [];
+  const curated = primary ? [primary, ...alts] : alts;
 
-  if (bassNote) {
-    const slashKey = `${key}/${bassNote}`;
-    const slashFingering = SLASH_CHORD_SHAPES[slashKey];
-    if (slashFingering) {
-      return [slashFingering, ...all];
-    }
-    // Auto-generate: modify the primary voicing to include the bass note
-    if (primary) {
-      const generated = generateSlashVoicing(primary, bassNote);
-      if (generated) {
-        return [generated, ...all];
-      }
-    }
+  const chordType = CHORD_TYPES[type];
+  const rootPc = getNoteIndex(root);
+  if (!chordType || rootPc < 0) return curated;
+
+  const spec: ChordSpec = { rootPc, typeKey: type, intervals: chordType.intervals };
+  let result = withMinimum(curated, spec);
+
+  const bassPc = bassNote ? getNoteIndex(bassNote) : -1;
+  if (bassNote && bassPc >= 0 && bassPc !== rootPc) {
+    const slashCurated = [
+      SLASH_CHORD_SHAPES[`${key}/${bassNote}`],
+      primary ? generateSlashVoicing(primary, bassNote) : null,
+    ].filter((f): f is GuitarFingering => Boolean(f));
+    const slash = withMinimum(slashCurated, { ...spec, bassPc });
+    // Shapes with the right bass come first. A few rare combinations (a 9th
+    // chord over a bass outside it, e.g. C9/D#) have fewer than
+    // MIN_VOICINGS playable ones; fill in with the plain chord's shapes, as
+    // before, so there are still enough charts to choose from.
+    const topUp = result.filter(f => !slash.some(sf => sf.frets.join(',') === f.frets.join(',')));
+    result = slash.length >= MIN_VOICINGS ? slash : [...slash, ...topUp];
   }
 
-  return all;
+  voicingCache.set(cacheKey, result);
+  return result;
 }
