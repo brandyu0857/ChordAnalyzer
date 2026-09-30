@@ -606,7 +606,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
 
   const quiet = 'px-2 py-1 rounded-md text-gray-400 hover:text-gray-800 hover:bg-gray-100 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
   const noFocus = (e: React.MouseEvent) => e.preventDefault();
-  const lyricsPx = wide ? 44 : 26;
+  const lyricsPx = wide ? 56 : 38;
   const hasLyrics = !!lyrics.trim();
   const showStart = !videoId && !hasLyrics && !isEditing;
 
@@ -846,6 +846,18 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
               onSkip={pb.skipBy}
               onSeek={pb.seekTo}
             />
+          )}
+          {/* Without timestamps the lyrics can't follow the song — say so */}
+          {controller && hasLyrics && !hasTimes && !syncing && (
+            <div className="flex items-center justify-center gap-2 flex-wrap text-sm">
+              <span className="text-gray-400">
+                {isEn ? "These lyrics aren't synced to the video, so they won't follow the song." : '这份歌词没有时间轴，还不能跟着歌走。'}
+              </span>
+              <button onMouseDown={noFocus} onClick={() => { setView('line'); startSync(); }}
+                className="h-8 px-3 font-medium rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200 cursor-pointer">
+                ⏱ {isEn ? 'Sync while listening' : '边听边打点同步'}
+              </button>
+            </div>
           )}
           {view === 'line' && hasLyrics && (
             <div className="flex items-center justify-center gap-1 text-xs">

@@ -47,7 +47,7 @@ export default function KaraokeTransport({ isEn, ready, playing, time, duration,
           onClick={onToggle}
           title={isEn ? 'Play / pause (Space)' : '播放 / 暂停（空格）'}
           aria-label={playing ? (isEn ? 'Pause' : '暂停') : (isEn ? 'Play' : '播放')}
-          className="w-20 h-20 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-20 h-20 rounded-full bg-gray-400 hover:bg-gray-500 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {playing ? (
             <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><rect x="5" y="4" width="5" height="16" rx="1" /><rect x="14" y="4" width="5" height="16" rx="1" /></svg>
