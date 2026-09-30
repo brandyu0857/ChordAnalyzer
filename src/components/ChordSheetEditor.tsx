@@ -69,6 +69,24 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
+function useWindowHeight(): number {
+  const [height, setHeight] = useState(() => window.innerHeight);
+  useEffect(() => {
+    const onResize = () => setHeight(window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return height;
+}
+
+// Line view sizes: the lyric size wanted, and (on wide screens) how much of
+// the height the header, lyrics banner and player take, and how tall one line
+// is per pixel of font (text, its chord row and spacing) — so all three
+// lines fit on shorter laptop screens too
+const LYRICS_PX = { wide: 68, narrow: 50 };
+const LINE_VIEW_CHROME_PX = 400;
+const LINE_HEIGHT_PER_PX = 2.4;
+
 function loadView(): SheetView {
   try {
     return localStorage.getItem(VIEW_KEY) === 'full' ? 'full' : 'line';
@@ -112,6 +130,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
   const [isEditing, setIsEditing] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const wide = useMediaQuery('(min-width: 768px)');
+  const windowHeight = useWindowHeight();
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const [popoverInput, setPopoverInput] = useState('');
   const [sheetName, setSheetName] = useState(sheet?.name ?? '');
@@ -639,7 +658,9 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
 
   const quiet = 'px-2 py-1 rounded-md text-gray-400 hover:text-gray-800 hover:bg-gray-100 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
   const noFocus = (e: React.MouseEvent) => e.preventDefault();
-  const lyricsPx = wide ? 56 : 38;
+  const lyricsPx = wide
+    ? Math.max(28, Math.min(LYRICS_PX.wide, Math.floor((windowHeight - LINE_VIEW_CHROME_PX) / (3 * LINE_HEIGHT_PER_PX))))
+    : LYRICS_PX.narrow;
   const hasLyrics = !!lyrics.trim();
   const showStart = !videoId && !hasLyrics && !isEditing;
 

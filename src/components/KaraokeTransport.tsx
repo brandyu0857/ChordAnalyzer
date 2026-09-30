@@ -52,7 +52,7 @@ export default function KaraokeTransport({ isEn, ready, playing, time, duration,
           {playing ? (
             <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><rect x="5" y="4" width="5" height="16" rx="1" /><rect x="14" y="4" width="5" height="16" rx="1" /></svg>
           ) : (
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="#fff" style={{ marginLeft: 4 }}><path d="M6 3.5l15 8.5-15 8.5z" /></svg>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="#fff" style={{ marginLeft: 2 }}><path d="M6 3.5l15 8.5-15 8.5z" /></svg>
           )}
         </button>
         <button className={skip} onMouseDown={noFocus} disabled={!ready} onClick={() => onSkip(SEEK_STEP_SECONDS)}
