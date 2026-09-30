@@ -1,5 +1,5 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
-import { measureTextWidth } from '../utils/textWidth';
+import { useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
+import { lineWidth } from '../utils/chordLabels';
 import LyricLine, { type LineChord } from './LyricLine';
 
 interface LineByLineViewProps {
@@ -12,8 +12,10 @@ interface LineByLineViewProps {
   onFocusLine: (li: number) => void;
   onCharClick: (e: React.MouseEvent, li: number, ci: number) => void;
   containerRef: Ref<HTMLDivElement>;
-  /** Lyric size to use when the lines fit; shrinks when the longest doesn't */
+  /** Lyric size to use when the lines fit; a line too long to fit shrinks */
   fontPx: number;
+  /** Height the three lines have to fit in, when it's limited */
+  maxHeight?: number;
   /** Scrolling / swiping over the lyrics: one line back (-1) or on (1) per step */
   onStep?: (dir: 1 | -1) => void;
   syncing: boolean;           // marking line starts while listening
@@ -22,6 +24,13 @@ interface LineByLineViewProps {
 }
 
 const MIN_FONT_PX = 20;
+// Chords at about half the lyric size keep the lines close together
+const CHORD_RATIO = 0.55;
+// Height of one line per pixel of font: its chord row (chord size × 1.3),
+// the text (leading 1.35), plus a 4px gap; and the view's own padding
+const LINE_HEIGHT_PER_PX = CHORD_RATIO * 1.3 + 1.35;
+const LINE_GAP_PX = 4;
+const VIEW_PADDING_PX = 16 + 4;   // py-2, and a little slack for rounding
 
 // Scrolling: pixels of wheel travel for one line, and the shortest time
 // between two lines for a mouse wheel (a trackpad swipe moves one line)
@@ -102,23 +111,28 @@ function useLineScroll(el: HTMLElement | null, onStep: ((dir: 1 | -1) => void) |
  */
 export default function LineByLineView({
   lines, navLines, focusLine, focusProgress, chordsForLine, onFocusLine, onCharClick,
-  containerRef, fontPx: maxFontPx, onStep, syncing, isEn, children,
+  containerRef, fontPx: wantedFontPx, maxHeight, onStep, syncing, isEn, children,
 }: LineByLineViewProps) {
   const pos = Math.max(0, navLines.indexOf(focusLine));
   const [box, setBox] = useState<HTMLDivElement | null>(null);
   useLineScroll(box, onStep);
-  // One size for the whole song, as large as allowed while its longest line
-  // still fits across (text width scales with the font size)
+  // Small enough for all three lines to fit the height available
+  const maxFontPx = maxHeight
+    ? Math.max(MIN_FONT_PX, Math.min(wantedFontPx, Math.floor((maxHeight - VIEW_PADDING_PX - 3 * LINE_GAP_PX) / (3 * LINE_HEIGHT_PER_PX))))
+    : wantedFontPx;
+  const chordPxFor = (fontPx: number) => Math.max(14, Math.round(fontPx * CHORD_RATIO));
+  // Each line at the full size unless it — text or chords — is too long to
+  // fit across; then just that line shrinks (widths scale with the font
+  // size), so one long line, like a credits line, doesn't shrink the song
   const boxWidth = useWidth(box);
-  const longest = useMemo(
-    () => Math.max(1, ...navLines.map(li => measureTextWidth(lines[li], `600 ${maxFontPx}px monospace`))),
-    [lines, navLines, maxFontPx],
-  );
-  const fontPx = boxWidth
-    ? Math.max(MIN_FONT_PX, Math.min(maxFontPx, Math.floor(maxFontPx * (boxWidth - (syncing ? 24 : 0)) / longest)))
-    : maxFontPx;
-  // Chords at about half the lyric size keep the lines close together
-  const chordPx = Math.max(14, Math.round(fontPx * 0.55));
+  const sizeFor = (li: number) => {
+    const room = boxWidth - (syncing && li === focusLine ? 24 : 0);
+    const width = lineWidth(lines[li], chordsForLine(li), maxFontPx, chordPxFor(maxFontPx), true);
+    const fontPx = !boxWidth || width <= room
+      ? maxFontPx
+      : Math.max(MIN_FONT_PX, Math.floor(maxFontPx * room / width));
+    return { fontPx, chordPx: chordPxFor(fontPx) };
+  };
 
   if (!navLines.length) {
     return <p className="text-base text-gray-400">{isEn ? 'No lyrics yet' : '还没有歌词'}</p>;
@@ -128,30 +142,29 @@ export default function LineByLineView({
   // song an empty slot keeps the active line in the middle
   const neighbour = (li: number | undefined, key: string) => li === undefined ? (
     <div key={key} aria-hidden className="invisible">
-      <LyricLine line="　" chords={[]} fontPx={fontPx} chordPx={chordPx} bold tone="upcoming" />
+      <LyricLine line="　" chords={[]} fontPx={maxFontPx} chordPx={chordPxFor(maxFontPx)} bold tone="upcoming" />
     </div>
   ) : (
     <button
       key={key}
-      className="block max-w-full overflow-x-auto text-left cursor-pointer"
+      className="block text-left cursor-pointer"
       onClick={() => onFocusLine(li)}
       title={isEn ? 'Go to this line' : '跳到这句'}
     >
-      <LyricLine line={lines[li]} chords={chordsForLine(li)} fontPx={fontPx} chordPx={chordPx} bold tone="upcoming" />
+      <LyricLine line={lines[li]} chords={chordsForLine(li)} {...sizeFor(li)} bold tone="upcoming" />
     </button>
   );
 
   return (
     // touch-action: vertical swipes step lines instead of scrolling the page
-    <div ref={setBox} className="w-full flex justify-center py-6 touch-pan-x">
+    <div ref={setBox} className="w-full flex justify-center py-2 touch-pan-x">
       <div ref={containerRef} className="relative max-w-full select-none">
         {neighbour(navLines[pos - 1], 'prev')}
-        <div className={`overflow-x-auto rounded-lg ${syncing ? 'ring-2 ring-amber-300 px-3 -mx-3' : ''}`}>
+        <div className={`rounded-lg ${syncing ? 'ring-2 ring-amber-300 px-3 -mx-3' : ''}`}>
           <LyricLine
             line={lines[focusLine]}
             chords={chordsForLine(focusLine)}
-            fontPx={fontPx}
-            chordPx={chordPx}
+            {...sizeFor(focusLine)}
             bold
             tone="current"
             progress={focusProgress}

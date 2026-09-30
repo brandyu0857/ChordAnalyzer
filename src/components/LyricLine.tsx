@@ -1,10 +1,7 @@
 import { useRef } from 'react';
-import { measureTextWidth } from '../utils/textWidth';
+import { placeChordLabels, type LineChord } from '../utils/chordLabels';
 
-export interface LineChord {
-  charIndex: number;
-  chord: string;
-}
+export type { LineChord };
 
 // How a line is shown relative to playback: sung lines stay dark gray, lines
 // not reached yet are light gray, the line being worked on is darkest
@@ -16,8 +13,6 @@ const TONE_CLASSES: Record<LineTone, { text: string; chord: string }> = {
   sung: { text: 'text-gray-600', chord: 'text-blue-500' },
   upcoming: { text: 'text-gray-300', chord: 'text-blue-300' },
 };
-
-const CHORD_GAP_PX = 6;
 
 interface LyricLineProps {
   line: string;
@@ -42,30 +37,22 @@ export default function LyricLine({
   line, chords, fontPx, tone, onCharClick, chordTitle, progress, chordPx = fontPx, bold = false,
 }: LyricLineProps) {
   const textRef = useRef<HTMLDivElement>(null);
-  // Measured with the same weight they're drawn in, so chords stay aligned
-  const lyricsFont = `${bold ? '600 ' : ''}${fontPx}px monospace`;
-  const chordFont = `bold ${chordPx}px monospace`;
   const colors = TONE_CLASSES[tone];
   const chars = [...line];
   const karaoke = progress !== undefined;
   // Light up a character as soon as its turn starts
   const sungCount = karaoke ? Math.ceil(progress * chars.length) : 0;
-  const sorted = [...chords].sort((a, b) => a.charIndex - b.charIndex);
-
-  // Chord labels are pixel-positioned via measured text width, so each lands
-  // exactly above its target character regardless of font metrics (CJK glyphs
-  // render wider than Latin ones, by an amount that varies by font/OS) —
-  // pushed right only if it would otherwise overlap the previous label.
-  const labels = sorted.reduce<(LineChord & { left: number; right: number })[]>((acc, c) => {
-    const naturalLeft = measureTextWidth(line.slice(0, c.charIndex), lyricsFont);
-    const left = Math.max(naturalLeft, acc.length ? acc[acc.length - 1].right : 0);
-    const right = left + measureTextWidth(c.chord, chordFont) + CHORD_GAP_PX;
-    return [...acc, { ...c, left, right }];
-  }, []);
+  // Measured with the same weight the lyrics are drawn in, so chords stay aligned
+  const labels = placeChordLabels(line, chords, fontPx, chordPx, bold);
 
   return (
     <div>
-      <div className="relative" style={{ fontFamily: 'monospace', fontSize: chordPx, height: Math.round(chordPx * 1.3) }}>
+      {/* As wide as its labels, which can run past the text, so the line's
+          box holds them instead of spilling over */}
+      <div
+        className="relative"
+        style={{ fontFamily: 'monospace', fontSize: chordPx, height: Math.round(chordPx * 1.3), minWidth: labels.length ? labels[labels.length - 1].right : undefined }}
+      >
         {labels.map(c => (
           <span
             key={c.charIndex}
@@ -84,7 +71,8 @@ export default function LyricLine({
       <div
         ref={textRef}
         className={`whitespace-pre leading-relaxed mb-1 transition-colors ${colors.text}`}
-        style={{ fontFamily: 'monospace', fontSize: fontPx, fontWeight: bold ? 600 : undefined }}
+        // The large semibold lines get tighter leading so three fit on screen
+        style={{ fontFamily: 'monospace', fontSize: fontPx, fontWeight: bold ? 600 : undefined, lineHeight: bold ? 1.35 : undefined }}
       >
         {onCharClick || karaoke
           ? chars.map((char, ci) => {

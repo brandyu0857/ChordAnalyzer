@@ -69,23 +69,21 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-function useWindowHeight(): number {
-  const [height, setHeight] = useState(() => window.innerHeight);
+function useElementHeight(el: HTMLElement | null): number {
+  const [height, setHeight] = useState(0);
   useEffect(() => {
-    const onResize = () => setHeight(window.innerHeight);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeight(el.clientHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [el]);
   return height;
 }
 
-// Line view sizes: the lyric size wanted, and (on wide screens) how much of
-// the height the header, lyrics banner and player take, and how tall one line
-// is per pixel of font (text, its chord row and spacing) — so all three
-// lines fit on shorter laptop screens too
+// Line view lyric size, before fitting to the space
 const LYRICS_PX = { wide: 68, narrow: 50 };
-const LINE_VIEW_CHROME_PX = 400;
-const LINE_HEIGHT_PER_PX = 2.4;
+// Vertical padding around the lyrics inside the scrolling area
+const CONTENT_PADDING_PX = 32;
 
 function loadView(): SheetView {
   try {
@@ -130,7 +128,11 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
   const [isEditing, setIsEditing] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const wide = useMediaQuery('(min-width: 768px)');
-  const windowHeight = useWindowHeight();
+  // With the video tucked in a corner (lg), the lyrics have the scrolling
+  // area to themselves and are sized to fit it
+  const videoInCorner = useMediaQuery('(min-width: 1024px)');
+  const [mainEl, setMainEl] = useState<HTMLElement | null>(null);
+  const mainHeight = useElementHeight(mainEl);
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const [popoverInput, setPopoverInput] = useState('');
   const [sheetName, setSheetName] = useState(sheet?.name ?? '');
@@ -658,9 +660,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
 
   const quiet = 'px-2 py-1 rounded-md text-gray-400 hover:text-gray-800 hover:bg-gray-100 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
   const noFocus = (e: React.MouseEvent) => e.preventDefault();
-  const lyricsPx = wide
-    ? Math.max(28, Math.min(LYRICS_PX.wide, Math.floor((windowHeight - LINE_VIEW_CHROME_PX) / (3 * LINE_HEIGHT_PER_PX))))
-    : LYRICS_PX.narrow;
+  const lyricsPx = wide ? LYRICS_PX.wide : LYRICS_PX.narrow;
   const hasLyrics = !!lyrics.trim();
   const showStart = !videoId && !hasLyrics && !isEditing;
 
@@ -744,7 +744,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
         </div>
       )}
 
-      <main className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 flex flex-col">
+      <main ref={setMainEl} className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 flex flex-col">
         {/* The video, as small as YouTube allows: at the top on narrow
             screens, in the bottom-left corner on wide ones */}
         {videoId && (
@@ -759,7 +759,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
           />
         )}
 
-        <div className="flex-1 flex items-center justify-center py-8">
+        <div className="flex-1 flex items-center justify-center py-4">
           {showStart ? (
             // New sheet: start from a video
             <div className="w-full max-w-xl text-center space-y-5">
@@ -824,6 +824,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
               onCharClick={handleCharClick}
               containerRef={containerRef}
               fontPx={lyricsPx}
+              maxHeight={videoInCorner && mainHeight ? mainHeight - CONTENT_PADDING_PX : undefined}
               onStep={popover || syncing ? undefined : stepLine}
               syncing={syncing}
               isEn={isEn}
