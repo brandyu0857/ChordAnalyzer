@@ -35,9 +35,12 @@ interface PopoverState {
   x: number;
   y: number;
   charHeight: number;
+  existing?: string;   // the chord already on this character, if any
 }
 
 const POPOVER_WIDTH = 320;
+// How long after the last change the sheet saves itself
+const AUTOSAVE_DELAY_MS = 800;
 
 type SheetView = 'line' | 'full';
 const VIEW_KEY = 'chord_analyzer_sheet_view';
@@ -114,7 +117,6 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
   const [sheetName, setSheetName] = useState(sheet?.name ?? '');
   const [youtubeUrl, setYoutubeUrl] = useState(sheet?.youtubeUrl ?? '');
   const [isExporting, setIsExporting] = useState(false);
-  const [savedFlash, setSavedFlash] = useState(false);
 
   // Line-by-line transcribing
   const [view, setViewState] = useState<SheetView>(loadView);
@@ -183,10 +185,11 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
     el.style.height = `${el.scrollHeight}px`;
   }, [lyrics, isEditing]);
 
-  // Focus input when popover opens
+  // Focus input when popover opens, with an existing chord selected so typing
+  // replaces it
   useEffect(() => {
     if (popover) {
-      setTimeout(() => popoverInputRef.current?.focus(), 10);
+      setTimeout(() => popoverInputRef.current?.select(), 10);
     }
   }, [popover]);
 
@@ -238,22 +241,26 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
     return placements.filter(p => p.line === lineIdx);
   }, [placements]);
 
+  // Opens the chord popover on a character. With a chord already there it
+  // starts from that chord, to change it or (with the bin) delete it
   const handleCharClick = useCallback((e: React.MouseEvent, line: number, charIndex: number) => {
-    // If there's already a chord here, remove it
     const existing = placements.find(p => p.line === line && p.charIndex === charIndex);
-    if (existing) {
-      removeChord(line, charIndex);
-      return;
-    }
     const charRect = (e.target as HTMLElement).getBoundingClientRect();
     const containerRect = containerRef.current?.getBoundingClientRect();
     // Keep the popover inside the card when clicking near its right edge
     const maxX = containerRect ? Math.max(0, containerRect.width - POPOVER_WIDTH - 8) : 0;
     const x = containerRect ? Math.min(charRect.left - containerRect.left, maxX) : 0;
     const y = containerRect ? charRect.top - containerRect.top : 0;
-    setPopover({ line, charIndex, x, y, charHeight: charRect.height });
+    setPopover({ line, charIndex, x, y, charHeight: charRect.height, existing: existing?.chord });
+    setPopoverInput(existing?.chord ?? '');
+  }, [placements]);
+
+  const deletePopoverChord = useCallback(() => {
+    if (!popover) return;
+    removeChord(popover.line, popover.charIndex);
+    setPopover(null);
     setPopoverInput('');
-  }, [placements, removeChord]);
+  }, [popover, removeChord]);
 
   const isValidChord = popoverInput.trim() ? parseChordName(popoverInput.trim()) !== null : false;
 
@@ -468,8 +475,11 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
 
   const canSave = !!(lyrics.trim() || youtubeUrl.trim());
 
-  const handleSave = useCallback(() => {
-    if (!canSave) return;
+  // Saves on its own shortly after each change; returns the sheet's id
+  const save = useCallback((): string | null => {
+    if (!canSave) return sheetId;
+    // The list needs a name; the field itself stays empty so a name found
+    // later (e.g. the imported song's title) can still fill it
     let name = sheetName.trim();
     if (!name) {
       const firstLine = lyrics.split('\n').find(l => l.trim()) || '';
@@ -486,25 +496,36 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
       id = saveChordSheet({ name, lyrics, placements, youtubeUrl: trimmedUrl, lineTimes: times }).id;
       setSheetId(id);
     }
-    setSheetName(name);
-    setSavedKey(contentKey({ lyrics, placements, youtubeUrl, lineTimes, name }));
-    setSavedFlash(true);
-    setTimeout(() => setSavedFlash(false), 1500);
+    setSavedKey(contentKey({ lyrics, placements, youtubeUrl, lineTimes, name: sheetName }));
     const saved = loadChordSheets().find(s => s.id === id);
     if (saved) onSaved(saved);
+    return id;
   }, [canSave, sheetName, lyrics, placements, youtubeUrl, lineTimes, sheetId, isEn, onSaved]);
 
-  // Esc and ✕: first leave whatever is in progress, then close (asking about
-  // unsaved changes)
+  // Each change restarts the wait, so typing saves once it pauses
+  useEffect(() => {
+    if (!dirty || !canSave) return;
+    const timer = setTimeout(save, AUTOSAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [dirty, canSave, save]);
+
+  // Don't lose the last change if the tab is closed before the wait is up
+  const flushRef = useRef<() => void>(() => {});
+  useEffect(() => { flushRef.current = () => { if (dirty && canSave) save(); }; });
+  useEffect(() => {
+    const onHide = () => flushRef.current();
+    window.addEventListener('pagehide', onHide);
+    return () => window.removeEventListener('pagehide', onHide);
+  }, []);
+
+  // Esc and ✕: first leave whatever is in progress, then save anything
+  // pending and close
   const requestClose = useCallback(() => {
     if (popover) { setPopover(null); setPopoverInput(''); return; }
     if (syncing) { setSyncing(false); return; }
-    if (dirty) {
-      const msg = isEn ? 'You have unsaved changes. Close without saving?' : '有未保存的修改，确定不保存就关闭吗？';
-      if (!window.confirm(msg)) return;
-    }
-    onClose(pb.time, sheetId);
-  }, [popover, syncing, dirty, isEn, onClose, pb.time, sheetId]);
+    const id = dirty ? save() : sheetId;
+    onClose(pb.time, id);
+  }, [popover, syncing, dirty, save, onClose, pb.time, sheetId]);
 
   const handleExportPng = useCallback(async () => {
     if (isExporting) return;
@@ -582,6 +603,18 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
         >
           ✓
         </button>
+        {popover.existing && (
+          <button
+            onClick={deletePopoverChord}
+            title={isEn ? `Delete ${popover.existing}` : `删除 ${popover.existing}`}
+            aria-label={isEn ? 'Delete chord' : '删除和弦'}
+            className="ml-auto w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
+            </svg>
+          </button>
+        )}
       </div>
       {/* Mini chord preview */}
       {popoverInput.trim() && isValidChord && (() => {
@@ -647,7 +680,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
 
   return (
     <Modal label={sheet ? (isEn ? 'Edit chord sheet' : '编辑和弦谱') : (isEn ? 'New chord sheet' : '新建和弦谱')} onRequestClose={requestClose}>
-      {/* Header: name, save, menu, close */}
+      {/* Header: name, save status, menu, close */}
       <header className="h-14 shrink-0 flex items-center gap-2 px-4 md:px-6">
         <input
           value={sheetName}
@@ -657,15 +690,8 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
           className="flex-1 min-w-0 bg-transparent text-lg font-semibold text-gray-900 placeholder-gray-300 focus:outline-none"
         />
         <span className="text-sm text-gray-400 whitespace-nowrap">
-          {savedFlash ? (isEn ? 'Saved ✓' : '已保存 ✓') : dirty ? (isEn ? 'Unsaved' : '未保存') : ''}
+          {dirty && canSave ? (isEn ? 'Saving…' : '保存中…') : sheetId ? (isEn ? 'Saved' : '已自动保存') : ''}
         </span>
-        <button
-          onClick={handleSave}
-          disabled={!canSave || !dirty}
-          className="h-9 px-4 text-sm font-medium rounded-full bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          {isEn ? 'Save' : '保存'}
-        </button>
         <MenuButton items={menuItems} label={isEn ? 'More' : '更多'} />
         <button
           onClick={requestClose}
@@ -775,9 +801,9 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
               chordsForLine={getChordsForLine}
               onFocusLine={goToLine}
               onCharClick={handleCharClick}
-              onChordClick={removeChord}
               containerRef={containerRef}
               fontPx={lyricsPx}
+              onStep={popover || syncing ? undefined : stepLine}
               syncing={syncing}
               isEn={isEn}
             >
@@ -803,8 +829,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
                       tone={tone}
                       progress={li === playbackLine ? lineProgress(pb.time, li, lineTimes, line) : undefined}
                       onCharClick={(e, ci) => handleCharClick(e, li, ci)}
-                      onChordClick={ci => removeChord(li, ci)}
-                      chordTitle={isEn ? 'Click to remove' : '点击删除'}
+                      chordTitle={isEn ? 'Click to change or delete' : '点击修改或删除'}
                     />
                   );
                 })}

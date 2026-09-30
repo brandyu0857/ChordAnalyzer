@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { measureTextWidth } from '../utils/textWidth';
 
 export interface LineChord {
@@ -23,10 +24,9 @@ interface LyricLineProps {
   chords: LineChord[];
   fontPx: number;
   tone: LineTone;
-  /** Makes each character clickable to place a chord */
+  /** Makes each character clickable to place a chord; a chord label counts
+   *  as a click on its character */
   onCharClick?: (e: React.MouseEvent, charIndex: number) => void;
-  /** Makes each chord label clickable (to remove it) */
-  onChordClick?: (charIndex: number) => void;
   chordTitle?: string;
   /** Karaoke fill for the line being sung: share of it already sung, 0–1.
    *  Sung characters are dark gray, the rest light gray. */
@@ -39,8 +39,9 @@ interface LyricLineProps {
 
 /** One lyric line with its chords positioned exactly above their characters. */
 export default function LyricLine({
-  line, chords, fontPx, tone, onCharClick, onChordClick, chordTitle, progress, chordPx = fontPx, bold = false,
+  line, chords, fontPx, tone, onCharClick, chordTitle, progress, chordPx = fontPx, bold = false,
 }: LyricLineProps) {
+  const textRef = useRef<HTMLDivElement>(null);
   // Measured with the same weight they're drawn in, so chords stay aligned
   const lyricsFont = `${bold ? '600 ' : ''}${fontPx}px monospace`;
   const chordFont = `bold ${chordPx}px monospace`;
@@ -69,17 +70,19 @@ export default function LyricLine({
           <span
             key={c.charIndex}
             className={`absolute top-0 font-bold whitespace-nowrap ${colors.chord} ${
-              onChordClick ? 'cursor-pointer hover:text-red-500 transition-colors' : ''
+              onCharClick ? 'cursor-pointer hover:text-blue-800 transition-colors' : ''
             }`}
             style={{ left: c.left }}
-            onClick={onChordClick ? () => onChordClick(c.charIndex) : undefined}
-            title={onChordClick ? chordTitle : undefined}
+            // Opens the chord's character, where it can be changed or deleted
+            onClick={onCharClick ? () => (textRef.current?.children[c.charIndex] as HTMLElement | undefined)?.click() : undefined}
+            title={onCharClick ? chordTitle : undefined}
           >
             {c.chord}
           </span>
         ))}
       </div>
       <div
+        ref={textRef}
         className={`whitespace-pre leading-relaxed mb-1 transition-colors ${colors.text}`}
         style={{ fontFamily: 'monospace', fontSize: fontPx, fontWeight: bold ? 600 : undefined }}
       >
