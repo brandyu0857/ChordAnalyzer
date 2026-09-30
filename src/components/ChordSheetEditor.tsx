@@ -18,7 +18,7 @@ import LyricsImportBanner, { type LyricsLookupState } from './LyricsImportBanner
 import ChordSuggestions from './ChordSuggestions';
 import { suggestNextChords } from '../utils/chordSuggestions';
 import {
-  findLyricsForVideo, searchLyricsByName, isConfidentMatch, toImportedLyrics, remapLineTimes,
+  findLyricsForVideo, searchLyricsByName, isConfidentMatch, toImportedLyrics, remapLineTimes, remapLinePlacements,
   type RankedResult,
 } from '../utils/lyrics';
 import { usePlayback, usePlaybackKeys, lineAtTime, lineProgress } from '../hooks/usePlayback';
@@ -375,6 +375,16 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
         if (matched >= nonEmpty * 0.5) {
           setUndoImport(snapshot());
           setLineTimes(times);
+          // Lines removed from these lyrics before chords followed their lines
+          // left the chords on the wrong lines; the original lyrics say where
+          // they belong
+          const restored = remapLinePlacements(imported.lines, placementsRef.current, currentLines);
+          const linesRemoved = imported.lines.length > currentLines.length;
+          const moves = restored.length > 0 && JSON.stringify(restored) !== JSON.stringify(placementsRef.current);
+          const ask = isEn
+            ? 'Were lines deleted from these lyrics earlier? Chords placed before that may now be on the wrong lines. Move them back to their lines using the original lyrics?'
+            : '之前删过歌词里的行吗？那之前放的和弦可能错位了。要按原始歌词把和弦移回对应的句子吗？';
+          if (linesRemoved && moves && window.confirm(ask)) setPlacements(restored);
           setLookup(s => ({
             ...s, importedId: r.result.id,
             note: isEn ? `Timing added to ${matched} of ${nonEmpty} lines; chords kept.` : `已为 ${matched}/${nonEmpty} 句加上时间轴，和弦保留。`,
@@ -487,10 +497,20 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
     setYoutubeUrl(value);
   }, [youtubeUrl]);
 
+  // Timing and chords follow their lines through a round of text editing.
+  // Each keystroke maps from the text as it was before the round started, so
+  // a line that passes through an in-between state (merged with the line
+  // above while that one is being deleted, say) gets them back after
+  const editBase = useRef<{ lines: string[]; times: (number | null)[] | null; placements: ChordPlacement[] } | null>(null);
+  useEffect(() => { if (!isEditing) editBase.current = null; }, [isEditing]);
+
   const handleLyricsChange = useCallback((value: string) => {
-    setLineTimes(prev => remapLineTimes(lines, prev, value.split('\n')));
+    const base = editBase.current ??= { lines, times: lineTimes, placements };
+    const newLines = value.split('\n');
+    setLineTimes(remapLineTimes(base.lines, base.times, newLines));
+    setPlacements(remapLinePlacements(base.lines, base.placements, newLines));
     setLyrics(value);
-  }, [lines]);
+  }, [lines, lineTimes, placements]);
 
   // ---------- Save / close / export ----------
 

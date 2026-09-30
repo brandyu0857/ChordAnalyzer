@@ -214,25 +214,68 @@ export function toImportedLyrics(result: LyricsResult): ImportedLyrics | null {
 }
 
 /**
+ * Pair each line of edited lyrics with the line it came from. Lines with the
+ * same text match in order, however many lines were removed or added around
+ * them (longest common subsequence); where the same number of lines sit
+ * between two matches, they're taken as edited in place (a typo fixed) and
+ * paired too. Returns, for each new line, the old line's index, or null for a
+ * line that's new.
+ */
+export function alignLines(oldLines: string[], newLines: string[]): (number | null)[] {
+  const a = oldLines.map(l => l.trim());
+  const b = newLines.map(l => l.trim());
+  const n = a.length, m = b.length;
+  // common[i][j]: length of the longest common run of a[i..] and b[j..]
+  const common = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      common[i][j] = a[i] === b[j] ? common[i + 1][j + 1] + 1 : Math.max(common[i + 1][j], common[i][j + 1]);
+    }
+  }
+  const out: (number | null)[] = new Array(m).fill(null);
+  const pairGap = (i0: number, i1: number, j0: number, j1: number) => {
+    if (i1 - i0 === j1 - j0) for (let k = 0; k < j1 - j0; k++) out[j0 + k] = i0 + k;
+  };
+  let i = 0, j = 0, gapI = 0, gapJ = 0;
+  while (i < n && j < m) {
+    if (a[i] === b[j]) {
+      pairGap(gapI, i, gapJ, j);
+      out[j] = i;
+      gapI = ++i;
+      gapJ = ++j;
+    } else if (common[i + 1][j] >= common[i][j + 1]) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+  pairGap(gapI, n, gapJ, m);
+  return out;
+}
+
+/**
  * Carry line timestamps across a lyrics edit: each new line takes the time of
- * the matching old line (same text, in order), or null when it's new.
+ * the line it came from (see alignLines), or null when it's new.
  */
 export function remapLineTimes(oldLines: string[], oldTimes: (number | null)[] | null, newLines: string[]): (number | null)[] | null {
   if (!oldTimes) return null;
-  const out: (number | null)[] = [];
-  let cursor = 0;
-  for (const line of newLines) {
-    const key = line.trim();
-    let found = -1;
-    for (let i = cursor; i < Math.min(oldLines.length, cursor + 8); i++) {
-      if (oldLines[i].trim() === key) { found = i; break; }
-    }
-    if (found >= 0) {
-      out.push(oldTimes[found] ?? null);
-      cursor = found + 1;
-    } else {
-      out.push(null);
-    }
-  }
+  const out = alignLines(oldLines, newLines).map(i => (i === null ? null : oldTimes[i] ?? null));
   return out.some(t => t !== null) ? out : null;
+}
+
+/**
+ * Carry things placed on lines (chords) across a lyrics edit: each moves with
+ * its line; those on removed lines go, and a character position past the end
+ * of an edited line moves to its last character.
+ */
+export function remapLinePlacements<T extends { line: number; charIndex: number }>(oldLines: string[], items: T[], newLines: string[]): T[] {
+  const newIndex = new Map<number, number>();
+  alignLines(oldLines, newLines).forEach((oldI, newI) => { if (oldI !== null) newIndex.set(oldI, newI); });
+  return items.flatMap(item => {
+    const line = newIndex.get(item.line);
+    if (line === undefined) return [];
+    const length = newLines[line].length;
+    if (!length) return [];
+    return [{ ...item, line, charIndex: Math.min(item.charIndex, length - 1) }];
+  });
 }
