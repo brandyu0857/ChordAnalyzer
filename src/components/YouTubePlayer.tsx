@@ -10,7 +10,8 @@ interface YouTubePlayerProps {
   onToggle: () => void;
   onSkip: (delta: number) => void;
   onSeek: (seconds: number) => void;
-  onClose: () => void;
+  /** Where to start the video, e.g. to continue from the other mode */
+  startAt?: number;
   /** Called with a controller once the player is ready, and with null when it goes away */
   onController?: (controller: YouTubeController | null) => void;
   onPlayingChange?: (playing: boolean) => void;
@@ -34,9 +35,10 @@ const noFocus = (e: React.MouseEvent) => e.preventDefault();
  * plays, only the page-side controls are unavailable).
  */
 export default function YouTubePlayer({
-  videoId, isEn, playing, time, duration, onToggle, onSkip, onSeek, onClose,
+  videoId, isEn, playing, time, duration, onToggle, onSkip, onSeek, startAt = 0,
   onController, onPlayingChange, onApiUnavailable,
 }: YouTubePlayerProps) {
+  const startRef = useRef(startAt);   // only the first value matters
   const boxRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
@@ -58,10 +60,12 @@ export default function YouTubePlayer({
         videoId,
         width: '100%',
         height: '100%',
-        playerVars: { rel: 0, playsinline: 1 },
+        playerVars: { rel: 0, playsinline: 1, ...(startRef.current >= 1 ? { start: Math.floor(startRef.current) } : {}) },
         events: {
           onReady: e => {
             if (destroyed) return;
+            // `start` only takes whole seconds; land on the exact position
+            if (startRef.current > 0) e.target.seekTo(startRef.current, true);
             setReady(true);
             callbacks.current.onController?.(createController(e.target, YT.PlayerState.PLAYING));
           },
@@ -174,10 +178,6 @@ export default function YouTubePlayer({
         <button className={btn} onMouseDown={noFocus} onClick={toggleSize}
           title={large ? (isEn ? 'Smaller video' : '缩小视频') : (isEn ? 'Larger video' : '放大视频')}>
           {large ? (isEn ? 'Smaller' : '缩小') : (isEn ? 'Larger' : '放大')}
-        </button>
-        <button className={btn} onMouseDown={noFocus} onClick={onClose}
-          title={isEn ? 'Close video' : '关闭视频'} aria-label={isEn ? 'Close video' : '关闭视频'}>
-          ✕
         </button>
       </div>
       {controls ? (

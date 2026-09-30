@@ -5,7 +5,7 @@ import ChordInfo from './components/ChordInfo';
 import PlayButton from './components/PlayButton';
 import ProgressionPanel from './components/ProgressionPanel';
 import FretboardIdentifier from './components/FretboardIdentifier';
-import ChordSheetEditor, { type ChordSheetEditorHandle } from './components/ChordSheetEditor';
+import ChordSheetPage from './components/ChordSheetPage';
 import AuthModal from './components/AuthModal';
 import type { ParsedChord } from './utils/chordUtils';
 import { parseChordName, getChordNotes } from './utils/chordUtils';
@@ -32,7 +32,6 @@ function App() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const chordSheetEditorRef = useRef<ChordSheetEditorHandle>(null);
 
   const showToast = useCallback((msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -314,22 +313,7 @@ function App() {
           <FretboardIdentifier onChordSelect={handleChordSelect} />
         </div>
 
-        {page === 'sheet' && (
-          <div className="space-y-3">
-            <div className="flex justify-end">
-              <button
-                onClick={() => chordSheetEditorRef.current?.newSheet()}
-                className="px-5 py-2.5 text-base font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors flex items-center gap-2 shadow-sm"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                {isEn ? 'New Chord Sheet' : '新增和弦谱'}
-              </button>
-            </div>
-            <ChordSheetEditor ref={chordSheetEditorRef} />
-          </div>
-        )}
+        {page === 'sheet' && <ChordSheetPage />}
       </main>
 
       <footer className="border-t border-gray-100 mt-16 py-4 text-center text-sm text-gray-300">

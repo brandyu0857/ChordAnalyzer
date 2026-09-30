@@ -7,8 +7,12 @@ export interface TransportProps {
   hasTimes: boolean;          // lyrics carry per-line timestamps
   canPlayLine: boolean;       // the focused line has a timestamp
   follow: boolean;            // focus follows playback
+  syncing: boolean;           // marking line starts while listening
   onPlayLine: () => void;
   onFollowChange: (follow: boolean) => void;
+  onStartSync: () => void;
+  onMarkLine: () => void;
+  onStopSync: () => void;
 }
 
 interface LineByLineViewProps {
@@ -75,11 +79,15 @@ export default function LineByLineView({
       </div>
 
       {/* Line playback, when a video is open */}
-      {transport && (
+      {transport && !transport.syncing && (
         <div className="flex items-center gap-2 flex-wrap">
           <button className={btn} onMouseDown={noFocus} onClick={transport.onPlayLine} disabled={!transport.canPlayLine}
             title={isEn ? 'Play this line from its start (R)' : '从这句开头播放到下一句（R）'}>
             ↻ {isEn ? 'Play line' : '播放本句'}
+          </button>
+          <button className={btn} onMouseDown={noFocus} onClick={transport.onStartSync}
+            title={isEn ? 'Sync the lyrics to the video by marking where each line starts' : '边听歌，边在每句开始时按 ↓，让歌词和视频同步'}>
+            ⏱ {transport.hasTimes ? (isEn ? 'Re-sync lyrics' : '重新打点同步') : (isEn ? 'Sync lyrics to video' : '边听边打点同步')}
           </button>
           {transport.hasTimes && (
             <label className="flex items-center gap-1.5 text-sm text-gray-500 cursor-pointer select-none">
@@ -88,6 +96,24 @@ export default function LineByLineView({
               {isEn ? 'Follow the song' : '跟随歌曲进度'}
             </label>
           )}
+        </div>
+      )}
+
+      {/* Sync session: mark each line as it starts */}
+      {transport?.syncing && (
+        <div className="flex items-center gap-2 flex-wrap rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
+          <span className="text-sm text-amber-800 flex-1 min-w-48">
+            {isEn
+              ? 'Syncing: when the highlighted line starts being sung, press ↓ (or Enter). ↑ goes back a line.'
+              : '打点中：唱到下面高亮的这句时，按 ↓（或回车）。标错了按 ↑ 退回。'}
+          </span>
+          <button onMouseDown={noFocus} onClick={transport.onMarkLine}
+            className="h-8 px-3 text-sm font-medium rounded-lg bg-amber-500 text-white hover:bg-amber-600 cursor-pointer">
+            {isEn ? 'This line starts now ↓' : '这句开始了 ↓'}
+          </button>
+          <button className={btn} onMouseDown={noFocus} onClick={transport.onStopSync}>
+            {isEn ? 'Done' : '结束打点'}
+          </button>
         </div>
       )}
 
@@ -103,7 +129,9 @@ export default function LineByLineView({
           </div>
         )}
 
-        <div className="rounded-lg bg-gray-50 -mx-3 px-3 py-2 overflow-x-auto">
+        <div className={`rounded-lg -mx-3 px-3 py-2 overflow-x-auto ${
+          transport?.syncing ? 'bg-amber-50 ring-2 ring-amber-300' : 'bg-gray-50'
+        }`}>
           <LyricLine
             line={lines[focusLine]}
             chords={chordsForLine(focusLine)}
@@ -128,12 +156,12 @@ export default function LineByLineView({
         {isEn
           ? 'Click a character to add a chord above it. Keys: ← → jump 5s · Space play/pause · ↑ ↓ change line · R replay line'
           : '点击某个字，在它上方插入和弦。快捷键：← → 后退/快进 5 秒 · 空格 播放/暂停 · ↑ ↓ 切换句子 · R 重播本句'}
-        {transport && !transport.hasTimes && (
+        {transport && !transport.hasTimes && !transport.syncing && (
           <>
             <br />
             {isEn
-              ? 'These lyrics have no timing: while the song plays, press ↓ as each new line starts to mark it, then “Play line” works for that line.'
-              : '这份歌词没有时间轴：播放时，每当新的一句开始唱就按 ↓，会记下这句的开始时间，之后「播放本句」就能用了。'}
+              ? 'These lyrics aren’t synced to the video yet. Use “Sync lyrics to video”: press ↓ as each line starts, and the lyrics will follow the song.'
+              : '这份歌词还没和视频同步。点「边听边打点同步」，边听边在每句开始时按 ↓，之后歌词就会跟着歌走。'}
           </>
         )}
       </p>

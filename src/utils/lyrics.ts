@@ -82,6 +82,27 @@ async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown> {
   return res.json();
 }
 
+// Traditional → Simplified Chinese, loaded only when a query contains Chinese:
+// a Taiwanese or Hong Kong upload titled 竇靖童 空中飛人 is usually stored in
+// the lyrics database as 窦靖童 空中飞人. (The reverse converter is ~10x the
+// size — about 470 KB gzipped — so Simplified titles aren't tried in
+// Traditional.)
+type Convert = (s: string) => string;
+let toSimplifiedPromise: Promise<Convert | null> | null = null;
+function loadToSimplified(): Promise<Convert | null> {
+  toSimplifiedPromise ??= import('opencc-js/t2cn')
+    .then(m => m.Converter({ from: 'tw', to: 'cn' }))
+    .catch(() => null);
+  return toSimplifiedPromise;
+}
+
+/** The query as written, then in Simplified Chinese if that differs. */
+export async function scriptVariants(query: string): Promise<string[]> {
+  if (!hasCjk(query)) return [query];
+  const toSimplified = await loadToSimplified();
+  return [...new Set([query, ...(toSimplified ? [toSimplified(query)] : [])])];
+}
+
 /** One LRCLIB search. Uses the site's /api/lyrics proxy when deployed, and
  *  calls LRCLIB directly otherwise (local dev has no /api). */
 export async function searchLyrics(query: string, signal?: AbortSignal): Promise<LyricsResult[]> {
@@ -140,13 +161,25 @@ export function isConfidentMatch(r: RankedResult | undefined): boolean {
 export async function findLyricsForVideo(
   title: string, author: string, videoDuration: number, signal?: AbortSignal,
 ): Promise<RankedResult[]> {
+  // Rank against the title in both scripts so 空中飞人 matches 空中飛人
+  const matchTitle = (await scriptVariants(title)).join(' ');
   const all: LyricsResult[] = [];
-  for (const q of buildQueries(title, author)) {
-    all.push(...await searchLyrics(q, signal));
-    const ranked = rankResults(all, title, author, videoDuration);
-    if (isConfidentMatch(ranked[0])) return ranked;
+  for (const query of buildQueries(title, author)) {
+    for (const q of await scriptVariants(query)) {
+      all.push(...await searchLyrics(q, signal));
+      const ranked = rankResults(all, matchTitle, author, videoDuration);
+      if (isConfidentMatch(ranked[0])) return ranked;
+    }
   }
-  return rankResults(all, title, author, videoDuration);
+  return rankResults(all, matchTitle, author, videoDuration);
+}
+
+/** A search the user typed, tried in both Chinese scripts. */
+export async function searchLyricsByName(query: string, videoDuration: number, signal?: AbortSignal): Promise<RankedResult[]> {
+  const variants = await scriptVariants(query);
+  const all: LyricsResult[] = [];
+  for (const q of variants) all.push(...await searchLyrics(q, signal));
+  return rankResults(all, variants.join(' '), '', videoDuration);
 }
 
 /** Parse LRC text into timed lines. A line with several stamps (a repeated
