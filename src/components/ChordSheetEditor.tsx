@@ -9,7 +9,9 @@ import Modal from './Modal';
 import { useLocale } from '../i18n/context';
 import { loadChordSheets, saveChordSheet, updateChordSheet, type SavedChordSheet } from '../utils/storage';
 import { extractYouTubeId } from '../utils/youtube';
-import YouTubePlayer from './YouTubePlayer';
+import { YouTubeVideo } from './YouTubePlayer';
+import KaraokeTransport from './KaraokeTransport';
+import MenuButton from './MenuButton';
 import LyricLine, { type LineTone } from './LyricLine';
 import LineByLineView from './LineByLineView';
 import LyricsImportBanner, { type LyricsLookupState } from './LyricsImportBanner';
@@ -53,6 +55,17 @@ interface Snapshot {
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setMatches(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [query]);
+  return matches;
+}
+
 function loadView(): SheetView {
   try {
     return localStorage.getItem(VIEW_KEY) === 'full' ? 'full' : 'line';
@@ -78,9 +91,12 @@ interface ChordSheetEditorProps {
 }
 
 /**
- * The chord sheet editor, in a modal: YouTube link and player, lyrics (typed,
- * pasted or looked up from the video), chord placement line by line or on the
- * whole sheet, chord hints, syncing lyrics to the video, save and export.
+ * The chord sheet editor, full screen and kept plain: the line being sung in
+ * large type (filling in as it's sung) with the next lines below, and a
+ * progress bar over −5s / play / +5s. Everything else — changing the video,
+ * finding or editing lyrics, the full-sheet view, syncing, export — is in the
+ * ⋯ menu. The video itself is kept small in a corner: YouTube's terms don't
+ * allow hiding it (audio-only) and require at least 200×200 px.
  */
 export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose }: ChordSheetEditorProps) {
   const { locale } = useLocale();
@@ -89,7 +105,10 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
   const [sheetId, setSheetId] = useState<string | null>(sheet?.id ?? null);
   const [lyrics, setLyrics] = useState(sheet?.lyrics ?? '');
   const [placements, setPlacements] = useState<ChordPlacement[]>(sheet?.placements ?? []);
-  const [isEditing, setIsEditing] = useState(!sheet?.lyrics.trim());
+  // Editing the lyrics as text (a textarea) instead of placing chords
+  const [isEditing, setIsEditing] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const wide = useMediaQuery('(min-width: 768px)');
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const [popoverInput, setPopoverInput] = useState('');
   const [sheetName, setSheetName] = useState(sheet?.name ?? '');
@@ -585,211 +604,267 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
     </div>
   );
 
-  const headerBtn = 'h-8 px-3 text-sm rounded-lg border border-gray-200 text-gray-600 bg-white hover:bg-gray-50 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap';
+  const quiet = 'px-2 py-1 rounded-md text-gray-400 hover:text-gray-800 hover:bg-gray-100 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
+  const noFocus = (e: React.MouseEvent) => e.preventDefault();
+  const lyricsPx = wide ? 44 : 26;
+  const hasLyrics = !!lyrics.trim();
+  const showStart = !videoId && !hasLyrics && !isEditing;
+
+  const linkInput = (big: boolean) => (
+    <input
+      value={youtubeUrl}
+      onChange={e => { handleYoutubeUrlChange(e.target.value, e.target); if (extractYouTubeId(e.target.value)) setShowLinkInput(false); }}
+      autoFocus={big}
+      placeholder={isEn ? 'Paste a YouTube link…' : '粘贴 YouTube 链接…'}
+      aria-label={isEn ? 'YouTube link' : 'YouTube 链接'}
+      className={`w-full bg-white border rounded-xl placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 ${
+        big ? 'px-5 py-4 text-lg' : 'px-3 py-2 text-sm'
+      } ${youtubeUrl.trim() && !videoId ? 'border-red-300 text-red-700' : 'border-gray-200 text-gray-900'}`}
+    />
+  );
+
+  const menuItems = [
+    { label: isEn ? 'Change video link' : '更换视频链接', onSelect: () => setShowLinkInput(v => !v) },
+    videoId ? { label: isEn ? 'Find lyrics for this video' : '查找这首歌的歌词', onSelect: requestLookup } : null,
+    { label: isEn ? 'Edit lyrics text' : '编辑歌词文本', onSelect: () => { setIsEditing(true); setSyncing(false); setPopover(null); } },
+    hasLyrics ? {
+      label: isEn ? 'Show the whole sheet' : '显示整首歌',
+      checked: view === 'full',
+      onSelect: () => { setView(view === 'full' ? 'line' : 'full'); setPopover(null); setSyncing(false); setIsEditing(false); },
+    } : null,
+    controller && hasLyrics ? {
+      label: hasTimes ? (isEn ? 'Re-sync lyrics to the video' : '重新打点同步歌词') : (isEn ? 'Sync lyrics to the video' : '边听边打点同步歌词'),
+      onSelect: () => { setView('line'); setIsEditing(false); startSync(); },
+    } : null,
+    hasTimes ? { label: isEn ? 'Follow the song' : '跟随歌曲进度', checked: follow, onSelect: () => setFollow(f => !f) } : null,
+    placements.length > 0 ? { label: isEn ? 'Export as image' : '导出图片', onSelect: () => void handleExportPng(), disabled: isExporting } : null,
+    placements.length > 0 ? {
+      label: isEn ? 'Clear all chords' : '清除所有和弦',
+      danger: true,
+      onSelect: () => { if (window.confirm(isEn ? 'Remove all chords from this sheet?' : '清除这首歌的所有和弦？')) setPlacements([]); },
+    } : null,
+  ];
 
   return (
-    <Modal
-      title={sheet ? (isEn ? 'Edit chord sheet' : '编辑和弦谱') : (isEn ? 'New chord sheet' : '新建和弦谱')}
-      closeLabel={isEn ? 'Close editor' : '关闭编辑'}
-      onRequestClose={requestClose}
-      actions={
-        <>
-          <input
-            value={sheetName}
-            onChange={e => setSheetName(e.target.value)}
-            placeholder={isEn ? 'Song name...' : '歌曲名称...'}
-            aria-label={isEn ? 'Song name' : '歌曲名称'}
-            className="flex-1 min-w-32 max-w-72 h-8 px-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200"
-          />
-          {!isEditing && placements.length > 0 && (
-            <button onClick={handleExportPng} disabled={isExporting} className={headerBtn}>
-              {isExporting ? (isEn ? 'Exporting...' : '导出中...') : (isEn ? 'Export PNG' : '导出图片')}
-            </button>
-          )}
-          {placements.length > 0 && (
-            <button
-              onClick={() => {
-                if (window.confirm(isEn ? 'Remove all chords from this sheet?' : '清除这首歌的所有和弦？')) setPlacements([]);
-              }}
-              className={headerBtn}
-            >
-              {isEn ? 'Clear chords' : '清除和弦'}
-            </button>
-          )}
-          <span className="text-sm text-gray-400 min-w-12 text-right">
-            {savedFlash ? (isEn ? 'Saved ✓' : '已保存 ✓') : dirty ? (isEn ? 'Unsaved' : '未保存') : ''}
-          </span>
-          <button
-            onClick={handleSave}
-            disabled={!canSave || !dirty}
-            className="h-8 px-4 text-sm font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {isEn ? 'Save' : '保存'}
-          </button>
-        </>
-      }
-    >
-      <div className="space-y-3 max-w-4xl mx-auto">
-        {/* YouTube link */}
-        <div className="flex items-center gap-2">
-          <input
-            value={youtubeUrl}
-            onChange={e => handleYoutubeUrlChange(e.target.value, e.target)}
-            placeholder={isEn ? 'Paste a YouTube link...' : '粘贴YouTube链接...'}
-            aria-label={isEn ? 'YouTube link' : 'YouTube链接'}
-            className={`flex-1 min-w-0 px-3 py-1.5 text-sm bg-white border rounded-lg placeholder-gray-300 focus:outline-none focus:ring-1 ${
-              youtubeUrl.trim()
-                ? videoId
-                  ? 'border-green-300 focus:border-green-400 focus:ring-green-200 text-green-700'
-                  : 'border-red-300 focus:border-red-400 focus:ring-red-200 text-red-700'
-                : 'border-gray-200 focus:border-gray-400 focus:ring-gray-200 text-gray-900'
-            }`}
-          />
-          {videoId && lookup.status === 'idle' && (
-            <button onClick={requestLookup} className={headerBtn}>
-              {isEn ? 'Find lyrics' : '查找歌词'}
-            </button>
-          )}
-        </div>
+    <Modal label={sheet ? (isEn ? 'Edit chord sheet' : '编辑和弦谱') : (isEn ? 'New chord sheet' : '新建和弦谱')} onRequestClose={requestClose}>
+      {/* Header: name, save, menu, close */}
+      <header className="h-14 shrink-0 flex items-center gap-2 px-4 md:px-6">
+        <input
+          value={sheetName}
+          onChange={e => setSheetName(e.target.value)}
+          placeholder={isEn ? 'Song name' : '歌曲名称'}
+          aria-label={isEn ? 'Song name' : '歌曲名称'}
+          className="flex-1 min-w-0 bg-transparent text-lg font-semibold text-gray-900 placeholder-gray-300 focus:outline-none"
+        />
+        <span className="text-sm text-gray-400 whitespace-nowrap">
+          {savedFlash ? (isEn ? 'Saved ✓' : '已保存 ✓') : dirty ? (isEn ? 'Unsaved' : '未保存') : ''}
+        </span>
+        <button
+          onClick={handleSave}
+          disabled={!canSave || !dirty}
+          className="h-9 px-4 text-sm font-medium rounded-full bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          {isEn ? 'Save' : '保存'}
+        </button>
+        <MenuButton items={menuItems} label={isEn ? 'More' : '更多'} />
+        <button
+          onClick={requestClose}
+          aria-label={isEn ? 'Close editor' : '关闭编辑'}
+          title={isEn ? 'Close editor' : '关闭编辑'}
+          className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </header>
 
-        {/* The song's video, right above the lyrics */}
+      {(showLinkInput && !showStart) && (
+        <div className="px-4 md:px-6"><div className="max-w-2xl mx-auto">{linkInput(false)}</div></div>
+      )}
+      {lookup.status !== 'idle' && (
+        <div className="px-4 md:px-6 pt-2">
+          <div className="max-w-2xl mx-auto">
+            <LyricsImportBanner
+              state={lookup}
+              isEn={isEn}
+              onImport={importLyrics}
+              onSearch={q => void runLookup(q)}
+              onUndo={undoImport ? handleUndoImport : undefined}
+              onDismiss={() => { lookupAbort.current?.abort(); setLookup(IDLE_LOOKUP); }}
+            />
+          </div>
+        </div>
+      )}
+
+      <main className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 flex flex-col">
+        {/* The video, as small as YouTube allows: at the top on narrow
+            screens, in the bottom-left corner on wide ones */}
         {videoId && (
-          <YouTubePlayer
+          <YouTubeVideo
             key={videoId}
             videoId={videoId}
-            isEn={isEn}
             startAt={videoId === initialVideoId.current ? startAt : 0}
-            {...pb.playerProps}
+            className="shrink-0 mx-auto mt-2 w-[356px] max-w-full h-[200px] rounded-xl lg:fixed lg:left-6 lg:bottom-6 lg:m-0 lg:w-[200px] lg:h-[200px] lg:z-10"
+            onController={pb.playerProps.onController}
+            onPlayingChange={pb.playerProps.onPlayingChange}
+            onApiUnavailable={pb.playerProps.onApiUnavailable}
           />
         )}
 
-        {lookup.status !== 'idle' && (
-          <LyricsImportBanner
-            state={lookup}
-            isEn={isEn}
-            onImport={importLyrics}
-            onSearch={q => void runLookup(q)}
-            onUndo={undoImport ? handleUndoImport : undefined}
-            onDismiss={() => { lookupAbort.current?.abort(); setLookup(IDLE_LOOKUP); }}
-          />
-        )}
-
-        {isEditing ? (
-          <div className="space-y-2">
-            <textarea
-              ref={lyricsTextareaRef}
-              value={lyrics}
-              onChange={e => handleLyricsChange(e.target.value)}
-              placeholder={isEn
-                ? 'Paste lyrics here, or add a YouTube link above to look them up...\n\nExample:\nYesterday, all my troubles seemed so far away\nNow it looks as though they\'re here to stay'
-                : '粘贴歌词，或在上方贴 YouTube 链接自动查找…\n\n例如：\n已经为了变的更好去掉锋芒\n一不小心成了你的倾诉对象'}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-base text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 min-h-32 resize-none overflow-hidden"
-            />
-            {lyrics.trim() && (
-              <button
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2 text-base font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-800 cursor-pointer transition-colors"
-              >
-                {isEn ? 'Place Chords' : '开始放置和弦'} →
+        <div className="flex-1 flex items-center justify-center py-8">
+          {showStart ? (
+            // New sheet: start from a video
+            <div className="w-full max-w-xl text-center space-y-5">
+              <h2 className="text-2xl font-semibold text-gray-900">
+                {isEn ? 'Paste a YouTube link to start' : '贴上 YouTube 链接，开始扒歌'}
+              </h2>
+              {linkInput(true)}
+              <button onClick={() => setIsEditing(true)} className="text-sm text-gray-400 hover:text-gray-700 underline underline-offset-4 cursor-pointer">
+                {isEn ? 'No video? Paste lyrics instead' : '没有视频？直接粘贴歌词'}
               </button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Toolbar */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => { setIsEditing(true); setSyncing(false); }}
-                className="text-sm text-gray-400 hover:text-gray-700 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 bg-white cursor-pointer transition-colors"
-              >
-                ← {isEn ? 'Edit lyrics' : '编辑歌词'}
-              </button>
-              {/* One line at a time, or the whole sheet */}
-              <div className="flex rounded-lg border border-gray-200 bg-white p-0.5 text-sm">
-                {(['line', 'full'] as const).map(v => (
-                  <button
-                    key={v}
-                    onClick={() => { setView(v); setPopover(null); setSyncing(false); }}
-                    className={`px-2.5 py-0.5 rounded-md cursor-pointer transition-colors ${
-                      view === v ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-800'
-                    }`}
-                  >
-                    {v === 'line' ? (isEn ? 'Line by line' : '逐句') : (isEn ? 'Full sheet' : '全文')}
-                  </button>
-                ))}
+            </div>
+          ) : isEditing ? (
+            // Lyrics as text
+            <div className="w-full max-w-2xl space-y-3">
+              <textarea
+                ref={lyricsTextareaRef}
+                value={lyrics}
+                autoFocus
+                onChange={e => handleLyricsChange(e.target.value)}
+                placeholder={isEn ? 'Paste or type the lyrics, one line per line…' : '粘贴或输入歌词，一句一行…'}
+                className="w-full px-1 py-2 bg-transparent text-xl leading-relaxed text-gray-900 placeholder-gray-300 focus:outline-none min-h-48 resize-none overflow-hidden"
+              />
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  disabled={!hasLyrics}
+                  className="h-10 px-5 text-sm font-medium rounded-full bg-gray-900 text-white hover:bg-gray-800 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {isEn ? 'Done — place chords' : '完成，开始放和弦'} →
+                </button>
               </div>
-              {view === 'full' && (
-                <span className="text-sm text-gray-400">
-                  {isEn ? 'Click lyrics to place chord, click chord to remove' : '点击歌词放置和弦，点击和弦删除'}
-                </span>
+            </div>
+          ) : !hasLyrics ? (
+            // A video but no lyrics yet
+            <div className="text-center space-y-4">
+              <p className="text-lg text-gray-400">
+                {lookup.status === 'searching'
+                  ? (isEn ? 'Looking for the lyrics…' : '正在找歌词…')
+                  : (isEn ? 'No lyrics yet' : '还没有歌词')}
+              </p>
+              {lookup.status !== 'searching' && (
+                <div className="flex items-center justify-center gap-2">
+                  <button onClick={() => setIsEditing(true)} className="h-10 px-5 text-sm rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                    {isEn ? 'Paste lyrics' : '粘贴歌词'}
+                  </button>
+                  {lookup.status === 'idle' && (
+                    <button onClick={requestLookup} className="h-10 px-5 text-sm rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                      {isEn ? 'Find lyrics' : '查找歌词'}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-
-            {view === 'line' && (
-              <LineByLineView
-                lines={lines}
-                navLines={navLines}
-                focusLine={activeLine}
-                focusProgress={activeLine === playbackLine ? lineProgress(pb.time, activeLine, lineTimes, lines[activeLine]) : undefined}
-                chordsForLine={getChordsForLine}
-                onFocusLine={goToLine}
-                onCharClick={handleCharClick}
-                onChordClick={removeChord}
-                containerRef={containerRef}
-                isEn={isEn}
-                transport={controller ? {
-                  hasTimes,
-                  canPlayLine: lineTimes?.[activeLine] != null,
-                  follow,
-                  syncing,
-                  onPlayLine: playLine,
-                  onFollowChange: setFollow,
-                  onStartSync: startSync,
-                  onMarkLine: markLine,
-                  onStopSync: () => setSyncing(false),
-                } : null}
-              >
+          ) : view === 'line' ? (
+            <LineByLineView
+              lines={lines}
+              navLines={navLines}
+              focusLine={activeLine}
+              focusProgress={activeLine === playbackLine ? lineProgress(pb.time, activeLine, lineTimes, lines[activeLine]) : undefined}
+              chordsForLine={getChordsForLine}
+              onFocusLine={goToLine}
+              onCharClick={handleCharClick}
+              onChordClick={removeChord}
+              containerRef={containerRef}
+              fontPx={lyricsPx}
+              syncing={syncing}
+              isEn={isEn}
+            >
+              {popoverNode}
+            </LineByLineView>
+          ) : (
+            // The whole sheet
+            <div ref={exportRef} className="w-full max-w-3xl self-start bg-white">
+              <div ref={containerRef} className="relative select-none py-2">
+                {lines.map((line, li) => {
+                  const lineChords = getChordsForLine(li);
+                  if (!line.trim() && !lineChords.length) return <div key={li} className="h-5" />;
+                  // While a synced video plays: sung lines dark, the rest light
+                  const tone: LineTone = playbackLine === null
+                    ? 'normal'
+                    : li === playbackLine ? 'current' : li < playbackLine ? 'sung' : 'upcoming';
+                  return (
+                    <LyricLine
+                      key={li}
+                      line={line}
+                      chords={lineChords}
+                      fontPx={wide ? 20 : 17}
+                      tone={tone}
+                      progress={li === playbackLine ? lineProgress(pb.time, li, lineTimes, line) : undefined}
+                      onCharClick={(e, ci) => handleCharClick(e, li, ci)}
+                      onChordClick={ci => removeChord(li, ci)}
+                      chordTitle={isEn ? 'Click to remove' : '点击删除'}
+                    />
+                  );
+                })}
                 {popoverNode}
-              </LineByLineView>
-            )}
-
-            {view === 'full' && (
-              <div ref={exportRef} className="space-y-3 bg-white rounded-xl">
-                {/* Lyrics with chord placement */}
-                <div ref={containerRef} className="bg-white rounded-xl p-5 space-y-0 select-none relative">
-                  {lines.map((line, li) => {
-                    const lineChords = getChordsForLine(li);
-                    if (!line.trim() && !lineChords.length) return <div key={li} className="h-4" />;
-                    // While a synced video plays: sung lines dark, the rest light
-                    const tone: LineTone = playbackLine === null
-                      ? 'normal'
-                      : li === playbackLine ? 'current' : li < playbackLine ? 'sung' : 'upcoming';
-                    return (
-                      <LyricLine
-                        key={li}
-                        line={line}
-                        chords={lineChords}
-                        fontPx={16}
-                        tone={tone}
-                        progress={li === playbackLine ? lineProgress(pb.time, li, lineTimes, line) : undefined}
-                        onCharClick={(e, ci) => handleCharClick(e, li, ci)}
-                        onChordClick={ci => removeChord(li, ci)}
-                        chordTitle={isEn ? 'Click to remove' : '点击删除'}
-                      />
-                    );
-                  })}
-
-                  {popoverNode}
-                </div>
-
-                <div className="px-5 pb-5">
-                  <ChordLegend chords={placements.map(p => p.chord)} isEn={isEn} />
-                </div>
               </div>
-            )}
-          </div>
-        )}
-      </div>
+              <div className="pt-6 pb-2">
+                <ChordLegend chords={placements.map(p => p.chord)} isEn={isEn} />
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Footer: playback, then quiet line controls */}
+      {!showStart && !isEditing && (videoId || hasLyrics) && (
+        <footer className="shrink-0 px-4 md:px-6 pt-2 pb-6 space-y-4">
+          {syncing && (
+            <div className="max-w-lg mx-auto flex items-center justify-center gap-3 flex-wrap text-sm">
+              <span className="text-amber-700">
+                {isEn ? 'When the highlighted line starts, press ↓' : '唱到高亮的这句时，按 ↓'}
+              </span>
+              <button onMouseDown={noFocus} onClick={markLine}
+                className="h-8 px-3 font-medium rounded-full bg-amber-500 text-white hover:bg-amber-600 cursor-pointer">
+                {isEn ? 'It starts now ↓' : '这句开始了 ↓'}
+              </button>
+              <button onMouseDown={noFocus} onClick={() => setSyncing(false)} className={quiet}>
+                {isEn ? 'Done' : '结束打点'}
+              </button>
+            </div>
+          )}
+          {videoId && (
+            <KaraokeTransport
+              isEn={isEn}
+              ready={!!controller}
+              playing={pb.playing}
+              time={pb.time}
+              duration={pb.duration}
+              onToggle={pb.togglePlay}
+              onSkip={pb.skipBy}
+              onSeek={pb.seekTo}
+            />
+          )}
+          {view === 'line' && hasLyrics && (
+            <div className="flex items-center justify-center gap-1 text-xs">
+              <button onMouseDown={noFocus} onClick={() => stepLine(-1)} className={quiet} title={isEn ? 'Previous line (↑)' : '上一句（↑）'}>
+                ↑ {isEn ? 'Previous' : '上一句'}
+              </button>
+              <button onMouseDown={noFocus} onClick={() => stepLine(1)} className={quiet} title={isEn ? 'Next line (↓)' : '下一句（↓）'}>
+                ↓ {isEn ? 'Next' : '下一句'}
+              </button>
+              {controller && (
+                <button onMouseDown={noFocus} onClick={playLine} disabled={lineTimes?.[activeLine] == null} className={quiet}
+                  title={isEn ? 'Play this line from its start (R)' : '从这句开头播放到下一句（R）'}>
+                  ↻ {isEn ? 'Replay line' : '重播本句'}
+                </button>
+              )}
+            </div>
+          )}
+        </footer>
+      )}
     </Modal>
   );
 }

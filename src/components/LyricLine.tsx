@@ -31,12 +31,19 @@ interface LyricLineProps {
   /** Karaoke fill for the line being sung: share of it already sung, 0–1.
    *  Sung characters are dark gray, the rest light gray. */
   progress?: number;
+  /** Chord label size; defaults to the lyrics size */
+  chordPx?: number;
+  /** Semibold lyrics (the large karaoke lines) */
+  bold?: boolean;
 }
 
 /** One lyric line with its chords positioned exactly above their characters. */
-export default function LyricLine({ line, chords, fontPx, tone, onCharClick, onChordClick, chordTitle, progress }: LyricLineProps) {
-  const lyricsFont = `${fontPx}px monospace`;
-  const chordFont = `bold ${fontPx}px monospace`;
+export default function LyricLine({
+  line, chords, fontPx, tone, onCharClick, onChordClick, chordTitle, progress, chordPx = fontPx, bold = false,
+}: LyricLineProps) {
+  // Measured with the same weight they're drawn in, so chords stay aligned
+  const lyricsFont = `${bold ? '600 ' : ''}${fontPx}px monospace`;
+  const chordFont = `bold ${chordPx}px monospace`;
   const colors = TONE_CLASSES[tone];
   const chars = [...line];
   const karaoke = progress !== undefined;
@@ -57,7 +64,7 @@ export default function LyricLine({ line, chords, fontPx, tone, onCharClick, onC
 
   return (
     <div>
-      <div className="relative" style={{ fontFamily: 'monospace', fontSize: fontPx, height: Math.round(fontPx * 1.25) }}>
+      <div className="relative" style={{ fontFamily: 'monospace', fontSize: chordPx, height: Math.round(chordPx * 1.3) }}>
         {labels.map(c => (
           <span
             key={c.charIndex}
@@ -74,7 +81,7 @@ export default function LyricLine({ line, chords, fontPx, tone, onCharClick, onC
       </div>
       <div
         className={`whitespace-pre leading-relaxed mb-1 transition-colors ${colors.text}`}
-        style={{ fontFamily: 'monospace', fontSize: fontPx }}
+        style={{ fontFamily: 'monospace', fontSize: fontPx, fontWeight: bold ? 600 : undefined }}
       >
         {onCharClick || karaoke
           ? chars.map((char, ci) => {

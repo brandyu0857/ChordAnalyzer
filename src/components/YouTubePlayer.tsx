@@ -1,51 +1,38 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadYouTubeApi, createController, formatTime, SEEK_STEP_SECONDS, type YouTubeController } from '../utils/youtubeApi';
 
-interface YouTubePlayerProps {
+interface YouTubeVideoProps {
   videoId: string;
-  isEn: boolean;
-  playing: boolean;
-  time: number;
-  duration: number;
-  onToggle: () => void;
-  onSkip: (delta: number) => void;
-  onSeek: (seconds: number) => void;
   /** Where to start the video, e.g. to continue from the other mode */
   startAt?: number;
+  /** Size and placement of the video box */
+  className?: string;
   /** Called with a controller once the player is ready, and with null when it goes away */
   onController?: (controller: YouTubeController | null) => void;
   onPlayingChange?: (playing: boolean) => void;
   /** Called when the player API can't load and the plain embed is used */
   onApiUnavailable?: () => void;
+  /** Tells the owner whether the page can control the video yet */
+  onReadyChange?: (ready: boolean) => void;
 }
-
-const SIZE_KEY = 'chord_analyzer_player_large';
-
-function loadLarge(): boolean {
-  try { return localStorage.getItem(SIZE_KEY) === '1'; } catch { return false; }
-}
-
-// Buttons keep focus off themselves so Space stays play/pause
-const noFocus = (e: React.MouseEvent) => e.preventDefault();
 
 /**
- * The song's video, embedded at the top of the editor with its transport
- * underneath. Uses the IFrame Player API so the page can read the time and
- * seek; if the API can't load, falls back to the plain embed (the video still
+ * Just the video, via the IFrame Player API so the page can read the time and
+ * seek. If the API can't load, falls back to the plain embed (the video still
  * plays, only the page-side controls are unavailable).
+ *
+ * YouTube's terms require the player to stay visible (at least 200×200 px)
+ * and don't allow audio-only playback, so callers shrink it, never hide it.
  */
-export default function YouTubePlayer({
-  videoId, isEn, playing, time, duration, onToggle, onSkip, onSeek, startAt = 0,
-  onController, onPlayingChange, onApiUnavailable,
-}: YouTubePlayerProps) {
+export function YouTubeVideo({
+  videoId, startAt = 0, className = '', onController, onPlayingChange, onApiUnavailable, onReadyChange,
+}: YouTubeVideoProps) {
   const startRef = useRef(startAt);   // only the first value matters
   const boxRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
   const [apiFailed, setApiFailed] = useState(false);
-  const [large, setLarge] = useState(loadLarge);
-  const callbacks = useRef({ onController, onPlayingChange, onApiUnavailable });
-  useEffect(() => { callbacks.current = { onController, onPlayingChange, onApiUnavailable }; });
+  const callbacks = useRef({ onController, onPlayingChange, onApiUnavailable, onReadyChange });
+  useEffect(() => { callbacks.current = { onController, onPlayingChange, onApiUnavailable, onReadyChange }; });
 
   useEffect(() => {
     let destroyed = false;
@@ -66,7 +53,7 @@ export default function YouTubePlayer({
             if (destroyed) return;
             // `start` only takes whole seconds; land on the exact position
             if (startRef.current > 0) e.target.seekTo(startRef.current, true);
-            setReady(true);
+            callbacks.current.onReadyChange?.(true);
             callbacks.current.onController?.(createController(e.target, YT.PlayerState.PLAYING));
           },
           onStateChange: e => callbacks.current.onPlayingChange?.(e.data === YT.PlayerState.PLAYING),
@@ -81,7 +68,7 @@ export default function YouTubePlayer({
     return () => {
       destroyed = true;
       player?.destroy();
-      setReady(false);
+      callbacks.current.onReadyChange?.(false);
       callbacks.current.onController?.(null);
       callbacks.current.onPlayingChange?.(false);
     };
@@ -107,6 +94,57 @@ export default function YouTubePlayer({
     return () => { clearTimeout(timer); window.removeEventListener('blur', onWindowBlur); };
   }, []);
 
+  return (
+    <div ref={boxRef} className={`relative bg-black overflow-hidden ${className}`}>
+      {apiFailed ? (
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
+          title="YouTube player"
+          className="absolute inset-0 w-full h-full"
+          frameBorder={0}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      ) : (
+        <div ref={mountRef} className="absolute inset-0 w-full h-full [&>iframe]:w-full [&>iframe]:h-full" />
+      )}
+    </div>
+  );
+}
+
+interface YouTubePlayerProps {
+  videoId: string;
+  isEn: boolean;
+  playing: boolean;
+  time: number;
+  duration: number;
+  onToggle: () => void;
+  onSkip: (delta: number) => void;
+  onSeek: (seconds: number) => void;
+  startAt?: number;
+  onController?: (controller: YouTubeController | null) => void;
+  onPlayingChange?: (playing: boolean) => void;
+  onApiUnavailable?: () => void;
+}
+
+const SIZE_KEY = 'chord_analyzer_player_large';
+
+function loadLarge(): boolean {
+  try { return localStorage.getItem(SIZE_KEY) === '1'; } catch { return false; }
+}
+
+// Buttons keep focus off themselves so Space stays play/pause
+const noFocus = (e: React.MouseEvent) => e.preventDefault();
+
+/** The video with a transport bar underneath (used by the play view). */
+export default function YouTubePlayer({
+  videoId, isEn, playing, time, duration, onToggle, onSkip, onSeek, startAt = 0,
+  onController, onPlayingChange, onApiUnavailable,
+}: YouTubePlayerProps) {
+  const [ready, setReady] = useState(false);
+  const [apiFailed, setApiFailed] = useState(false);
+  const [large, setLarge] = useState(loadLarge);
+
   const toggleSize = () => {
     setLarge(v => {
       try { localStorage.setItem(SIZE_KEY, v ? '0' : '1'); } catch { /* preference only */ }
@@ -119,23 +157,15 @@ export default function YouTubePlayer({
 
   return (
     <div className="space-y-2">
-      <div
-        ref={boxRef}
-        className={`relative w-full aspect-video bg-black rounded-lg overflow-hidden ${large ? '' : 'max-w-md'}`}
-      >
-        {apiFailed ? (
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
-            title="YouTube player"
-            className="absolute inset-0 w-full h-full"
-            frameBorder={0}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          <div ref={mountRef} className="absolute inset-0 w-full h-full [&>iframe]:w-full [&>iframe]:h-full" />
-        )}
-      </div>
+      <YouTubeVideo
+        videoId={videoId}
+        startAt={startAt}
+        className={`w-full aspect-video rounded-lg ${large ? '' : 'max-w-md'}`}
+        onController={onController}
+        onPlayingChange={onPlayingChange}
+        onReadyChange={setReady}
+        onApiUnavailable={() => { setApiFailed(true); onApiUnavailable?.(); }}
+      />
 
       {/* Transport */}
       <div className="flex items-center gap-2 flex-wrap">
