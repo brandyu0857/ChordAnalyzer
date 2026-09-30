@@ -171,6 +171,8 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
   const navLines = useMemo(() => lines.flatMap((l, i) => (l.trim() ? [i] : [])), [lines]);
   const activeLine = navLines.includes(focusLine) ? focusLine : (navLines[0] ?? 0);
   const hasTimes = !!lineTimes?.some(t => t !== null);
+  // Timing that's mostly gone (lines edited before timing followed its lines)
+  const timingBroken = hasTimes && navLines.filter(li => lineTimes?.[li] != null).length < navLines.length * 0.5;
   const dirty = contentKey({ lyrics, placements, youtubeUrl, lineTimes, name: sheetName }) !== savedKey;
 
   const setView = useCallback((v: SheetView) => {
@@ -188,12 +190,16 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
   const { controller } = pb;
   const playbackLine = controller && hasTimes ? lineAtTime(pb.time, lineTimes) : null;
 
-  // Follow the song: move the focus to the line being sung, unless a chord
-  // is being entered or lines are being marked
+  // Follow the song: move the focus when the song reaches another line, unless
+  // a chord is being entered or lines are being marked. Only on a change, so
+  // a line picked by hand stays until the song moves on
+  const followedLine = useRef<number | null>(null);
   useEffect(() => {
     pb.onTickRef.current = (t: number) => {
       if (!follow || popover || isEditing || view !== 'line' || syncing) return;
       const li = lineAtTime(t, lineTimes);
+      if (li === followedLine.current) return;
+      followedLine.current = li;
       if (li !== null && lines[li]?.trim()) setFocusLine(li);
     };
   });
@@ -421,8 +427,10 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
     setLookup(s => ({ ...s, importedId: null, note: null }));
   }, [undoImport]);
 
-  // Look up lyrics from the video title, or from a name the user typed
-  const runLookup = useCallback(async (query?: string) => {
+  // Look up lyrics from the video title, or from a name the user typed. To
+  // repair timing, take the synced version that matches the current lyrics
+  // best, keeping the text and chords
+  const runLookup = useCallback(async (query?: string, repairTiming = false) => {
     if (!controller && !query) return;
     lookupAbort.current?.abort();
     const abort = new AbortController();
@@ -449,13 +457,27 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
         return;
       }
       setLookup(s => ({ ...s, status: 'found', ranked }));
+      if (repairTiming) {
+        const current = lyricsRef.current.split('\n');
+        const needed = current.filter(l => l.trim()).length * 0.5;
+        const best = ranked
+          .map(r => {
+            const imported = toImportedLyrics(r.result);
+            const times = imported?.times ? remapLineTimes(imported.lines, imported.times, current) : null;
+            return { r, matched: times?.filter(t => t !== null).length ?? 0 };
+          })
+          .reduce((a, b) => (b.matched > a.matched ? b : a));
+        if (best.matched >= needed) importLyrics(best.r);
+        else setLookup(s => ({ ...s, note: isEn ? 'No synced lyrics match these lines. Use "Sync while listening" instead.' : '没找到能对上这份歌词的时间轴，可以用「边听边打点同步」。' }));
+        return;
+      }
       // Import straight away only when it's clearly the right song and the
       // editor is still empty; otherwise the user picks from the list
       if (!query && isConfidentMatch(ranked[0]) && !lyricsRef.current.trim()) importLyrics(ranked[0]);
     } catch (err) {
       if ((err as Error).name !== 'AbortError') setLookup(s => ({ ...s, status: 'error' }));
     }
-  }, [controller, importLyrics]);
+  }, [controller, importLyrics, isEn]);
 
   // Once the player is ready: run a lookup the user asked for while it was
   // loading, or — for a new video and an empty editor — look up automatically
@@ -914,12 +936,19 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
               onSeek={pb.seekTo}
             />
           )}
-          {/* Without timestamps the lyrics can't follow the song — say so */}
-          {controller && hasLyrics && !hasTimes && !syncing && (
+          {/* Without timestamps (or with most of them missing) the lyrics
+              can't follow the song — say so, with ways to fix it */}
+          {controller && hasLyrics && (!hasTimes || timingBroken) && !syncing && (
             <div className="flex items-center justify-center gap-2 flex-wrap text-sm">
               <span className="text-gray-400">
-                {isEn ? "These lyrics aren't synced to the video, so they won't follow the song." : '这份歌词没有时间轴，还不能跟着歌走。'}
+                {timingBroken
+                  ? (isEn ? "Most lines have lost their timing, so the lyrics can't follow the song." : '大部分句子没有时间轴了，歌词跟不上歌。')
+                  : (isEn ? "These lyrics aren't synced to the video, so they won't follow the song." : '这份歌词没有时间轴，还不能跟着歌走。')}
               </span>
+              <button onMouseDown={noFocus} onClick={() => void runLookup(undefined, true)} disabled={lookup.status === 'searching'}
+                className="h-8 px-3 font-medium rounded-full bg-gray-900 text-white hover:bg-gray-700 cursor-pointer disabled:opacity-40">
+                {timingBroken ? (isEn ? 'Repair timing' : '修复时间轴') : (isEn ? 'Find timing' : '自动找时间轴')}
+              </button>
               <button onMouseDown={noFocus} onClick={() => { setView('line'); startSync(); }}
                 className="h-8 px-3 font-medium rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200 cursor-pointer">
                 ⏱ {isEn ? 'Sync while listening' : '边听边打点同步'}
