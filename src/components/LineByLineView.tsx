@@ -19,6 +19,8 @@ interface LineByLineViewProps {
   lines: string[];
   navLines: number[];         // indices of non-empty lines, in order
   focusLine: number;
+  /** Karaoke fill of the focused line while it's being sung, 0–1 */
+  focusProgress?: number;
   chordsForLine: (li: number) => LineChord[];
   onFocusLine: (li: number) => void;
   onCharClick: (e: React.MouseEvent, li: number, ci: number) => void;
@@ -42,7 +44,7 @@ const noFocus = (e: React.MouseEvent) => e.preventDefault();
  * the next lines are previewed in light gray.
  */
 export default function LineByLineView({
-  lines, navLines, focusLine, chordsForLine, onFocusLine, onCharClick, onChordClick,
+  lines, navLines, focusLine, focusProgress, chordsForLine, onFocusLine, onCharClick, onChordClick,
   containerRef, transport, isEn, children,
 }: LineByLineViewProps) {
   const pos = Math.max(0, navLines.indexOf(focusLine));
@@ -137,6 +139,7 @@ export default function LineByLineView({
             chords={chordsForLine(focusLine)}
             fontPx={FOCUS_FONT_PX}
             tone="current"
+            progress={focusProgress}
             onCharClick={(e, ci) => onCharClick(e, focusLine, ci)}
             onChordClick={ci => onChordClick(focusLine, ci)}
             chordTitle={isEn ? 'Click to remove' : '点击删除'}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SavedChordSheet } from '../utils/storage';
 import { extractYouTubeId } from '../utils/youtube';
-import { usePlayback, usePlaybackKeys, lineAtTime } from '../hooks/usePlayback';
+import { usePlayback, usePlaybackKeys, lineAtTime, lineProgress } from '../hooks/usePlayback';
 import YouTubePlayer from './YouTubePlayer';
 import LyricLine, { type LineTone } from './LyricLine';
 import ChordLegend from './ChordLegend';
@@ -90,7 +90,15 @@ export default function ChordSheetViewer({ sheet, isEn, startAt = 0, showPlayer,
               ? 'normal'
               : li === playbackLine ? 'current' : li < playbackLine ? 'sung' : 'upcoming';
             const t = times?.[li] ?? null;
-            const content = <LyricLine line={line} chords={chords} fontPx={16} tone={tone} />;
+            const content = (
+              <LyricLine
+                line={line}
+                chords={chords}
+                fontPx={16}
+                tone={tone}
+                progress={li === playbackLine ? lineProgress(pb.time, li, times, line) : undefined}
+              />
+            );
             const setRef = (el: HTMLElement | null) => {
               if (el) lineRefs.current.set(li, el);
               else lineRefs.current.delete(li);

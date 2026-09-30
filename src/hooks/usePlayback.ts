@@ -173,3 +173,23 @@ export function lineAtTime(t: number, times: (number | null)[] | null | undefine
   });
   return best;
 }
+
+// Typical sung length per character, for estimating progress through a line
+const SECONDS_PER_CHAR = 0.7;
+
+/**
+ * How far through line `li` the singer is, 0–1, for the karaoke fill.
+ * Lyrics only carry a start time per line, so this is an estimate: the line
+ * is spread over roughly SECONDS_PER_CHAR per character, and never over more
+ * than 90% of the gap before the next line (which often includes a pause).
+ */
+export function lineProgress(t: number, li: number, times: (number | null)[] | null | undefined, text: string): number {
+  const start = times?.[li];
+  if (start === null || start === undefined || t < start) return 0;
+  const chars = [...text.trim()].length;
+  if (!chars) return 1;
+  const next = times!.slice(li + 1).find((x): x is number => x !== null && x > start);
+  const estimate = Math.max(1, chars * SECONDS_PER_CHAR);
+  const length = next !== undefined ? Math.min((next - start) * 0.9, estimate) : estimate;
+  return Math.min(1, (t - start) / length);
+}

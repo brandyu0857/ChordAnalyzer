@@ -19,7 +19,7 @@ import {
   findLyricsForVideo, searchLyricsByName, isConfidentMatch, toImportedLyrics, remapLineTimes,
   type RankedResult,
 } from '../utils/lyrics';
-import { usePlayback, usePlaybackKeys, lineAtTime } from '../hooks/usePlayback';
+import { usePlayback, usePlaybackKeys, lineAtTime, lineProgress } from '../hooks/usePlayback';
 
 interface ChordPlacement {
   line: number;
@@ -730,6 +730,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
                 lines={lines}
                 navLines={navLines}
                 focusLine={activeLine}
+                focusProgress={activeLine === playbackLine ? lineProgress(pb.time, activeLine, lineTimes, lines[activeLine]) : undefined}
                 chordsForLine={getChordsForLine}
                 onFocusLine={goToLine}
                 onCharClick={handleCharClick}
@@ -770,6 +771,7 @@ export default function ChordSheetEditor({ sheet, startAt = 0, onSaved, onClose 
                         chords={lineChords}
                         fontPx={16}
                         tone={tone}
+                        progress={li === playbackLine ? lineProgress(pb.time, li, lineTimes, line) : undefined}
                         onCharClick={(e, ci) => handleCharClick(e, li, ci)}
                         onChordClick={ci => removeChord(li, ci)}
                         chordTitle={isEn ? 'Click to remove' : '点击删除'}

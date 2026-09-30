@@ -28,13 +28,20 @@ interface LyricLineProps {
   /** Makes each chord label clickable (to remove it) */
   onChordClick?: (charIndex: number) => void;
   chordTitle?: string;
+  /** Karaoke fill for the line being sung: share of it already sung, 0–1.
+   *  Sung characters are dark gray, the rest light gray. */
+  progress?: number;
 }
 
 /** One lyric line with its chords positioned exactly above their characters. */
-export default function LyricLine({ line, chords, fontPx, tone, onCharClick, onChordClick, chordTitle }: LyricLineProps) {
+export default function LyricLine({ line, chords, fontPx, tone, onCharClick, onChordClick, chordTitle, progress }: LyricLineProps) {
   const lyricsFont = `${fontPx}px monospace`;
   const chordFont = `bold ${fontPx}px monospace`;
   const colors = TONE_CLASSES[tone];
+  const chars = [...line];
+  const karaoke = progress !== undefined;
+  // Light up a character as soon as its turn starts
+  const sungCount = karaoke ? Math.ceil(progress * chars.length) : 0;
   const sorted = [...chords].sort((a, b) => a.charIndex - b.charIndex);
 
   // Chord labels are pixel-positioned via measured text width, so each lands
@@ -69,16 +76,20 @@ export default function LyricLine({ line, chords, fontPx, tone, onCharClick, onC
         className={`whitespace-pre leading-relaxed mb-1 transition-colors ${colors.text}`}
         style={{ fontFamily: 'monospace', fontSize: fontPx }}
       >
-        {onCharClick
-          ? [...line].map((char, ci) => {
+        {onCharClick || karaoke
+          ? chars.map((char, ci) => {
               const hasChord = chords.some(p => p.charIndex === ci);
+              // Karaoke: sung characters dark, the rest light
+              const fill = karaoke ? (ci < sungCount ? 'text-gray-700' : 'text-gray-300') : '';
               return (
                 <span
                   key={ci}
-                  className={`cursor-pointer transition-colors rounded-sm ${
-                    hasChord ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'
+                  className={`transition-colors duration-150 rounded-sm ${onCharClick ? 'cursor-pointer' : ''} ${
+                    hasChord && onCharClick
+                      ? `bg-blue-100 ${fill || 'text-blue-800'}`
+                      : `${fill} ${onCharClick ? 'hover:bg-gray-100' : ''}`
                   }`}
-                  onClick={e => onCharClick(e, ci)}
+                  onClick={onCharClick ? e => onCharClick(e, ci) : undefined}
                 >
                   {char}
                 </span>
