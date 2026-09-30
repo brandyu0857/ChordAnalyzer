@@ -21,7 +21,6 @@ interface LineByLineViewProps {
   children?: ReactNode;       // the chord popover, positioned inside
 }
 
-const LINES_AHEAD = 2;
 const MIN_FONT_PX = 20;
 
 // Scrolling: pixels of wheel travel for one line, and the shortest time
@@ -97,8 +96,9 @@ function useLineScroll(el: HTMLElement | null, onStep: ((dir: 1 | -1) => void) |
 }
 
 /**
- * Transcribe one line at a time: the line being sung, large and clickable,
- * with the next lines previewed in light gray. Scrolling moves a line at a time.
+ * Transcribe one line at a time: three lines, the one being sung in the
+ * middle, large and clickable, between the previous and next lines in light
+ * gray. Scrolling moves a line at a time.
  */
 export default function LineByLineView({
   lines, navLines, focusLine, focusProgress, chordsForLine, onFocusLine, onCharClick,
@@ -119,16 +119,33 @@ export default function LineByLineView({
     : maxFontPx;
   // Chords at about half the lyric size keep the lines close together
   const chordPx = Math.max(14, Math.round(fontPx * 0.55));
-  const ahead = navLines.slice(pos + 1, pos + 1 + LINES_AHEAD);
 
   if (!navLines.length) {
     return <p className="text-base text-gray-400">{isEn ? 'No lyrics yet' : '还没有歌词'}</p>;
   }
 
+  // The line just sung and the next one, in light gray; at either end of the
+  // song an empty slot keeps the active line in the middle
+  const neighbour = (li: number | undefined, key: string) => li === undefined ? (
+    <div key={key} aria-hidden className="invisible">
+      <LyricLine line="　" chords={[]} fontPx={fontPx} chordPx={chordPx} bold tone="upcoming" />
+    </div>
+  ) : (
+    <button
+      key={key}
+      className="block max-w-full overflow-x-auto text-left cursor-pointer"
+      onClick={() => onFocusLine(li)}
+      title={isEn ? 'Go to this line' : '跳到这句'}
+    >
+      <LyricLine line={lines[li]} chords={chordsForLine(li)} fontPx={fontPx} chordPx={chordPx} bold tone="upcoming" />
+    </button>
+  );
+
   return (
     // touch-action: vertical swipes step lines instead of scrolling the page
     <div ref={setBox} className="w-full flex justify-center py-6 touch-pan-x">
       <div ref={containerRef} className="relative max-w-full select-none">
+        {neighbour(navLines[pos - 1], 'prev')}
         <div className={`overflow-x-auto rounded-lg ${syncing ? 'ring-2 ring-amber-300 px-3 -mx-3' : ''}`}>
           <LyricLine
             line={lines[focusLine]}
@@ -142,16 +159,7 @@ export default function LineByLineView({
             chordTitle={isEn ? 'Click to change or delete' : '点击修改或删除'}
           />
         </div>
-        {ahead.map(li => (
-          <button
-            key={li}
-            className="block max-w-full overflow-x-auto text-left cursor-pointer"
-            onClick={() => onFocusLine(li)}
-            title={isEn ? 'Go to this line' : '跳到这句'}
-          >
-            <LyricLine line={lines[li]} chords={chordsForLine(li)} fontPx={fontPx} chordPx={chordPx} bold tone="upcoming" />
-          </button>
-        ))}
+        {neighbour(navLines[pos + 1], 'next')}
         {children}
       </div>
     </div>
